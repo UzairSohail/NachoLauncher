@@ -28,7 +28,9 @@ import { charMap } from "./char-map";
 import { Downloader } from "./constants";
 import {
   debridOnlyHosts,
+  getDownloadAttempts as getDownloadAttemptsWith,
   hosterDebridDownloaders,
+  withAllDebridSupport,
   pickDefaultDownloader as pickDefaultDownloaderWith,
   pickUriForDownloader as pickUriForDownloaderWith,
   rankUrisForDownloader as rankUrisForDownloaderWith,
@@ -213,7 +215,22 @@ export const formatName = pipe<string>(
 
 export { isBlockedTorrentDownload } from "./debrid-only";
 
-export const getDownloadersForUri = (uri: string) => {
+/**
+ * Downloaders that can take a link. A host with its own downloader also gets
+ * AllDebrid when AllDebrid currently supports it, for premium speed.
+ */
+export const getDownloadersForUri = (uri: string): Downloader[] =>
+  withAllDebridSupport(uri, getBaseDownloadersForUri(uri));
+
+/** Every (link, downloader) pair to try, in order; see download-choice.ts. */
+export const getDownloadAttempts = (
+  repack: { uris: string[]; unavailableUris?: string[] | null },
+  downloader: Downloader,
+  firstUri?: string
+) =>
+  getDownloadAttemptsWith(repack, downloader, getDownloadersForUri, firstUri);
+
+const getBaseDownloadersForUri = (uri: string): Downloader[] => {
   if (uri.startsWith("https://gofile.io")) return [Downloader.Gofile];
 
   if (uri.startsWith("https://pixeldrain.com")) return [Downloader.PixelDrain];
@@ -270,7 +287,13 @@ export const getDownloadersForUri = (uri: string) => {
   return [];
 };
 
-export { getUriConfidence, isKnownDebridHosterUri } from "./download-choice";
+export {
+  getUriConfidence,
+  isAllDebridSupportedUri,
+  isKnownDebridHosterUri,
+  refreshAllDebridSupportedDomains,
+  setAllDebridSupportedDomains,
+} from "./download-choice";
 
 /** The link of a listing a downloader is most likely to fetch. */
 export const pickUriForDownloader = (

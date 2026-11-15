@@ -798,6 +798,7 @@ declare global {
     authenticateRealDebrid: (apiToken: string) => Promise<RealDebridUser>;
     authenticatePremiumize: (apiToken: string) => Promise<PremiumizeUser>;
     authenticateAllDebrid: (apiToken: string) => Promise<AllDebridUser>;
+    getAllDebridHosts: () => Promise<string[]>;
     authenticateTorBox: (apiToken: string) => Promise<TorBoxUser>;
     getUserPreferences: () => Promise<UserPreferences | null>;
     updateUserPreferences: (

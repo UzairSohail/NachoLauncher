@@ -30,7 +30,7 @@ import {
   Downloader,
   DownloadError,
   getRepackUriParts,
-  rankUrisForDownloader,
+  getDownloadAttempts,
   toInstalledRepackInfo,
 } from "@shared";
 import { CloudSyncFilesModal } from "./cloud-sync-files-modal/cloud-sync-files-modal";
@@ -121,7 +121,7 @@ export default function GameDetails() {
             automaticallyDeleteArchiveFiles = false,
             signal?: AbortSignal
           ) => {
-            const buildPayload = (uri: string) => ({
+            const buildPayload = (uri: string, downloader: Downloader) => ({
               objectId: downloadGame?.objectId ?? game?.objectId ?? objectId!,
               title: gameTitle,
               downloader,
@@ -139,14 +139,15 @@ export default function GameDetails() {
             });
 
             // Debrid can reject a host; move on to the listing's next link
-            // it could take before giving up.
-            const uris = rankUrisForDownloader(repack, downloader);
+            // it could take, then to the host's own downloader, before
+            // giving up.
+            const attempts = getDownloadAttempts(repack, downloader);
             let response: Awaited<ReturnType<typeof startDownload>> = {
               ok: false,
               error: DownloadError.DebridHostNotSupported,
             };
-            for (const uri of uris) {
-              const payload = buildPayload(uri);
+            for (const attempt of attempts) {
+              const payload = buildPayload(attempt.uri, attempt.downloader);
               response = addToQueueOnly
                 ? await addGameToQueue(payload, signal)
                 : await startDownload(payload, signal);

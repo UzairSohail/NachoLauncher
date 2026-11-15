@@ -286,6 +286,35 @@ export class AllDebridClient {
     return entries;
   }
 
+  private static hostsCache: { domains: string[]; fetchedAt: number } | null =
+    null;
+  static readonly HOSTS_CACHE_MS = 15 * 60 * 1000;
+
+  /**
+   * Domains AllDebrid can unlock right now (hosts it marks as down are left
+   * out). Cached for 15 minutes because the list changes during the day.
+   */
+  static async getSupportedDomains(): Promise<string[]> {
+    if (!this.apiToken) return [];
+    if (
+      this.hostsCache &&
+      Date.now() - this.hostsCache.fetchedAt < this.HOSTS_CACHE_MS
+    )
+      return this.hostsCache.domains;
+    const response = await this.instance.get<
+      AllDebridApiResponse<{
+        hosts?: Record<string, { domains?: unknown; status?: unknown }>;
+      }>
+    >(`/hosts?${this.getSearchParams().toString()}`);
+    this.ensureSuccess(response.data);
+    const domains = Object.values(response.data.data?.hosts ?? {})
+      .filter((host) => host.status !== false)
+      .flatMap((host) => (Array.isArray(host.domains) ? host.domains : []))
+      .filter((domain): domain is string => typeof domain === "string");
+    this.hostsCache = { domains, fetchedAt: Date.now() };
+    return domains;
+  }
+
   static async getUser() {
     const response = await this.instance.get<
       AllDebridApiResponse<AllDebridUserResponse>
