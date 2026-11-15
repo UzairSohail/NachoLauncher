@@ -272,6 +272,14 @@ const rememberTorrentFiles = (
   if (downloader === Downloader.Torrent) cache.set(key, files);
 };
 
+/** Premium services that need the user's own account (API key). */
+const DEBRID_DOWNLOADERS = [
+  Downloader.AllDebrid,
+  Downloader.RealDebrid,
+  Downloader.Premiumize,
+  Downloader.TorBox,
+];
+
 export function DownloadSettingsModal({
   visible,
   onClose,
@@ -320,7 +328,7 @@ export function DownloadSettingsModal({
   const [hasWritePermission, setHasWritePermission] = useState<boolean | null>(
     null
   );
-  const [showRealDebridModal, setShowRealDebridModal] = useState(false);
+  const [debridToSetUp, setDebridToSetUp] = useState<Downloader | null>(null);
   const [torrentFiles, setTorrentFiles] = useState<TorrentFile[]>([]);
   const [singleArchiveSelectionKey, setSingleArchiveSelectionKey] = useState<
     string | null
@@ -1340,10 +1348,32 @@ export function DownloadSettingsModal({
                     );
                   }
 
+                  if (
+                    DEBRID_DOWNLOADERS.includes(option.downloader) &&
+                    option.isAvailableButNotConfigured
+                  ) {
+                    return (
+                      <div className="download-settings-modal__recommendation-badge">
+                        <Badge>{t("downloader_set_up")}</Badge>
+                      </div>
+                    );
+                  }
+
                   if (option.downloader === Downloader.AllDebrid) {
                     return (
                       <div className="download-settings-modal__recommendation-badge">
                         <Badge>{t("recommended")}</Badge>
+                      </div>
+                    );
+                  }
+
+                  if (
+                    option.isAvailable &&
+                    !DEBRID_DOWNLOADERS.includes(option.downloader)
+                  ) {
+                    return (
+                      <div className="download-settings-modal__recommendation-badge">
+                        <Badge>{t("downloader_free")}</Badge>
                       </div>
                     );
                   }
@@ -1383,14 +1413,10 @@ export function DownloadSettingsModal({
                       disabled={isDisabled}
                       onClick={() => {
                         if (
-                          [
-                            Downloader.RealDebrid,
-                            Downloader.Premiumize,
-                            Downloader.AllDebrid,
-                          ].includes(option.downloader) &&
+                          DEBRID_DOWNLOADERS.includes(option.downloader) &&
                           option.isAvailableButNotConfigured
                         ) {
-                          setShowRealDebridModal(true);
+                          setDebridToSetUp(option.downloader);
                         } else if (
                           option.downloader === Downloader.VikingFile &&
                           option.isAvailableButNotConfigured
@@ -1415,6 +1441,27 @@ export function DownloadSettingsModal({
               })}
             </div>
           </div>
+
+          {downloadOptions.some(
+            (option) =>
+              DEBRID_DOWNLOADERS.includes(option.downloader) &&
+              option.isAvailableButNotConfigured
+          ) &&
+            !downloadOptions.some(
+              (option) =>
+                DEBRID_DOWNLOADERS.includes(option.downloader) &&
+                option.isAvailable
+            ) && (
+              <p className="download-settings-modal__single-archive-notice">
+                {downloadOptions.some(
+                  (option) =>
+                    option.isAvailable &&
+                    !DEBRID_DOWNLOADERS.includes(option.downloader)
+                )
+                  ? t("downloader_free_and_debrid_hint")
+                  : t("downloader_needs_debrid_hint")}
+              </p>
+            )}
 
           {canOpenTorrentStep && isSingleArchive && (
             <p className="download-settings-modal__single-archive-notice">
@@ -1503,8 +1550,9 @@ export function DownloadSettingsModal({
       </div>
 
       <RealDebridInfoModal
-        visible={showRealDebridModal}
-        onClose={() => setShowRealDebridModal(false)}
+        visible={debridToSetUp !== null}
+        downloader={debridToSetUp ?? Downloader.AllDebrid}
+        onClose={() => setDebridToSetUp(null)}
       />
 
       <Modal
