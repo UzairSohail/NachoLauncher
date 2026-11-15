@@ -19,9 +19,10 @@ import {
   getRepackUriParts,
   isEpicMemberInCurrentScope,
   pickDefaultDownloader,
-  rankUrisForDownloader,
+  getDownloadAttempts,
   DownloadError,
 } from "@shared";
+import { useAllDebridHosts } from "@renderer/hooks/use-all-debrid-hosts";
 import { DOWNLOADER_NAME, IS_DESKTOP } from "../../../constants";
 import useEmblaCarousel from "embla-carousel-react";
 import {
@@ -1490,14 +1491,25 @@ function DownloadGameOptions({
   const { hasActiveSubscription } = useUserDetails();
   const isOptionsInteractionLocked = isSubmitting;
 
+  // Recompute when AllDebrid's supported hosts change.
+  const allDebridHostsVersion = useAllDebridHosts(
+    Boolean(userPreferences?.allDebridApiToken)
+  );
   const availableDownloaderOptions = useMemo(() => {
+    void allDebridHostsVersion;
     return getDownloaderAvailabilityOptions(
       option,
       userPreferences,
       features,
       hasActiveSubscription
     ).filter((downloaderOption) => downloaderOption.isAvailable);
-  }, [features, option, userPreferences, hasActiveSubscription]);
+  }, [
+    features,
+    option,
+    userPreferences,
+    hasActiveSubscription,
+    allDebridHostsVersion,
+  ]);
 
   const downloaderItems = useMemo(() => {
     return availableDownloaderOptions.map((downloaderOption) => ({
@@ -1556,9 +1568,11 @@ function DownloadGameOptions({
   ]);
 
   const getDefaultDownloader = useCallback(
-    (availableDownloaders: Downloader[]) =>
-      pickDefaultDownloader(option, availableDownloaders),
-    [option]
+    (availableDownloaders: Downloader[]) => {
+      void allDebridHostsVersion;
+      return pickDefaultDownloader(option, availableDownloaders);
+    },
+    [option, allDebridHostsVersion]
   );
 
   useEffect(() => {
@@ -1664,27 +1678,26 @@ function DownloadGameOptions({
       return;
     }
 
-    const buildPayload = (uri: string) => ({
+    const buildPayload = (uri: string, downloader: Downloader) => ({
       objectId: game.objectId,
       title: game.title,
       shop: game.shop,
       uri,
       parts: getRepackUriParts(option, uri),
       downloadPath: selectedDownloadPath,
-      downloader: resolvedDownloader,
+      downloader,
       automaticallyExtract: automaticExtractionEnabled,
       automaticallyDeleteArchiveFiles: deleteArchiveFilesAfterExtraction,
       fileSize: option.fileSize,
     });
 
     // Debrid can reject a host; move on to the listing's next link it could
-    // take before giving up.
-    const uris = [
-      selectedUri,
-      ...rankUrisForDownloader(option, resolvedDownloader).filter(
-        (uri) => uri !== selectedUri
-      ),
-    ];
+    // take, then to the host's own downloader, before giving up.
+    const attempts = getDownloadAttempts(
+      option,
+      resolvedDownloader,
+      selectedUri
+    );
 
     setIsSubmitting(true);
     let shouldQueue = hasActiveDownload;
@@ -1697,8 +1710,8 @@ function DownloadGameOptions({
       let response: Awaited<
         ReturnType<typeof globalThis.window.electron.startGameDownload>
       > = { ok: false };
-      for (const uri of uris) {
-        const payload = buildPayload(uri);
+      for (const attempt of attempts) {
+        const payload = buildPayload(attempt.uri, attempt.downloader);
         response = shouldQueue
           ? await globalThis.window.electron.addGameToQueue(payload)
           : await globalThis.window.electron.startGameDownload(payload);

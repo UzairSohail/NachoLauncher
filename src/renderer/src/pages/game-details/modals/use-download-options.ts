@@ -6,7 +6,12 @@ import {
   pickDefaultDownloader,
 } from "@shared";
 
-import { useAppSelector, useFeature, useUserDetails } from "@renderer/hooks";
+import {
+  useAllDebridHosts,
+  useAppSelector,
+  useFeature,
+  useUserDetails,
+} from "@renderer/hooks";
 import { Feature } from "@renderer/hooks/use-feature";
 
 interface DownloadOptionsContext {
@@ -129,29 +134,31 @@ export function useDownloadOptions(repack: GameRepack | null) {
   const premiumizeApiToken = userPreferences?.premiumizeApiToken;
   const allDebridApiToken = userPreferences?.allDebridApiToken;
   const torBoxApiToken = userPreferences?.torBoxApiToken;
+  // Recompute when AllDebrid's supported hosts change.
+  const allDebridHostsVersion = useAllDebridHosts(Boolean(allDebridApiToken));
 
-  return useMemo(
-    () =>
-      getDownloadOptions(repack, {
-        userPreferences: {
-          realDebridApiToken,
-          premiumizeApiToken,
-          allDebridApiToken,
-          torBoxApiToken,
-        },
-        hasActiveSubscription,
-        isFeatureEnabled,
-      }),
-    [
-      repack,
-      realDebridApiToken,
-      premiumizeApiToken,
-      allDebridApiToken,
-      torBoxApiToken,
+  return useMemo(() => {
+    void allDebridHostsVersion;
+    return getDownloadOptions(repack, {
+      userPreferences: {
+        realDebridApiToken,
+        premiumizeApiToken,
+        allDebridApiToken,
+        torBoxApiToken,
+      },
       hasActiveSubscription,
       isFeatureEnabled,
-    ]
-  );
+    });
+  }, [
+    repack,
+    realDebridApiToken,
+    premiumizeApiToken,
+    allDebridApiToken,
+    torBoxApiToken,
+    hasActiveSubscription,
+    isFeatureEnabled,
+    allDebridHostsVersion,
+  ]);
 }
 
 export const getDefaultDownloader = (

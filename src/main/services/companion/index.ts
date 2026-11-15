@@ -37,6 +37,7 @@ import {
   type CompanionRemovalRequest,
   type CompanionRequest,
   type CompanionRequestStatus,
+  refreshAllDebridSupportedDomains,
 } from "@shared";
 
 import { logger } from "../logger";
@@ -46,6 +47,7 @@ import { getUserPreferences } from "../user-preferences";
 import { DownloadManager } from "../download";
 import { isGameRunning } from "../game-running-state";
 import { rankCompanionDownloads } from "./pick-download";
+import { AllDebridClient } from "../download/all-debrid";
 
 /** How often an open launcher looks for new requests from the phone. */
 const POLL_MS = 90_000;
@@ -474,6 +476,12 @@ export class CompanionLink {
 
   private static async startDownload(request: CompanionDownloadRequest) {
     const preferences = await getUserPreferences();
+    if (preferences?.allDebridApiToken) {
+      // Prefer AllDebrid's premium links for hosts it supports right now.
+      await refreshAllDebridSupportedDomains(() =>
+        AllDebridClient.getSupportedDomains()
+      );
+    }
     const options = rankCompanionDownloads(
       request.repack,
       preferences,

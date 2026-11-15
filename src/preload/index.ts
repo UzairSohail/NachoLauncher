@@ -1144,6 +1144,7 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("authenticatePremiumize", apiToken),
   authenticateAllDebrid: (apiToken: string) =>
     ipcRenderer.invoke("authenticateAllDebrid", apiToken),
+  getAllDebridHosts: () => ipcRenderer.invoke("getAllDebridHosts"),
   authenticateTorBox: (apiToken: string) =>
     ipcRenderer.invoke("authenticateTorBox", apiToken),
 
