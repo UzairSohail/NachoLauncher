@@ -27,7 +27,8 @@ import {
   downloadParallelRanges,
   getRangeResumeCapability,
   getRangeTotal,
-  getStrongRangeValidator,
+  getIfRangeHeader,
+  getRangeValidator,
   PARALLEL_RANGE_SIZE,
   ParallelRangeUnsupportedError,
   ParallelRangeHttpStatusError,
@@ -59,6 +60,8 @@ export interface JsHttpDownloaderStatus {
   isReconnecting: boolean;
   isRecovering: boolean;
   recoveryProgress: number;
+  /** Connections currently downloading; 0 when idle. */
+  connections?: number;
   resumeCapability?: "unknown" | "supported" | "unsupported";
 }
 
@@ -147,6 +150,7 @@ export class JsHttpDownloader {
   private verifyUnvalidatedResumeOverlap = false;
   private resumeCapability: "unknown" | "supported" | "unsupported" = "unknown";
   private readonly pendingRangeReads = new Map<number, number>();
+  private parallelConnections = 0;
   private urlRefreshAttempted = false;
   private activeRun: Promise<void> | null = null;
 
@@ -609,8 +613,8 @@ export class JsHttpDownloader {
     ) {
       requestHeaders["Range"] = `bytes=${startByte}-`;
     }
-    if (startByte > 0 && this.resourceValidator) {
-      requestHeaders["If-Range"] = this.resourceValidator;
+    if (startByte > 0) {
+      Object.assign(requestHeaders, getIfRangeHeader(this.resourceValidator));
     }
     return requestHeaders;
   }
@@ -747,7 +751,7 @@ export class JsHttpDownloader {
         requestHeaders["If-Range"]
       );
       const total = getRangeTotal(response, startByte, rangeEnd);
-      const validator = getStrongRangeValidator(response);
+      const validator = getRangeValidator(response);
       fullRangeResponse = total !== null && rangeEnd >= total - 1;
       if (
         this.savedRangeState &&
@@ -799,7 +803,7 @@ export class JsHttpDownloader {
               startByte,
               Math.min(startByte + rangeSize - 1, total - 1)
             ) !== total ||
-            getStrongRangeValidator(response) !== validator
+            getRangeValidator(response) !== validator
           ) {
             await response.body?.cancel();
             if (response.status >= 400)
@@ -863,6 +867,9 @@ export class JsHttpDownloader {
               this.isReconnecting = false;
               this.updateSpeed();
             },
+            onConnectionsChange: (count) => {
+              this.parallelConnections = count;
+            },
             onReadPending: (offset, pending) => {
               if (pending) this.pendingRangeReads.set(offset, Date.now());
               else this.pendingRangeReads.delete(offset);
@@ -889,6 +896,7 @@ export class JsHttpDownloader {
           throw error;
         } finally {
           this.pendingRangeReads.clear();
+          this.parallelConnections = 0;
         }
         if (complete) {
           this.markComplete();
@@ -981,7 +989,7 @@ export class JsHttpDownloader {
       startByte > 0 &&
       response.status === 206 &&
       this.resourceValidator &&
-      getStrongRangeValidator(response) !== this.resourceValidator
+      getRangeValidator(response) !== this.resourceValidator
     ) {
       await response.body?.cancel();
       throw new Error(
@@ -1486,6 +1494,10 @@ export class JsHttpDownloader {
       bytesDownloaded: this.bytesDownloaded,
       isReconnecting: this.isReconnecting,
       isRecovering: this.isRecovering,
+      connections:
+        this.status === "active" && this.isDownloading
+          ? this.parallelConnections || 1
+          : 0,
       resumeCapability: this.resumeCapability,
       recoveryProgress:
         this.recoverBytesTotal > 0

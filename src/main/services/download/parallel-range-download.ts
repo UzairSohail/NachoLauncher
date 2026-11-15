@@ -104,6 +104,29 @@ export function getStrongRangeValidator(response: Response): string | null {
     : null;
 }
 
+const SIZE_VALIDATOR_PREFIX = "nacho-size:";
+
+/**
+ * The strong validator when the host sends one. Otherwise, like IDM, fall back
+ * to the file size from Content-Range so hosts without an ETag still get
+ * multiple connections. Every range must then report that same total size.
+ */
+export function getRangeValidator(response: Response): string | null {
+  const strong = getStrongRangeValidator(response);
+  if (strong) return strong;
+  const range = parseContentRange(response);
+  return range ? `${SIZE_VALIDATOR_PREFIX}${range.total}` : null;
+}
+
+/** If-Range only works with a real validator, never the size fallback. */
+export function getIfRangeHeader(
+  validator: string | null | undefined
+): Record<string, string> {
+  return validator && !validator.startsWith(SIZE_VALIDATOR_PREFIX)
+    ? { "If-Range": validator }
+    : {};
+}
+
 export function getRangeResumeCapability(
   response: Response,
   requestedRange: string | undefined,
@@ -142,6 +165,8 @@ export interface ParallelRangeDownloadOptions {
   beforeComplete?: () => Promise<void>;
   afterChunk: (length: number) => void;
   onReadPending: (offset: number, pending: boolean) => void;
+  /** Called with the number of connections currently downloading. */
+  onConnectionsChange?: (count: number) => void;
 }
 
 /** A slice of the file one connection is responsible for. `end` is inclusive
@@ -251,8 +276,9 @@ export async function downloadParallelRanges({
   beforeComplete,
   afterChunk,
   onReadPending,
+  onConnectionsChange,
 }: ParallelRangeDownloadOptions): Promise<boolean> {
-  const validator = getStrongRangeValidator(firstResponse);
+  const validator = getRangeValidator(firstResponse);
   if (!validator) {
     await firstResponse.body?.cancel();
     throw new ParallelRangeUnsupportedError(
@@ -336,7 +362,7 @@ export async function downloadParallelRanges({
         headers: {
           ...headers,
           Range: `bytes=${segment.next}-${segment.end}`,
-          "If-Range": validator,
+          ...getIfRangeHeader(validator),
         },
         signal,
       });
@@ -358,7 +384,7 @@ export async function downloadParallelRanges({
       if (
         range?.start !== segment.next ||
         range.total !== total ||
-        getStrongRangeValidator(response) !== validator
+        getRangeValidator(response) !== validator
       ) {
         await response.body?.cancel();
         if (RETIRE_STATUSES.has(response.status) && active.size > 1) {
@@ -456,6 +482,7 @@ export async function downloadParallelRanges({
       const segment = nextSegment();
       if (!segment) return;
       active.add(segment);
+      onConnectionsChange?.(active.size);
       try {
         await runSegment(segment);
       } catch (error) {
@@ -464,6 +491,7 @@ export async function downloadParallelRanges({
         return;
       } finally {
         active.delete(segment);
+        onConnectionsChange?.(active.size);
       }
     }
   };

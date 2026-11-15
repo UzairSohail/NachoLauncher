@@ -299,6 +299,10 @@ export class TorBoxBatchDownloader {
         statuses.some((status) => status?.isReconnecting),
       isRecovering,
       recoveryProgress: 0,
+      connections: statuses.reduce(
+        (sum, status) => sum + (status?.connections ?? 0),
+        0
+      ),
       resumeCapability: statuses.some(
         (status) => status?.resumeCapability === "unsupported"
       )

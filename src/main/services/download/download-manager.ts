@@ -761,6 +761,7 @@ export class DownloadManager {
         isReconnecting: status.isReconnecting,
         isRecovering: status.isRecovering,
         recoveryProgress: status.recoveryProgress,
+        connections: status.connections,
         progress,
         gameId: downloadId,
         download: updatedDownload,

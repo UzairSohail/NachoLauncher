@@ -9,6 +9,8 @@ import { after, before, describe, it } from "node:test";
 
 import {
   downloadParallelRanges,
+  getIfRangeHeader,
+  getRangeValidator,
   planDownloadSegments,
   splitLargestSegment,
 } from "./parallel-range-download.ts";
@@ -76,7 +78,8 @@ function startServer(
   {
     bytesPerSecond,
     maxConnections = Infinity,
-  }: { bytesPerSecond: number; maxConnections?: number }
+    sendEtag = true,
+  }: { bytesPerSecond: number; maxConnections?: number; sendEtag?: boolean }
 ) {
   const etag = `"${createHash("sha1").update(body).digest("hex")}"`;
   let open = 0;
@@ -94,7 +97,7 @@ function startServer(
       ? Math.min(Number(match[2]), body.length - 1)
       : body.length - 1;
     response.writeHead(match ? 206 : 200, {
-      ETag: etag,
+      ...(sendEtag ? { ETag: etag } : {}),
       "Accept-Ranges": "bytes",
       "Content-Length": end - start + 1,
       ...(match
@@ -149,7 +152,8 @@ async function download(
   url: string,
   filePath: string,
   size: number,
-  connectionCount: number
+  connectionCount: number,
+  onConnectionsChange?: (count: number) => void
 ) {
   const firstResponse = await fetch(url, {
     headers: { Range: `bytes=0-${8 * MB - 1}` },
@@ -170,6 +174,7 @@ async function download(
     beforeChunk: async () => undefined,
     afterChunk: () => undefined,
     onReadPending: () => undefined,
+    onConnectionsChange,
   });
   return { complete, seconds: (Date.now() - started) / 1000 };
 }
@@ -203,6 +208,25 @@ describe("downloadParallelRanges", () => {
     }
   });
 
+  it("splits hosts that send no ETag, checking the size instead", async () => {
+    const server = await startServer(body, {
+      bytesPerSecond: 16 * MB,
+      sendEtag: false,
+    });
+    try {
+      const target = path.join(directory, "no-etag.bin");
+      let peak = 0;
+      const result = await download(server.url, target, size, 8, (count) => {
+        peak = Math.max(peak, count);
+      });
+      assert.equal(result.complete, true);
+      assert.ok(peak >= 4, `only ${peak} connections`);
+      assert.ok(fs.readFileSync(target).equals(body));
+    } finally {
+      await server.close();
+    }
+  });
+
   it("carries on with fewer connections when the host refuses extra ones", async () => {
     const server = await startServer(body, {
       bytesPerSecond: 16 * MB,
@@ -218,5 +242,26 @@ describe("downloadParallelRanges", () => {
     } finally {
       await server.close();
     }
+  });
+});
+
+describe("getRangeValidator", () => {
+  const partial = (headers: Record<string, string>) =>
+    new Response("ab", {
+      status: 206,
+      headers: { "Content-Range": "bytes 0-1/10", ...headers },
+    });
+
+  it("prefers a strong ETag and sends it as If-Range", () => {
+    const validator = getRangeValidator(partial({ ETag: '"abc"' }));
+    assert.equal(validator, '"abc"');
+    assert.deepEqual(getIfRangeHeader(validator), { "If-Range": '"abc"' });
+  });
+
+  it("falls back to the file size without sending If-Range", () => {
+    const validator = getRangeValidator(partial({ ETag: 'W/"weak"' }));
+    assert.equal(validator, "nacho-size:10");
+    assert.deepEqual(getIfRangeHeader(validator), {});
+    assert.equal(getRangeValidator(new Response("x")), null);
   });
 });

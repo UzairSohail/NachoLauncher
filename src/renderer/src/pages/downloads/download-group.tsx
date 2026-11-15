@@ -65,6 +65,7 @@ import {
   XCircleIcon,
   GraphIcon,
   GearIcon,
+  ZapIcon,
 } from "@primer/octicons-react";
 import { MoreVertical, FileArchive, FolderOpen } from "lucide-react";
 import { average } from "color.js";
@@ -463,7 +464,20 @@ export function HeroDownloadView({
                         : `${formatBytes(game.download?.bytesDownloaded ?? 0)} / ${finalDownloadSize}`}
                     </span>
                   )}
-                <span></span>
+                {isGameDownloading &&
+                !isGameExtracting &&
+                !isRecovering &&
+                (lastPacket?.connections ?? 0) > 0 ? (
+                  <span
+                    className="download-group__progress-size"
+                    title={t("connections_hint")}
+                  >
+                    <ZapIcon size={14} />
+                    {t("connections", { count: lastPacket!.connections })}
+                  </span>
+                ) : (
+                  <span></span>
+                )}
               </div>
               <div className="download-group__progress-info-row">
                 {!lastPacket?.isCheckingFiles && !isGameExtracting && (

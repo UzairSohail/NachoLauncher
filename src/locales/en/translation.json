@@ -1241,6 +1241,9 @@
     "loading": "Loading…"
   },
   "downloads": {
+    "connections_one": "{{count}} connection",
+    "connections_other": "{{count}} connections",
+    "connections_hint": "How many parts of the file are downloading at once. 1 means the host doesn't support splitting.",
     "reconnecting": "Reconnecting…",
     "recovering": "Re-downloading the saved portion… {{percentage}}",
     "resume": "Resume",
