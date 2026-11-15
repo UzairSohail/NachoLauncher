@@ -181,6 +181,12 @@ const applyDownloadManagerPreferences = async (
     );
   }
 
+  if (Object.hasOwn(preferences, "downloadConnections")) {
+    await DownloadManager.applyDownloadConnections(
+      preferences.downloadConnections ?? null
+    );
+  }
+
   if (Object.hasOwn(preferences, "torrentNetworkInterface")) {
     await DownloadManager.applyNetworkInterface(
       preferences.torrentNetworkInterface ?? null

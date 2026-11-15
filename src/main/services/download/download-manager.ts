@@ -69,7 +69,11 @@ import { GameFilesManager } from "../game-files-manager";
 import { PremiumizeClient } from "./premiumize";
 import { AllDebridClient } from "./all-debrid";
 import { getDebridRootFolderName, isZipDownloadUrl } from "./debrid-files";
-import { getRangeSizeForRequestBudget } from "./parallel-range-download";
+import {
+  getRangeSizeForRequestBudget,
+  MAX_PARALLEL_CONNECTIONS,
+  PARALLEL_RANGE_COUNT,
+} from "./parallel-range-download";
 import {
   DEFAULT_DOWNLOAD_USER_AGENT,
   JsHttpDownloader,
@@ -174,7 +178,7 @@ interface JsBatchState {
 }
 
 const TORBOX_MAX_PARALLEL_RANGES = 256;
-const REAL_DEBRID_MAX_CONNECTIONS = 8;
+const REAL_DEBRID_MAX_CONNECTIONS = MAX_PARALLEL_CONNECTIONS;
 
 function realDebridConnections(chunks: number | undefined): number {
   if (!Number.isInteger(chunks) || !chunks || chunks < 1)
@@ -192,6 +196,7 @@ export class DownloadManager {
   private static isPreparingDownload = false;
   private static jsBatch: JsBatchState | null = null;
   private static maxDownloadSpeedBytesPerSecond: number | null = null;
+  private static downloadConnections = PARALLEL_RANGE_COUNT;
   private static startGeneration = 0;
   private static preparationController: AbortController | null = null;
   private static readonly preparedRealDebridDownloads = new Map<
@@ -469,6 +474,33 @@ export class DownloadManager {
     });
   }
 
+  static normalizeDownloadConnections(value?: number | null): number {
+    if (typeof value !== "number" || !Number.isInteger(value))
+      return PARALLEL_RANGE_COUNT;
+    return Math.min(MAX_PARALLEL_CONNECTIONS, Math.max(1, value));
+  }
+
+  /** Takes effect from the next download start or resume. */
+  public static async applyDownloadConnections(
+    value?: number | null
+  ): Promise<void> {
+    if (value === undefined) {
+      const userPreferences = await db.get<string, UserPreferences | null>(
+        levelKeys.userPreferences,
+        { valueEncoding: "json" }
+      );
+      value = userPreferences?.downloadConnections;
+    }
+    this.downloadConnections = this.normalizeDownloadConnections(value);
+  }
+
+  /** The user's connection count, lowered to what the host allows. */
+  private static connectionsFor(hostLimit?: number): number {
+    return hostLimit === undefined
+      ? this.downloadConnections
+      : Math.min(hostLimit, this.downloadConnections);
+  }
+
   private static async getPersistedNetworkInterface() {
     const userPreferences = await db.get<string, UserPreferences | null>(
       levelKeys.userPreferences,
@@ -540,6 +572,10 @@ export class DownloadManager {
         });
       }
     }
+
+    await this.applyDownloadConnections().catch((error) => {
+      logger.error("[DownloadManager] Failed to read connection count", error);
+    });
 
     if (download) {
       await this.startDownload(download).catch((error) => {
@@ -1815,10 +1851,11 @@ export class DownloadManager {
           )
         : undefined,
       probeUnboundedRange: batch.provider === "realDebrid",
-      parallelRangeConnections:
+      parallelRangeConnections: this.connectionsFor(
         batch.provider === "realDebrid"
           ? realDebridConnections(entry.chunks)
-          : undefined,
+          : undefined
+      ),
       maxParallelRanges: torBoxParallel
         ? TORBOX_MAX_PARALLEL_RANGES
         : undefined,
@@ -1891,7 +1928,9 @@ export class DownloadManager {
     return async () => {
       const link = await this.resolveBatchEntryUrl(batch, entry);
       if (!link) throw new Error("The download link is unavailable.");
-      options.parallelRangeConnections = realDebridConnections(entry.chunks);
+      options.parallelRangeConnections = this.connectionsFor(
+        realDebridConnections(entry.chunks)
+      );
       return link;
     };
   }
@@ -3442,7 +3481,13 @@ export class DownloadManager {
 
     this.logResolvedUrl(options.url);
     this.jsDownloader
-      .startDownload({ ...options, resourceId: download.uri })
+      .startDownload({
+        ...options,
+        resourceId: download.uri,
+        parallelRangeConnections: this.connectionsFor(
+          options.parallelRangeConnections
+        ),
+      })
       .catch((err) =>
         this.reportRuntimeDownloadError(downloadId, err, myGeneration)
       );
