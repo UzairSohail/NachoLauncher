@@ -22,6 +22,8 @@ export interface DownloadProgress {
   isReconnecting?: boolean;
   isRecovering?: boolean;
   recoveryProgress?: number;
+  /** HTTP connections currently downloading (direct and debrid only). */
+  connections?: number;
   progress: number;
   gameId: string;
   download: Download;
