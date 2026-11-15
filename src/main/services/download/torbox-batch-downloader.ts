@@ -24,6 +24,9 @@ import {
   PARALLEL_RANGE_SIZE,
 } from "./parallel-range-download";
 
+// Small files and link requests stay at the old pace to respect TorBox's API limits.
+const TORBOX_FILE_CONCURRENCY = 4;
+
 interface PreparedLink {
   url?: string;
   error?: unknown;
@@ -105,7 +108,10 @@ export class TorBoxBatchDownloader {
 
   private prefetch(position: number): void {
     // At most four upcoming links, in addition to links already being consumed.
-    const end = Math.min(this.pending.length, position + PARALLEL_RANGE_COUNT);
+    const end = Math.min(
+      this.pending.length,
+      position + TORBOX_FILE_CONCURRENCY
+    );
     while (this.prefetchPosition < end) {
       const index = this.pending[this.prefetchPosition++];
       if (this.controller.signal.aborted) break;
@@ -147,7 +153,9 @@ export class TorBoxBatchDownloader {
         null;
     options.allowParallelRanges = true;
     options.parallelRangeConnections =
-      file.size > PARALLEL_RANGE_SIZE ? PARALLEL_RANGE_COUNT : 1;
+      file.size > PARALLEL_RANGE_SIZE
+        ? (options.parallelRangeConnections ?? PARALLEL_RANGE_COUNT)
+        : 1;
     options.refreshUrl = () => this.resolveLink(index, this.controller.signal);
     if (!this.transferStarted) {
       this.throttle.reset();
@@ -182,7 +190,7 @@ export class TorBoxBatchDownloader {
       });
     const results = await Promise.allSettled(
       Array.from(
-        { length: Math.min(PARALLEL_RANGE_COUNT, end - start) },
+        { length: Math.min(TORBOX_FILE_CONCURRENCY, end - start) },
         runWorker
       )
     );

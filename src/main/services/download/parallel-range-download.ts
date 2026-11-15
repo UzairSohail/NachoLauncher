@@ -1,4 +1,3 @@
-import { runDownloadQueue } from "./download-work-queue.js";
 import fs from "node:fs";
 import {
   markSavedRange,
@@ -11,12 +10,12 @@ import {
 } from "./range-download-state.js";
 
 const PARALLEL_RANGE_FAILURE_LIMIT = 2;
-const MAX_PARALLEL_CONNECTIONS = 16;
-const RANGE_CHECKPOINT_INTERVAL_MS = 1000;
+export const MAX_PARALLEL_CONNECTIONS = 16;
+const RANGE_CHECKPOINT_INTERVAL_MS = 3000;
 const STRONG_LAST_MODIFIED_AGE_MS = 60_000;
 
 export const PARALLEL_RANGE_SIZE = 8 * 1024 * 1024;
-export const PARALLEL_RANGE_COUNT = 4;
+export const PARALLEL_RANGE_COUNT = 8;
 export const MAX_PARALLEL_RANGE_SIZE = 256 * 1024 * 1024;
 
 export function getRangeSizeForRequestBudget(
@@ -145,10 +144,95 @@ export interface ParallelRangeDownloadOptions {
   onReadPending: (offset: number, pending: boolean) => void;
 }
 
-interface ByteRange {
+/** A slice of the file one connection is responsible for. `end` is inclusive
+ * and can shrink while the slice downloads, when an idle connection takes over
+ * the back half of it. `next` is the first byte nobody has claimed yet. */
+export interface DownloadSegment {
   start: number;
+  next: number;
   end: number;
 }
+
+/** Splitting off less than this is not worth a new HTTP request. */
+export const MIN_SEGMENT_SPLIT_SIZE = 4 * 1024 * 1024;
+
+const RETIRE_STATUSES = new Set([429, 503]);
+
+/**
+ * Spread the missing bytes over roughly one large segment per connection, like
+ * IDM does, instead of many small fixed-size requests. Each request then streams
+ * for a long time over one warmed-up connection.
+ */
+export function planDownloadSegments(
+  gaps: [start: number, end: number][],
+  connectionCount: number,
+  minSegmentSize: number,
+  maxSegments = Infinity
+): DownloadSegment[] {
+  const missing = gaps.reduce((sum, [start, end]) => sum + end - start, 0);
+  const segmentSize = Math.max(
+    minSegmentSize,
+    Math.ceil(missing / Math.max(1, connectionCount))
+  );
+  const segments: DownloadSegment[] = [];
+  for (const [start, end] of gaps) {
+    for (let offset = start; offset < end && segments.length < maxSegments; ) {
+      // Fold a small leftover into this segment rather than making a tiny one.
+      let next = Math.min(offset + segmentSize, end);
+      if (end - next < minSegmentSize) next = end;
+      segments.push({ start: offset, next: offset, end: next - 1 });
+      offset = next;
+    }
+    if (segments.length >= maxSegments) break;
+  }
+  return segments;
+}
+
+/**
+ * Give an idle connection the back half of whichever active segment has the
+ * most bytes left. Returns null when nothing is big enough to be worth it.
+ */
+export function splitLargestSegment(
+  active: Iterable<DownloadSegment>,
+  minSplitSize = MIN_SEGMENT_SPLIT_SIZE
+): DownloadSegment | null {
+  let victim: DownloadSegment | null = null;
+  for (const segment of active) {
+    if (!victim || segment.end - segment.next > victim.end - victim.next)
+      victim = segment;
+  }
+  if (!victim) return null;
+  const remaining = victim.end - victim.next + 1;
+  if (remaining < minSplitSize * 2) return null;
+  const middle = victim.next + Math.ceil(remaining / 2);
+  const stolen = { start: middle, next: middle, end: victim.end };
+  victim.end = middle - 1;
+  return stolen;
+}
+
+function parseContentRange(
+  response: Response
+): { start: number; end: number; total: number } | null {
+  if (response.status !== 206) return null;
+  const match = /^bytes (\d+)-(\d+)\/(\d+)$/i.exec(
+    response.headers.get("content-range") ?? ""
+  );
+  if (!match) return null;
+  const [start, end, total] = match.slice(1).map(Number);
+  const encoding = response.headers.get("content-encoding")?.toLowerCase();
+  const length = response.headers.get("content-length");
+  if (
+    ![start, end, total].every(Number.isSafeInteger) ||
+    end < start ||
+    end >= total ||
+    (encoding && encoding !== "identity") ||
+    (length && Number(length) !== end - start + 1)
+  )
+    return null;
+  return { start, end, total };
+}
+
+class RetireConnection extends Error {}
 
 export async function downloadParallelRanges({
   url,
@@ -208,15 +292,15 @@ export async function downloadParallelRanges({
     resourceId: rangeResourceId(resourceId),
     ranges: startByte > 0 ? [[0, startByte]] : [],
   };
-  const jobs: ByteRange[] = [];
-  for (const [start, end] of missingRanges(state)) {
-    for (let offset = start; offset < end && jobs.length < maxRanges; ) {
-      const next = Math.min(offset + rangeSize, end);
-      jobs.push({ start: offset, end: next - 1 });
-      offset = next;
-    }
-    if (jobs.length >= maxRanges) break;
-  }
+  const pool = planDownloadSegments(
+    missingRanges(state),
+    connectionCount,
+    Math.min(rangeSize, MIN_SEGMENT_SPLIT_SIZE),
+    maxRanges
+  );
+  let requestCount = pool.length;
+  const active = new Set<DownloadSegment>();
+  const firstRange = parseContentRange(firstResponse);
   const file = await fs.promises.open(filePath, "r+");
   let lastCheckpoint = Date.now();
   let checkpoint: Promise<void> = Promise.resolve();
@@ -235,119 +319,160 @@ export async function downloadParallelRanges({
     });
     return checkpoint;
   };
-  let nextJob = 0;
   let firstUsed = false;
-  const runRange = async (range: ByteRange): Promise<void> => {
-    signal.throwIfAborted();
-    let response: Response;
-    const probeTotal = getRangeTotal(firstResponse, range.start, range.end);
-    if (!firstUsed && probeTotal === total) {
-      firstUsed = true;
-      response = firstResponse;
-    } else {
-      onReadPending(range.start, true);
-      try {
-        response = await fetch(url, {
-          headers: {
-            ...headers,
-            Range: `bytes=${range.start}-${range.end}`,
-            "If-Range": validator,
-          },
-          signal,
-        });
-      } finally {
-        onReadPending(range.start, false);
-      }
-    }
+
+  const openRange = async (segment: DownloadSegment): Promise<Response> => {
     if (
-      getRangeTotal(response, range.start, range.end) !== total ||
-      getStrongRangeValidator(response) !== validator
+      !firstUsed &&
+      firstRange?.total === total &&
+      firstRange.start === segment.next
     ) {
-      await response.body?.cancel();
-      if (response.status >= 400) {
-        throw new ParallelRangeHttpStatusError(
-          response.status,
-          response.headers.get("retry-after")
-        );
-      }
-      throw new ParallelRangeUnsupportedError(
-        "The download server stopped serving matching byte ranges"
-      );
+      firstUsed = true;
+      return firstResponse;
     }
-    if (!response.body) throw new Error("Range response body is null");
-    const reader = response.body.getReader();
-    let received = 0;
-    const writeChunk = async (
-      chunk: Uint8Array,
-      written = 0
-    ): Promise<void> => {
-      if (written === chunk.length) return;
-      const offset = range.start + received;
-      const result = await file.write(
-        chunk,
-        written,
-        chunk.length - written,
-        offset
-      );
-      if (!result.bytesWritten)
-        throw new Error("Could not write the downloaded byte range");
-      markSavedRange(state, offset, offset + result.bytesWritten);
-      received += result.bytesWritten;
-      afterChunk(result.bytesWritten);
-      return writeChunk(chunk, written + result.bytesWritten);
-    };
+    onReadPending(segment.start, true);
     try {
-      const chunks: AsyncIterable<Uint8Array> = {
-        [Symbol.asyncIterator]: () => ({
-          next: async () => {
-            onReadPending(range.start, true);
-            try {
-              return await reader.read();
-            } finally {
-              onReadPending(range.start, false);
-            }
-          },
-        }),
-      };
-      for await (const chunk of chunks) {
-        if (received + chunk.length > range.end - range.start + 1) {
-          throw new ParallelRangeUnsupportedError(
-            "The server sent more data than the requested byte range"
-          );
-        }
-        await beforeChunk(chunk.length);
-        signal.throwIfAborted();
-        await writeChunk(chunk);
-        if (Date.now() - lastCheckpoint >= RANGE_CHECKPOINT_INTERVAL_MS) {
-          lastCheckpoint = Date.now();
-          await persist();
-        }
-        signal.throwIfAborted();
-      }
-    } finally {
-      await reader.cancel().catch(() => undefined);
-      reader.releaseLock();
-    }
-    if (received !== range.end - range.start + 1) {
-      const error = new Error(
-        "Byte range ended before its expected size"
-      ) as Error & { retryable: boolean };
-      error.retryable = true;
+      return await fetch(url, {
+        headers: {
+          ...headers,
+          Range: `bytes=${segment.next}-${segment.end}`,
+          "If-Range": validator,
+        },
+        signal,
+      });
+    } catch (error) {
+      // Another connection is still going, so drop this one and let the
+      // others take its share instead of failing the whole download.
+      if (!signal.aborted && active.size > 1) throw new RetireConnection();
       throw error;
+    } finally {
+      onReadPending(segment.start, false);
     }
   };
-  const worker = () =>
-    runDownloadQueue(() => {
-      const job = jobs[nextJob++];
-      return job ? runRange(job) : undefined;
-    }, signal);
+
+  const runSegment = async (segment: DownloadSegment): Promise<void> => {
+    while (segment.next <= segment.end) {
+      signal.throwIfAborted();
+      const response = await openRange(segment);
+      const range = parseContentRange(response);
+      if (
+        range?.start !== segment.next ||
+        range.total !== total ||
+        getStrongRangeValidator(response) !== validator
+      ) {
+        await response.body?.cancel();
+        if (RETIRE_STATUSES.has(response.status) && active.size > 1) {
+          // The host limits connections per link; carry on with fewer.
+          throw new RetireConnection();
+        }
+        if (response.status >= 400) {
+          throw new ParallelRangeHttpStatusError(
+            response.status,
+            response.headers.get("retry-after")
+          );
+        }
+        throw new ParallelRangeUnsupportedError(
+          "The download server stopped serving matching byte ranges"
+        );
+      }
+      if (!response.body) throw new Error("Range response body is null");
+      const reader = response.body.getReader();
+      try {
+        const chunks: AsyncIterable<Uint8Array> = {
+          [Symbol.asyncIterator]: () => ({
+            next: async () => {
+              onReadPending(segment.start, true);
+              try {
+                return await reader.read();
+              } finally {
+                onReadPending(segment.start, false);
+              }
+            },
+          }),
+        };
+        for await (const received of chunks) {
+          await beforeChunk(received.length);
+          signal.throwIfAborted();
+          // Another connection may have taken over the rest of this segment.
+          const length = Math.min(
+            received.length,
+            segment.end - segment.next + 1
+          );
+          if (length <= 0) break;
+          const offset = segment.next;
+          segment.next += length;
+          for (let written = 0; written < length; ) {
+            const result = await file.write(
+              received,
+              written,
+              length - written,
+              offset + written
+            );
+            if (!result.bytesWritten)
+              throw new Error("Could not write the downloaded byte range");
+            markSavedRange(
+              state,
+              offset + written,
+              offset + written + result.bytesWritten
+            );
+            written += result.bytesWritten;
+            afterChunk(result.bytesWritten);
+          }
+          if (Date.now() - lastCheckpoint >= RANGE_CHECKPOINT_INTERVAL_MS) {
+            lastCheckpoint = Date.now();
+            await persist();
+          }
+          signal.throwIfAborted();
+          if (segment.next > segment.end) break;
+        }
+      } finally {
+        await reader.cancel().catch(() => undefined);
+        reader.releaseLock();
+      }
+      // Stopping early because the segment shrank is fine; the server
+      // closing the response before the bytes it promised is not.
+      if (segment.next <= Math.min(segment.end, range.end)) {
+        const error = new Error(
+          "Byte range ended before its expected size"
+        ) as Error & { retryable: boolean };
+        error.retryable = true;
+        throw error;
+      }
+    }
+  };
+
+  const nextSegment = (): DownloadSegment | undefined => {
+    const queued = pool.shift();
+    if (queued) return queued;
+    if (requestCount >= maxRanges) return undefined;
+    const stolen = splitLargestSegment(active);
+    if (stolen) requestCount++;
+    return stolen ?? undefined;
+  };
+
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      signal.throwIfAborted();
+      const segment = nextSegment();
+      if (!segment) return;
+      active.add(segment);
+      try {
+        await runSegment(segment);
+      } catch (error) {
+        if (!(error instanceof RetireConnection)) throw error;
+        pool.unshift(segment);
+        return;
+      } finally {
+        active.delete(segment);
+      }
+    }
+  };
+
   let workers: Promise<void>[] = [];
   try {
     await persist();
-    workers = Array.from(
-      { length: Math.min(connectionCount, jobs.length) },
-      () => worker()
-    );
+    // Connections beyond the planned segments start by splitting one.
+    workers = Array.from({ length: connectionCount }, () => worker());
     try {
       await Promise.all(workers);
     } catch (error) {

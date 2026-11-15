@@ -25,7 +25,12 @@ const formatLimitInputValue = (
     : `${Number(unitValue.toFixed(2))}`;
 };
 
+const DEFAULT_DOWNLOAD_CONNECTIONS = 8;
+const DOWNLOAD_CONNECTION_CHOICES = [1, 2, 4, 6, 8, 12, 16];
+
 const buildForm = (preferences: UserPreferences | null) => ({
+  downloadConnections:
+    preferences?.downloadConnections ?? DEFAULT_DOWNLOAD_CONNECTIONS,
   seedAfterDownloadComplete: preferences?.seedAfterDownloadComplete ?? false,
   showDownloadSpeedInMegabytes:
     preferences?.showDownloadSpeedInMegabytes ?? false,
@@ -201,6 +206,27 @@ export function SettingsContextDownloads() {
           onBlur={handleMaxDownloadSpeedBlur}
           placeholder={t("max_download_speed_unlimited")}
         />
+
+        <div className="settings-general__network-interface">
+          <SelectField
+            label={t("download_connections")}
+            value={String(form.downloadConnections)}
+            onChange={(event) =>
+              handleChange({ downloadConnections: Number(event.target.value) })
+            }
+            options={DOWNLOAD_CONNECTION_CHOICES.map((count) => ({
+              key: String(count),
+              value: String(count),
+              label:
+                count === DEFAULT_DOWNLOAD_CONNECTIONS
+                  ? t("download_connections_default", { count })
+                  : String(count),
+            }))}
+          />
+          <small className="settings-general__network-interface-hint">
+            {t("download_connections_hint")}
+          </small>
+        </div>
 
         {SHOW_LOCAL_TORRENT_SETTINGS && (
           <>
