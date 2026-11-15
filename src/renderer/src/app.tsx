@@ -1,3 +1,4 @@
+import { resolveThemeCode } from "@renderer/theme-presets";
 import { AppTitleBar, Sidebar, Toast } from "@renderer/components";
 import { AutoUpdateSubHeader } from "@renderer/components/header/auto-update-sub-header";
 import { ScanGamesProvider } from "@renderer/context";
@@ -670,12 +671,14 @@ export function App() {
 
   const loadAndApplyTheme = useCallback(async () => {
     const allThemes = (await levelDBService.values("themes")) as {
+      id?: string;
       isActive?: boolean;
       code?: string;
     }[];
     const activeTheme = allThemes.find((theme) => theme.isActive);
-    if (activeTheme?.code) {
-      injectCustomCss(activeTheme.code);
+    const code = activeTheme ? resolveThemeCode(activeTheme) : null;
+    if (code) {
+      injectCustomCss(code);
     } else {
       removeCustomCss();
     }

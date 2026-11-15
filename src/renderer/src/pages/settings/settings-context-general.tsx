@@ -35,14 +35,6 @@ const LANGUAGE_OPTIONS: LanguageOption[] = orderBy(
   "asc"
 );
 
-interface SettingsContextGeneralProps {
-  appearance: {
-    theme: string | null;
-    authorId: string | null;
-    authorName: string | null;
-  };
-}
-
 interface DownloadDirectoryReplacementState {
   nextPath: string;
   replaceableDirectories: DownloadDirectoryPreference[];
@@ -77,9 +69,7 @@ const buildForm = (
   openFriendsWindowOnStartup: preferences?.openFriendsWindowOnStartup ?? false,
 });
 
-export function SettingsContextGeneral({
-  appearance,
-}: Readonly<SettingsContextGeneralProps>) {
+export function SettingsContextGeneral() {
   const { t } = useTranslation("settings");
   const { updateUserPreferences } = useContext(settingsContext);
 
@@ -314,7 +304,7 @@ export function SettingsContextGeneral({
 
       <div className="settings-context-panel__group">
         <h3>{t("appearance")}</h3>
-        <SettingsAppearance appearance={appearance} />
+        <SettingsAppearance />
       </div>
 
       <DownloadDirectoryReplacementModal
