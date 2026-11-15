@@ -493,6 +493,13 @@ function syncSourceThresholdFocusScroll(
   }
 }
 
+/** Premium services that need the user's own account (API key). */
+const DEBRID_DOWNLOADERS = [
+  Downloader.AllDebrid,
+  Downloader.RealDebrid,
+  Downloader.Premiumize,
+  Downloader.TorBox,
+];
 export function DownloadGameModal({
   visible,
   onClose,
@@ -1495,14 +1502,14 @@ function DownloadGameOptions({
   const allDebridHostsVersion = useAllDebridHosts(
     Boolean(userPreferences?.allDebridApiToken)
   );
-  const availableDownloaderOptions = useMemo(() => {
+  const downloaderAvailability = useMemo(() => {
     void allDebridHostsVersion;
     return getDownloaderAvailabilityOptions(
       option,
       userPreferences,
       features,
       hasActiveSubscription
-    ).filter((downloaderOption) => downloaderOption.isAvailable);
+    );
   }, [
     features,
     option,
@@ -1510,6 +1517,32 @@ function DownloadGameOptions({
     hasActiveSubscription,
     allDebridHostsVersion,
   ]);
+  const availableDownloaderOptions = useMemo(
+    () =>
+      downloaderAvailability.filter(
+        (downloaderOption) => downloaderOption.isAvailable
+      ),
+    [downloaderAvailability]
+  );
+  // Debrid services that could fetch this listing once the user adds a key.
+  const debridToSetUp = useMemo(
+    () =>
+      downloaderAvailability
+        .filter(
+          (downloaderOption) =>
+            DEBRID_DOWNLOADERS.includes(downloaderOption.downloader) &&
+            downloaderOption.hasAvailableUri &&
+            !downloaderOption.isConfigured
+        )
+        .map(
+          (downloaderOption) => DOWNLOADER_NAME[downloaderOption.downloader]
+        ),
+    [downloaderAvailability]
+  );
+  const hasConfiguredDebrid = availableDownloaderOptions.some(
+    (downloaderOption) =>
+      DEBRID_DOWNLOADERS.includes(downloaderOption.downloader)
+  );
 
   const downloaderItems = useMemo(() => {
     return availableDownloaderOptions.map((downloaderOption) => ({
@@ -1805,9 +1838,18 @@ function DownloadGameOptions({
             />
           ) : (
             <p className="download-game-modal__downloader-empty">
-              No download methods are available for your current setup.
+              {debridToSetUp.length > 0
+                ? `This download needs a debrid service (${debridToSetUp.join(", ")}). Torrents always download through debrid. Add your account in Settings > Integrations.`
+                : "No download methods are available for your current setup."}
             </p>
           )}
+          {hasAvailableDownloader &&
+            !hasConfiguredDebrid &&
+            debridToSetUp.length > 0 && (
+              <p className="download-game-modal__downloader-description">
+                {`These are free links. For faster, uncapped downloads, add a debrid account (${debridToSetUp.join(", ")}) in Settings > Integrations.`}
+              </p>
+            )}
         </div>
 
         <div className="download-game-modal__directory">
