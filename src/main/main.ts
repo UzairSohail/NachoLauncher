@@ -39,6 +39,7 @@ import {
   groupedSouvenirWorker,
 } from "@main/services";
 import { migrateDownloadSources } from "./helpers/migrate-download-sources";
+import { ensureDefaultDownloadSources } from "./services/default-download-sources";
 import {
   getUserPreferences,
   migratePreferenceSecrets,
@@ -156,6 +157,9 @@ export const loadState = async () => {
     (async () => {
       await migrateDownloadSources().catch((error) =>
         logger.error("Failed to migrate download sources", error)
+      );
+      await ensureDefaultDownloadSources().catch((error) =>
+        logger.error("Failed to add the default download sources", error)
       );
       await DownloadSourcesChecker.checkForChanges();
       await GameUpdates.finishCompletedUpdates().catch((error) =>

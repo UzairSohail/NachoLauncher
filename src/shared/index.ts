@@ -43,6 +43,7 @@ import { AchievementNotificationInfo, GameRepack } from "@types";
 export * from "./archive-org";
 export * from "./direct-hosts";
 export * from "./ankergames";
+export * from "./default-download-sources";
 export * from "./romsfun";
 export * from "./official-chat";
 export * from "./constants";
