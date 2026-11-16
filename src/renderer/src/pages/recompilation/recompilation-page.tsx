@@ -259,6 +259,7 @@ export default function RecompilationPage() {
           visible={isRomDownloadOpen}
           objectId={objectId}
           gameTitle={details.game.title}
+          platform={details.game.platform}
           onStarted={() => setIsRomDownloadOpen(false)}
           onClose={() => setIsRomDownloadOpen(false)}
         />
@@ -309,6 +310,7 @@ export default function RecompilationPage() {
             installAsset={installAsset}
             install={install}
             rom={rom}
+            onDownloadRom={() => setIsRomDownloadOpen(true)}
           />
         </div>
       </div>

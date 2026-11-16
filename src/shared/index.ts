@@ -20,6 +20,7 @@ import {
 import { isArchiveOrgFileUri } from "./archive-org";
 import { isBuzzheavierUri, isMegaDbUri } from "./direct-hosts";
 import { isAnkerGamesPageUri } from "./ankergames";
+import { isRomsFunPageUri } from "./romsfun";
 import {
   getUriGroupParts,
   normalizeUriGroups,
@@ -42,6 +43,7 @@ import { AchievementNotificationInfo, GameRepack } from "@types";
 export * from "./archive-org";
 export * from "./direct-hosts";
 export * from "./ankergames";
+export * from "./romsfun";
 export * from "./official-chat";
 export * from "./constants";
 export {
@@ -277,6 +279,11 @@ const getBaseDownloadersForUri = (uri: string): Downloader[] => {
       Downloader.TorBox,
       Downloader.Premiumize,
     ];
+  }
+
+  // A RomsFun game page: its free direct download, read from the page.
+  if (isRomsFunPageUri(uri)) {
+    return [Downloader.RomsFun];
   }
 
   if (debridOnlyHosts.some((host) => uri.startsWith(host)))

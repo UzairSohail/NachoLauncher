@@ -9,6 +9,7 @@ import {
 import { createGame } from "@main/services/library-sync";
 import { GameUpdates } from "@main/services/game-updates";
 import { resolveAnkerGamesDownload } from "@main/services/hosters/ankergames";
+import { resolveRomsFunDownload } from "@main/services/hosters/romsfun";
 import { downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 import { DownloadError, isBlockedTorrentDownload, parseBytes } from "@shared";
 import {
@@ -57,6 +58,8 @@ export const startGameDownload = async (
       requestedDownloader,
       requestedUri
     ));
+    // So is a RomsFun listing: read the file's link from its pages.
+    ({ downloader, uri } = await resolveRomsFunDownload(downloader, uri));
     if (isBlockedTorrentDownload(downloader, uri)) {
       throw new Error(DownloadError.TorrentRequiresDebrid);
     }

@@ -745,6 +745,8 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("closeRecompilation", ref),
   getRecompilationRomState: (ref: RecompilationRef) =>
     ipcRenderer.invoke("getRecompilationRomState", ref),
+  searchRomsFun: (gameTitle: string, platform: string | null) =>
+    ipcRenderer.invoke("searchRomsFun", gameTitle, platform),
   getCatalogRecompilations: (gameTitle: string) =>
     ipcRenderer.invoke("getCatalogRecompilations", gameTitle),
   getCatalogRecompilation: (objectId: string, slug: string) =>

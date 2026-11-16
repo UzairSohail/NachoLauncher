@@ -752,6 +752,7 @@ function InstallModalContent({
       <RomSourcesPanel
         objectId={details.game.objectId}
         gameTitle={details.game.title}
+        platform={details.game.platform}
         onStarted={() => {
           setPickedFile(null);
           setSkipLibrary(false);

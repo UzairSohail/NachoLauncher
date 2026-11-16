@@ -1780,6 +1780,8 @@ export class DownloadManager {
         return this.getMegaDbDownloadOptions(download, resumingFilename);
       case Downloader.AnkerGames:
         return this.getAnkerGamesDownloadOptions(download, resumingFilename);
+      case Downloader.RomsFun:
+        return this.getRomsFunDownloadOptions(download, resumingFilename);
       default:
         return null;
     }
@@ -2515,6 +2517,35 @@ export class DownloadManager {
       {
         "User-Agent": getAnkerGamesUserAgent(),
         Referer: "https://ankergames.net/",
+        ...(cookie ? { Cookie: cookie } : {}),
+      }
+    );
+  }
+
+  /**
+   * RomsFun's file link was read from its pages when the download started;
+   * the file server wants the site as the referrer.
+   */
+  private static async getRomsFunDownloadOptions(
+    download: Download,
+    resumingFilename?: string
+  ) {
+    const { getRomsFunCookieHeader, getRomsFunUserAgent } = await import(
+      "../hosters/romsfun-browser"
+    );
+    const cookie = await getRomsFunCookieHeader(download.uri);
+    const filename = this.resolveFilename(
+      resumingFilename,
+      download.uri,
+      download.uri
+    );
+    return this.buildDownloadOptions(
+      download.uri,
+      download.downloadPath,
+      filename,
+      {
+        "User-Agent": getRomsFunUserAgent(),
+        Referer: "https://romsfun.com/",
         ...(cookie ? { Cookie: cookie } : {}),
       }
     );

@@ -192,6 +192,24 @@ describe("releases", () => {
     assert.equal(latest.version, "1.2.2");
   });
 
+  it("falls back to the best file when the pattern matches none", () => {
+    const [latest] = toCatalogReleases(entry, [
+      release("v1.2.2", [
+        "Zelda64Recompiled-1.2.2-windows-x64-setup.exe",
+        "Zelda64Recompiled-1.2.2-linux-x86_64.AppImage",
+      ]),
+    ]);
+    assert.deepEqual(
+      latest.assets
+        .filter((asset) => asset.isInstallTarget)
+        .map((asset) => asset.name),
+      [
+        "Zelda64Recompiled-1.2.2-windows-x64-setup.exe",
+        "Zelda64Recompiled-1.2.2-linux-x86_64.AppImage",
+      ]
+    );
+  });
+
   it("keeps the catalog's pinned tag as latest over a newer release", () => {
     const releases = toCatalogReleases(entry, [
       release("v1.3.0", ["Zelda64Recompiled-v1.3.0-Windows.zip"]),

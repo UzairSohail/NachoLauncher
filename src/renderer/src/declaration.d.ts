@@ -1,4 +1,9 @@
-import type { AuthPage, Downloader, RecompCatalogItem } from "@shared";
+import type {
+  AuthPage,
+  Downloader,
+  RecompCatalogItem,
+  RomsFunSearchResult,
+} from "@shared";
 import type {
   GameRepack,
   LocalScreenshot,
@@ -911,6 +916,10 @@ declare global {
     getRecompilationRomState: (
       ref: RecompilationRef
     ) => Promise<RecompilationRomState | null>;
+    searchRomsFun: (
+      gameTitle: string,
+      platform: string | null
+    ) => Promise<RomsFunSearchResult[]>;
     getCatalogRecompilations: (
       gameTitle: string
     ) => Promise<RecompilationSummary[]>;
