@@ -8,6 +8,7 @@ import {
 } from "@main/services";
 import { createGame } from "@main/services/library-sync";
 import { GameUpdates } from "@main/services/game-updates";
+import { resolveAnkerGamesDownload } from "@main/services/hosters/ankergames";
 import { downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 import { DownloadError, isBlockedTorrentDownload, parseBytes } from "@shared";
 import {
@@ -27,8 +28,8 @@ export const addGameToQueue = async (
     title,
     shop,
     downloadPath,
-    downloader,
-    uri,
+    downloader: requestedDownloader,
+    uri: requestedUri,
     parts,
     automaticallyExtract,
     automaticallyDeleteArchiveFiles,
@@ -40,12 +41,19 @@ export const addGameToQueue = async (
   } = payload;
 
   const parsedFileSize = parseBytes(fileSize ?? null);
+  let downloader = requestedDownloader;
+  let uri = requestedUri;
   const gameKey = levelKeys.game(shop, objectId);
   let download: Download;
   let didWriteDownload = false;
   let setAside = false;
 
   try {
+    // An AnkerGames listing is the game's page: read the real link from it.
+    ({ downloader, uri } = await resolveAnkerGamesDownload(
+      requestedDownloader,
+      requestedUri
+    ));
     if (isBlockedTorrentDownload(downloader, uri)) {
       throw new Error(DownloadError.TorrentRequiresDebrid);
     }
