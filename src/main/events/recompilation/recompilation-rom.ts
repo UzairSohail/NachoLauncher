@@ -19,6 +19,7 @@ import { db, downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 import { t } from "i18next";
 import { logger, SevenZip, WindowManager } from "@main/services";
 import { HydraApi } from "@main/services/hydra-api";
+import { RecompCatalog } from "@main/services/recomp-catalog";
 import { parseParamSfoValue } from "@main/services/emulators/param-sfo";
 import {
   assertPs4UpdateFits,
@@ -63,8 +64,12 @@ const ROM_META = recompilationMeta as Record<
   | undefined
 >;
 
+// Hand-written entries win; a port without one sets itself up from its
+// developer's recomplauncher.json (in its release, or in the recomp catalog).
 const getRecompilationRomMeta = (slug: string): RecompilationRomMeta | null =>
-  (Object.hasOwn(ROM_META, slug) ? ROM_META[slug]?.rom : null) ?? null;
+  Object.hasOwn(ROM_META, slug)
+    ? (ROM_META[slug]?.rom ?? null)
+    : RecompCatalog.getRomMeta(slug);
 
 export const shouldHideRecompilationConsole = (slug: string) =>
   Object.hasOwn(ROM_META, slug) && ROM_META[slug]?.hideConsole === true;
@@ -72,7 +77,7 @@ export const shouldHideRecompilationConsole = (slug: string) =>
 export const getRecompilationExecutableOverride = (slug: string) =>
   (Object.hasOwn(ROM_META, slug)
     ? ROM_META[slug]?.executable?.[process.platform as MetaPlatform]
-    : undefined) ?? null;
+    : undefined) ?? RecompCatalog.getExecutable(slug);
 
 type RomKind = Pick<RecompilationRomMeta, "extensions" | "folder" | "titleIds">;
 

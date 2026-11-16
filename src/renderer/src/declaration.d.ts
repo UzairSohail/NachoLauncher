@@ -74,6 +74,10 @@ import type {
   RecompilationRef,
   RecompilationRomSource,
   RecompilationRomState,
+  RecompilationSummary,
+  RecompilationDetails,
+  RecompilationReleases,
+  RecompilationReadme,
   EmulatorInstallResult,
   ResolvedInstallOption,
   DetectedRom,
@@ -907,6 +911,19 @@ declare global {
     getRecompilationRomState: (
       ref: RecompilationRef
     ) => Promise<RecompilationRomState | null>;
+    getCatalogRecompilations: (
+      gameTitle: string
+    ) => Promise<RecompilationSummary[]>;
+    getCatalogRecompilation: (
+      objectId: string,
+      slug: string
+    ) => Promise<RecompilationDetails | null>;
+    getCatalogRecompilationReleases: (
+      slug: string
+    ) => Promise<RecompilationReleases>;
+    getCatalogRecompilationReadme: (
+      slug: string
+    ) => Promise<RecompilationReadme | null>;
     setRecompilationRom: (
       ref: RecompilationRef,
       choice: { source: RecompilationRomSource; path?: string }

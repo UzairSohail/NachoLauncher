@@ -1,7 +1,7 @@
 import type { ChildProcess } from "node:child_process";
 import path from "node:path";
 
-import type { Game, RecompilationDetails, RecompilationRef } from "@types";
+import type { Game, RecompilationRef } from "@types";
 import { toRecompilationCloudSaveObjectId } from "@shared";
 
 import { gamesSublevel, levelKeys } from "@main/level";
@@ -30,6 +30,7 @@ import { logger } from "@main/services/logger";
 import { killWindowsProcessTree } from "@main/helpers/kill-windows-process-tree";
 import { WindowManager } from "@main/services/window-manager";
 import { isRecompilationCloudSaveEnabled } from "./recompilation-features";
+import { fetchRecompilationDetails } from "./recompilation-source";
 import { getRecompilationInstallDirectory } from "./recompilation-paths";
 import {
   startRecompilationTrophyWatcher,
@@ -105,11 +106,7 @@ export const clearRecompilationCloudSaveGuard = (ref: RecompilationRef) =>
   clearCloudSaveLaunchGuard(cloudSaveObjectId(ref), SHOP);
 
 const fetchBaseGameDetails = (ref: RecompilationRef) =>
-  HydraApi.get<RecompilationDetails>(
-    `/games/launchbox/${ref.objectId}/recompilations/${ref.slug}`,
-    undefined,
-    { needsAuth: false }
-  )
+  fetchRecompilationDetails(ref)
     .then((details) => details.game)
     .catch(() => null);
 

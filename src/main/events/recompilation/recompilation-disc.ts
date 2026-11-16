@@ -1,17 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import type {
-  ClassicsDisc,
-  RecompilationDetails,
-  RecompilationRef,
-} from "@types";
+import type { ClassicsDisc, RecompilationRef } from "@types";
 import {
   gamesSublevel,
   levelKeys,
   recompilationInstallsSublevel,
 } from "@main/level";
-import { HydraApi, logger, WindowManager } from "@main/services";
+import { logger, WindowManager } from "@main/services";
+import { fetchRecompilationDetails } from "./recompilation-source";
 import { getCloudSaveRetroArchPlatform } from "@shared";
 import {
   INSTALL_MARKER_FILE,
@@ -103,11 +100,7 @@ const readDiscInfo = async (
     return { name: marker.name, iconUrl: marker.iconUrl ?? null };
   }
 
-  const details = await HydraApi.get<RecompilationDetails>(
-    `/games/launchbox/${ref.objectId}/recompilations/${ref.slug}`,
-    undefined,
-    { needsAuth: false }
-  ).catch(() => null);
+  const details = await fetchRecompilationDetails(ref).catch(() => null);
   if (!details) return { name: ref.slug, iconUrl: null };
 
   await fs.promises

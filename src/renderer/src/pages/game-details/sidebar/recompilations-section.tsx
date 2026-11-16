@@ -34,10 +34,15 @@ const dismissTip = (objectId: string) => {
 
 interface RecompilationsSectionProps {
   objectId: string;
+  gameTitle: string;
+  /** Hydra's own recomp list; the community catalog is always asked. */
+  includeHydra: boolean;
 }
 
 export function RecompilationsSection({
   objectId,
+  gameTitle,
+  includeHydra,
 }: Readonly<RecompilationsSectionProps>) {
   const { t } = useTranslation("recompilation");
   const [recompilations, setRecompilations] = useState<RecompilationSummary[]>(
@@ -51,10 +56,9 @@ export function RecompilationsSection({
     setRecompilations([]);
     setShowTip(false);
 
-    getGameRecompilations(objectId)
-      .then(async (items) => {
+    getGameRecompilations(objectId, gameTitle, { includeHydra })
+      .then(async (list) => {
         if (cancelled) return;
-        const list = Array.isArray(items) ? items : [];
         setRecompilations(list);
         if (list.length === 0 || getTipDismissedGames().includes(objectId)) {
           return;
@@ -84,7 +88,7 @@ export function RecompilationsSection({
     return () => {
       cancelled = true;
     };
-  }, [objectId]);
+  }, [objectId, gameTitle, includeHydra]);
 
   useEffect(() => {
     if (!showTip) return;
