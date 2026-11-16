@@ -150,7 +150,8 @@
     "steamgriddb_artwork_reset": "Artwork reset to default",
     "classics_hero_layout_warning": "To display the logo and hero, enable the logo + hero layout on the classic game page.",
     "classics_hero_layout_open_settings": "Open settings",
-    "custom_assets_not_sync": "Your custom artwork will not be synced with your account."
+    "custom_assets_not_sync": "Your custom artwork will not be synced with your account.",
+    "recomps": "Recomps"
   },
   "header": {
     "leaderboards": "Leaderboards",
@@ -3940,5 +3941,26 @@
     "status_outcome_learning": "learning where the saves are",
     "status_outcome_paused": "paused",
     "status_outcome_conflict": "conflict, choose which save to keep on the game page"
+  },
+  "recomp_catalog": {
+    "title": "Recomps",
+    "subtitle": "Native PC ports of console games, from the community recomp catalog. You still need your own copy of each game.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "search": "Search recomps",
+    "all_consoles": "All consoles",
+    "sort_popular": "Most downloaded",
+    "sort_newest": "Newest",
+    "sort_name": "Name",
+    "only_my_system": "Only ones that run on this PC",
+    "loading": "Loading the catalog…",
+    "unavailable": "The recomp catalog couldn't be loaded. Check your connection and press Refresh.",
+    "no_results": "No recomps match these filters.",
+    "count_one": "{{count}} recomp",
+    "count_other": "{{count}} recomps",
+    "easy_setup": "Easy setup",
+    "game_not_found": "Couldn't find {{game}} in the catalogue, so this recomp can't be opened yet.",
+    "open_failed": "Couldn't open this recomp. Try again in a moment.",
+    "credit": "Catalog by recomplauncher.com. Each recomp is made by its own developer and downloads from their GitHub."
   }
 }

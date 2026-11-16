@@ -10,6 +10,8 @@ import {
   matchesAssetPattern,
   normalizeGameTitle,
   parseRecompCatalog,
+  pickCatalogueGameForRecomp,
+  toCatalogItem,
   toCatalogDetails,
   toCatalogReleases,
   toCatalogSummary,
@@ -308,6 +310,48 @@ describe("developer manifests", () => {
     );
     assert.equal(
       manifestExecutable({ start: { program: ["../evil.exe"] } }, "win32"),
+      null
+    );
+  });
+});
+
+describe("browsing the catalog", () => {
+  const [zeldaEntry, dusklightEntry] = parseRecompCatalog(catalog);
+
+  it("lists each entry with its slug and setup state", () => {
+    const item = toCatalogItem(dusklightEntry);
+    assert.equal(item.slug, "rl-dusklight");
+    assert.equal(item.hasEasySetup, true);
+    assert.equal(toCatalogItem(zeldaEntry).hasEasySetup, false);
+  });
+
+  it("finds the catalogue game on the recomp's own console", () => {
+    const match = pickCatalogueGameForRecomp(
+      [
+        { objectId: "1", title: "Zelda Majora", platform: "Nintendo 64" },
+        {
+          objectId: "2",
+          title: "The Legend of Zelda: Majora's Mask",
+          platform: "Nintendo 3DS",
+        },
+        {
+          objectId: "3",
+          title: "Legend of Zelda, The - Majora's Mask",
+          platform: "Nintendo 64",
+          alternateNames: ["The Legend of Zelda: Majora's Mask"],
+        },
+      ],
+      toCatalogItem(zeldaEntry)
+    );
+    assert.equal(match?.objectId, "3");
+  });
+
+  it("finds nothing when no result is that game", () => {
+    assert.equal(
+      pickCatalogueGameForRecomp(
+        [{ objectId: "1", title: "Zelda II", platform: "NES" }],
+        toCatalogItem(zeldaEntry)
+      ),
       null
     );
   });

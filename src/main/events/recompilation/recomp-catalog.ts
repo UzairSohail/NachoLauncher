@@ -27,3 +27,9 @@ registerEvent(
   (_event: Electron.IpcMainInvokeEvent, slug: unknown) =>
     RecompCatalog.getReadme(text(slug))
 );
+
+registerEvent(
+  "getRecompCatalog",
+  (_event: Electron.IpcMainInvokeEvent, force: unknown) =>
+    RecompCatalog.listAll(force === true)
+);

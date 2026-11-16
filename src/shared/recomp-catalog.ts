@@ -616,3 +616,104 @@ export const parseRecompManifest = (text: string): RecompManifest | null => {
     return null;
   }
 };
+
+// ---------- browsing the whole catalog ----------
+
+/** One recomp as the catalog page lists it. */
+export interface RecompCatalogItem {
+  slug: string;
+  name: string;
+  game: string | null;
+  origin: string | null;
+  author: string | null;
+  version: string | null;
+  released: string | null;
+  systems: RecompilationOs[];
+  coverUrl: string | null;
+  iconUrl: string | null;
+  downloads: number;
+  stars: number;
+  /** The developer ships a manifest, so the port can set itself up. */
+  hasEasySetup: boolean;
+}
+
+export const toCatalogItem = (entry: CatalogEntry): RecompCatalogItem => ({
+  slug: toCatalogSlug(entry.id),
+  name: entry.name,
+  game: entry.game,
+  origin: entry.origin,
+  author: entry.author,
+  version: entry.version ?? (entry.tag ? trimTag(entry.tag) : null),
+  released: entry.released,
+  systems: entry.systems,
+  coverUrl: entry.coverUrl ?? entry.heroUrl,
+  iconUrl: entry.iconUrl,
+  downloads: entry.downloads,
+  stars: entry.stars,
+  hasEasySetup: manifestToRomMeta(entry.manifest, entry.origin) !== null,
+});
+
+const ORIGIN_NAMES: Record<string, string> = {
+  n64: "Nintendo 64",
+  gc: "GameCube",
+  wii: "Wii",
+  wiiu: "Wii U",
+  switch: "Switch",
+  snes: "SNES",
+  nes: "NES",
+  gb: "Game Boy",
+  gbc: "Game Boy Color",
+  gba: "Game Boy Advance",
+  ds: "Nintendo DS",
+  "3ds": "Nintendo 3DS",
+  ps1: "PlayStation",
+  ps2: "PlayStation 2",
+  ps3: "PlayStation 3",
+  ps4: "PlayStation 4",
+  psp: "PSP",
+  vita: "PS Vita",
+  xbox: "Xbox",
+  x360: "Xbox 360",
+  dc: "Dreamcast",
+  saturn: "Saturn",
+  genesis: "Genesis",
+  arcade: "Arcade",
+  pc: "PC",
+};
+
+/** A console id from the catalog, as players know it. */
+export const getRecompOriginName = (origin: string | null) =>
+  origin ? (ORIGIN_NAMES[origin.toLowerCase()] ?? origin.toUpperCase()) : "";
+
+/**
+ * The catalogue game a recomp belongs to, from a classics search for its
+ * original game: the same name (or one of its other names), preferring the
+ * recomp's own console. Null when no result is clearly that game.
+ */
+export const pickCatalogueGameForRecomp = <
+  Result extends {
+    objectId: string;
+    title: string;
+    platform?: string;
+    alternateNames?: string[];
+  },
+>(
+  results: Result[],
+  item: Pick<RecompCatalogItem, "game" | "name" | "origin">
+) => {
+  const wanted = normalizeGameTitle(item.game ?? item.name);
+  if (!wanted) return null;
+  const sameGame = results.filter((result) =>
+    [result.title, ...(result.alternateNames ?? [])].some(
+      (title) => normalizeGameTitle(title) === wanted
+    )
+  );
+  const originName = normalizeGameTitle(getRecompOriginName(item.origin));
+  const onSameConsole = sameGame.find(
+    (result) =>
+      !!originName &&
+      !!result.platform &&
+      normalizeGameTitle(result.platform).includes(originName)
+  );
+  return onSameConsole ?? sameGame[0] ?? null;
+};
