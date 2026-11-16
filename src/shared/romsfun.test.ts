@@ -139,5 +139,15 @@ describe("RomsFun", () => {
       true
     );
     assert.equal(isCloudflareChallenge("<title>RomsFun</title>"), false);
+    assert.equal(
+      isCloudflareChallenge(
+        '<title>You searched for Burnout 3 Takedown | ROMSFUN.COM</title><script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script>'
+      ),
+      false
+    );
+    assert.equal(
+      isCloudflareChallenge('<form id="challenge-form" action="/"></form>'),
+      true
+    );
   });
 });
