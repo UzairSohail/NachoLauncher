@@ -8,7 +8,6 @@ import {
 } from "@main/services";
 import { createGame } from "@main/services/library-sync";
 import { GameUpdates } from "@main/services/game-updates";
-import { resolveAnkerGamesDownload } from "@main/services/hosters/ankergames";
 import { resolveRomsFunDownload } from "@main/services/hosters/romsfun";
 import { downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 import { DownloadError, isBlockedTorrentDownload, parseBytes } from "@shared";
@@ -50,12 +49,7 @@ export const addGameToQueue = async (
   let setAside = false;
 
   try {
-    // An AnkerGames listing is the game's page: read the real link from it.
-    ({ downloader, uri } = await resolveAnkerGamesDownload(
-      requestedDownloader,
-      requestedUri
-    ));
-    // So is a RomsFun listing: read the file's link from its pages.
+    // A RomsFun listing is the game's page: read the file's link from it.
     ({ downloader, uri } = await resolveRomsFunDownload(downloader, uri));
     if (isBlockedTorrentDownload(downloader, uri)) {
       throw new Error(DownloadError.TorrentRequiresDebrid);

@@ -19,7 +19,6 @@ export const DOWNLOADER_NAME = {
   [Downloader.FileKeeper]: "FileKeeper",
   [Downloader.Buzzheavier]: "Buzzheavier",
   [Downloader.MegaDB]: "MegaDB",
-  [Downloader.AnkerGames]: "AnkerGames",
   [Downloader.RomsFun]: "RomsFun",
 };
 

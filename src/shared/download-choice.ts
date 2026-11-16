@@ -1,5 +1,4 @@
 import { Downloader } from "./constants.js";
-import { isAnkerGamesPageUri } from "./ankergames.js";
 
 /** Hosts with no direct downloader that a debrid provider can still unlock. */
 export const debridOnlyHosts = [
@@ -86,7 +85,6 @@ type GetDownloadersForUri = (uri: string) => Downloader[];
 /**
  * How sure we are that a downloader can fetch a link, best first:
  * 0. a torrent through debrid (debrid is the only way torrents are fetched),
- *    including an AnkerGames page's torrent,
  * 0.5. a hoster link AllDebrid currently supports: it unlocks to a premium,
  *    uncapped link, so it beats the host's own capped download,
  * 1. a host with its own downloader (Gofile, Buzzheavier, Pixeldrain...) or a
@@ -99,8 +97,6 @@ export const getUriConfidence = (
   downloader: Downloader
 ): number => {
   if (uri.startsWith("magnet:")) return 0;
-  // Debrid fetches an AnkerGames page's torrent.
-  if (DEBRID.has(downloader) && isAnkerGamesPageUri(uri)) return 0;
   if (downloader === Downloader.AllDebrid && isAllDebridSupportedUri(uri))
     return 0.5;
   if (!DEBRID.has(downloader)) return 1;
