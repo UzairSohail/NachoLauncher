@@ -8,6 +8,7 @@ import type {
   RecompilationRelease,
 } from "@types";
 import {
+  isCatalogSlug,
   pickRecompilationInstallAsset,
   toRecompilationCloudSaveObjectId,
 } from "@shared";
@@ -43,7 +44,9 @@ export default function RecompilationPage() {
   const { t, i18n } = useTranslation("recompilation");
   const { userDetails } = useUserDetails();
   const { isFeatureEnabled, isFeaturesSettled, Feature } = useFeature();
-  const isRecompilationsEnabled = isFeatureEnabled(Feature.Recompilations);
+  // Community catalog ports don't depend on Hydra's switch for its own list.
+  const isRecompilationsEnabled =
+    isCatalogSlug(slug) || isFeatureEnabled(Feature.Recompilations);
   const isCloudSaveEnabled = isFeatureEnabled(Feature.RecompilationCloudSaves);
 
   const [details, setDetails] = useState<RecompilationDetails | null>(null);

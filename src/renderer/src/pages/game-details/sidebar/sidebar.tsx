@@ -219,11 +219,13 @@ export function Sidebar() {
 
   return (
     <aside className="content-sidebar">
-      {shop === "launchbox" &&
-        catalogueGame.objectId &&
-        isFeatureEnabled(Feature.Recompilations) && (
-          <RecompilationsSection objectId={catalogueGame.objectId} />
-        )}
+      {shop === "launchbox" && catalogueGame.objectId && (
+        <RecompilationsSection
+          objectId={catalogueGame.objectId}
+          gameTitle={shopDetails?.name ?? gameTitle}
+          includeHydra={isFeatureEnabled(Feature.Recompilations)}
+        />
+      )}
 
       {shouldShowProtonFeatures && (
         <Suspense fallback={null}>

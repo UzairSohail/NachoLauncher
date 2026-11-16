@@ -6,24 +6,18 @@ import path from "node:path";
 
 import {
   isRecompilationAssetFromRepository,
+  manifestExecutable,
+  parseRecompManifest,
   pickRecompilationInstallAsset,
 } from "@shared";
 import type {
   RecompilationActionResult,
-  RecompilationDetails,
   RecompilationInstallProgress,
   RecompilationInstallState,
   RecompilationPrepareProgress,
   RecompilationRef,
-  RecompilationReleases,
 } from "@types";
-import {
-  HydraApi,
-  logger,
-  SevenZip,
-  SystemPath,
-  WindowManager,
-} from "@main/services";
+import { logger, SevenZip, SystemPath, WindowManager } from "@main/services";
 import {
   downloadToFile,
   removeFileQuietly,
@@ -44,7 +38,13 @@ import {
   shouldHideRecompilationConsole,
   shouldPrepareAfterUpdate,
 } from "./recompilation-rom";
+import { RecompCatalog } from "@main/services/recomp-catalog";
+import recompilationMeta from "./recompilation-meta.json";
 import recompilationSaves from "./recompilation-saves.json";
+import {
+  fetchRecompilationDetails,
+  fetchRecompilationReleases,
+} from "./recompilation-source";
 import {
   addRecompilationDisc,
   removeRecompilationDisc,
@@ -58,6 +58,7 @@ import {
 } from "./recompilation-executable";
 
 const MAX_NESTED_ARCHIVES = 3;
+const RELEASE_MANIFEST_FILE = "recomplauncher.json";
 
 class RecompilationInstallError extends Error {}
 
@@ -81,9 +82,6 @@ const sendPrepareProgress = (progress: RecompilationPrepareProgress) => {
     progress
   );
 };
-
-const apiPath = ({ objectId, slug }: RecompilationRef) =>
-  `/games/launchbox/${objectId}/recompilations/${slug}`;
 
 const loadSession = () => import("./recompilation-session");
 
@@ -309,12 +307,8 @@ const resolveTargetDirectory = async (
 
 const fetchRelease = async (ref: RecompilationRef) => {
   const [details, { releases }] = await Promise.all([
-    HydraApi.get<RecompilationDetails>(apiPath(ref), undefined, {
-      needsAuth: false,
-    }),
-    HydraApi.get<RecompilationReleases>(`${apiPath(ref)}/releases`, undefined, {
-      needsAuth: false,
-    }),
+    fetchRecompilationDetails(ref),
+    fetchRecompilationReleases(ref),
   ]);
   const release =
     releases.find((item) => item.isLatest) ?? releases.at(0) ?? null;
@@ -335,6 +329,31 @@ const fetchRelease = async (ref: RecompilationRef) => {
   }
 
   return { details, release, asset };
+};
+
+/**
+ * A developer's recomplauncher.json at the top of the release: kept so the
+ * port sets itself up, and its program used when it names one for this system.
+ */
+const applyReleaseManifest = async (
+  slug: string,
+  installDirectory: string,
+  executablePath: string
+) => {
+  const text = await fs.promises
+    .readFile(path.join(installDirectory, RELEASE_MANIFEST_FILE), "utf-8")
+    .catch(() => null);
+  const manifest = text ? parseRecompManifest(text) : null;
+  await RecompCatalog.rememberManifest(slug, manifest).catch(() => {});
+  if (!manifest || Object.hasOwn(recompilationMeta, slug)) {
+    return executablePath;
+  }
+
+  const declared = await findDeclaredRecompilationEntry(
+    installDirectory,
+    manifestExecutable(manifest, process.platform)
+  ).catch(() => null);
+  return declared ?? executablePath;
 };
 
 const downloadAndInstall = async (
@@ -374,12 +393,17 @@ const downloadAndInstall = async (
   }
 
   sendProgress({ slug: ref.slug, phase: "extracting" });
-  const executablePath = await extractRelease(
+  const extractedExecutable = await extractRelease(
     archivePath,
     asset.name,
     installDirectory,
     details.name,
     getRecompilationExecutableOverride(ref.slug)
+  );
+  const executablePath = await applyReleaseManifest(
+    ref.slug,
+    installDirectory,
+    extractedExecutable
   );
 
   const marker: InstallMarker = {
