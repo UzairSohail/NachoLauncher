@@ -209,10 +209,18 @@ export const parseRomsFunDirectLink = (html: string, pageUrl: string) => {
   return anchor && /^https?:/i.test(anchor.href) ? anchor.href : null;
 };
 
+/**
+ * True only for Cloudflare's "checking your browser" page. Normal pages load
+ * Cloudflare's `/cdn-cgi/challenge-platform/` script too, so that alone means
+ * nothing.
+ */
 export const isCloudflareChallenge = (html: string) =>
   /<title>\s*(just a moment|attention required|un instant|einen moment)/i.test(
     html
-  ) || /challenge-platform|cf-turnstile|id="challenge-form"/i.test(html);
+  ) ||
+  /id=["']challenge-(form|running|error-text)["']|window\._cf_chl_opt/i.test(
+    html
+  );
 
 const normalize = (text: string) =>
   text
