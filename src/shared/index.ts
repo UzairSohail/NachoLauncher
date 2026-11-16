@@ -19,7 +19,6 @@ import {
 
 import { isArchiveOrgFileUri } from "./archive-org";
 import { isBuzzheavierUri, isMegaDbUri } from "./direct-hosts";
-import { isAnkerGamesPageUri } from "./ankergames";
 import { isRomsFunPageUri } from "./romsfun";
 import {
   getUriGroupParts,
@@ -42,7 +41,6 @@ import { AchievementNotificationInfo, GameRepack } from "@types";
 
 export * from "./archive-org";
 export * from "./direct-hosts";
-export * from "./ankergames";
 export * from "./romsfun";
 export * from "./official-chat";
 export * from "./constants";
@@ -267,18 +265,6 @@ const getBaseDownloadersForUri = (uri: string): Downloader[] => {
   }
   if (isMegaDbUri(uri)) {
     return [Downloader.MegaDB];
-  }
-  // An AnkerGames game page: its direct download or FileKeeper mirror for
-  // free, or its torrent through a debrid service (never peer to peer).
-  if (isAnkerGamesPageUri(uri)) {
-    return [
-      Downloader.AnkerGames,
-      Downloader.FileKeeper,
-      Downloader.AllDebrid,
-      Downloader.RealDebrid,
-      Downloader.TorBox,
-      Downloader.Premiumize,
-    ];
   }
 
   // A RomsFun game page: its free direct download, read from the page.

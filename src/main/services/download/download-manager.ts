@@ -1778,8 +1778,6 @@ export class DownloadManager {
         return this.getArchiveOrgDownloadOptions(download, resumingFilename);
       case Downloader.MegaDB:
         return this.getMegaDbDownloadOptions(download, resumingFilename);
-      case Downloader.AnkerGames:
-        return this.getAnkerGamesDownloadOptions(download, resumingFilename);
       case Downloader.RomsFun:
         return this.getRomsFunDownloadOptions(download, resumingFilename);
       default:
@@ -2490,35 +2488,6 @@ export class DownloadManager {
       downloadUrl,
       download.downloadPath,
       filename
-    );
-  }
-
-  /**
-   * AnkerGames' direct link was read from its page when the download started;
-   * fetch it with the same browser identity and cookies the page gave.
-   */
-  private static async getAnkerGamesDownloadOptions(
-    download: Download,
-    resumingFilename?: string
-  ) {
-    const { getAnkerGamesCookieHeader, getAnkerGamesUserAgent } = await import(
-      "../hosters/ankergames-browser"
-    );
-    const cookie = await getAnkerGamesCookieHeader(download.uri);
-    const filename = this.resolveFilename(
-      resumingFilename,
-      download.uri,
-      download.uri
-    );
-    return this.buildDownloadOptions(
-      download.uri,
-      download.downloadPath,
-      filename,
-      {
-        "User-Agent": getAnkerGamesUserAgent(),
-        Referer: "https://ankergames.net/",
-        ...(cookie ? { Cookie: cookie } : {}),
-      }
     );
   }
 

@@ -19,8 +19,7 @@ export enum Downloader {
   // 18 was a FileDitch downloader that never shipped: its links are behind
   // a gate page, not direct files.
   MegaDB = 19,
-  /** AnkerGames' own direct download, read from the game's page. */
-  AnkerGames = 20,
+  // 20 was an AnkerGames downloader, removed again.
   /** A free ROM / disc image from RomsFun, read from the game's page. */
   RomsFun = 21,
 }
@@ -116,8 +115,6 @@ export enum DownloadError {
   UpdateGameRunning = "download_error_update_game_running",
   UpdateSaveBackupFailed = "download_error_update_save_backup_failed",
   DebridHostNotSupported = "download_error_debrid_host_not_supported",
-  AnkerGamesLinkNotFound = "download_error_ankergames_link_not_found",
-  AnkerGamesWindowClosed = "download_error_ankergames_window_closed",
   RomsFunLinkNotFound = "download_error_romsfun_link_not_found",
   RomsFunWindowClosed = "download_error_romsfun_window_closed",
 }
