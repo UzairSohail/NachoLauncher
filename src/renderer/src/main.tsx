@@ -50,6 +50,9 @@ const Profile = lazy(() => import("./pages/profile/profile"));
 const Achievements = lazy(() => import("./pages/achievements/achievements"));
 const ThemeEditor = lazy(() => import("./pages/theme-editor/theme-editor"));
 const Library = lazy(() => import("./pages/library/library"));
+const RecompCatalog = lazy(
+  () => import("./pages/recomp-catalog/recomp-catalog")
+);
 const Notifications = lazy(() => import("./pages/notifications/notifications"));
 const Shop = lazy(() => import("./pages/shop/shop"));
 const AchievementNotification = lazy(() =>
@@ -183,6 +186,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                     <Route path="/" element={<Home />} />
                     <Route path="/catalogue" element={<Catalogue />} />
                     <Route path="/library" element={<Library />} />
+                    <Route path="/recomps" element={<RecompCatalog />} />
                     <Route path="/downloads" element={<Downloads />} />
                     <Route
                       path="/game/:shop/:objectId"

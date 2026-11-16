@@ -20,6 +20,7 @@ import {
   manifestToRomMeta,
   parseRecompCatalog,
   toCatalogDetails,
+  toCatalogItem,
   toCatalogReadme,
   toCatalogReleases,
   toCatalogSummary,
@@ -168,6 +169,12 @@ export class RecompCatalog {
     const id = fromCatalogSlug(slug);
     if (!id) return null;
     return this.entriesNow().find((entry) => entry.id === id) ?? null;
+  }
+
+  /** Every recomp in the catalog, for the catalog page. */
+  static async listAll(force = false) {
+    const entries = await this.getEntries(force);
+    return entries.map(toCatalogItem);
   }
 
   static async findForGame(gameTitle: string): Promise<RecompilationSummary[]> {

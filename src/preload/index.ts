@@ -753,6 +753,8 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("getCatalogRecompilationReleases", slug),
   getCatalogRecompilationReadme: (slug: string) =>
     ipcRenderer.invoke("getCatalogRecompilationReadme", slug),
+  getRecompCatalog: (force?: boolean) =>
+    ipcRenderer.invoke("getRecompCatalog", force === true),
   setRecompilationRom: (
     ref: RecompilationRef,
     choice: { source: RecompilationRomSource; path?: string }

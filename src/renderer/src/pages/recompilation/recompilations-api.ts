@@ -1,4 +1,5 @@
 import type {
+  CatalogueSearchResult,
   RecompilationDetails,
   RecompilationReadme,
   RecompilationReleases,
@@ -8,6 +9,8 @@ import {
   CATALOG_SLUG_PREFIX,
   isCatalogSlug,
   normalizeGameTitle,
+  pickCatalogueGameForRecomp,
+  type RecompCatalogItem,
 } from "@shared";
 
 const gamePath = (objectId: string) =>
@@ -87,3 +90,68 @@ export const getRecompilationReleases = (objectId: string, slug: string) =>
 
 export const buildRecompilationPath = (objectId: string, slug: string) =>
   `/recompilation/${encodeURIComponent(objectId)}/${encodeURIComponent(slug)}`;
+
+const CATALOGUE_GAME_CACHE_KEY = "recomp-catalogue-games";
+
+const readCatalogueGameCache = (): Record<string, string> => {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(CATALOGUE_GAME_CACHE_KEY) ?? "{}"
+    );
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+/**
+ * The classics catalogue game a catalog recomp belongs to, found by its
+ * original game's name. Recomp pages hang off that game, so this is what
+ * opening a recomp from the catalog page needs. Null when no game matches.
+ */
+export const findCatalogueGameForRecomp = async (item: RecompCatalogItem) => {
+  const cached = readCatalogueGameCache()[item.slug];
+  if (cached) return cached;
+
+  const response = await window.electron.hydraApi.post<{
+    edges: CatalogueSearchResult[];
+  }>("/catalogue/search", {
+    data: {
+      title: item.game ?? item.name,
+      sortBy: "popularity",
+      sortOrder: "desc",
+      downloadSourceFingerprints: [],
+      tags: [],
+      publishers: [],
+      genres: [],
+      developers: [],
+      protondbSupportBadges: [],
+      deckCompatibility: [],
+      platforms: [],
+      shops: ["launchbox"],
+      take: 20,
+      skip: 0,
+      downloadSourceIds: [],
+    },
+    needsAuth: false,
+  });
+
+  const match = pickCatalogueGameForRecomp(
+    Array.isArray(response?.edges) ? response.edges : [],
+    item
+  );
+  if (!match) return null;
+
+  try {
+    localStorage.setItem(
+      CATALOGUE_GAME_CACHE_KEY,
+      JSON.stringify({
+        ...readCatalogueGameCache(),
+        [item.slug]: match.objectId,
+      })
+    );
+  } catch {
+    // Only a shortcut for next time.
+  }
+  return match.objectId;
+};
