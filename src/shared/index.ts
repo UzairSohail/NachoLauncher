@@ -19,6 +19,7 @@ import {
 
 import { isArchiveOrgFileUri } from "./archive-org";
 import { isBuzzheavierUri, isMegaDbUri } from "./direct-hosts";
+import { isAnkerGamesPageUri } from "./ankergames";
 import {
   getUriGroupParts,
   normalizeUriGroups,
@@ -40,6 +41,7 @@ import { AchievementNotificationInfo, GameRepack } from "@types";
 
 export * from "./archive-org";
 export * from "./direct-hosts";
+export * from "./ankergames";
 export * from "./official-chat";
 export * from "./constants";
 export {
@@ -263,6 +265,18 @@ const getBaseDownloadersForUri = (uri: string): Downloader[] => {
   }
   if (isMegaDbUri(uri)) {
     return [Downloader.MegaDB];
+  }
+  // An AnkerGames game page: its direct download or FileKeeper mirror for
+  // free, or its torrent through a debrid service (never peer to peer).
+  if (isAnkerGamesPageUri(uri)) {
+    return [
+      Downloader.AnkerGames,
+      Downloader.FileKeeper,
+      Downloader.AllDebrid,
+      Downloader.RealDebrid,
+      Downloader.TorBox,
+      Downloader.Premiumize,
+    ];
   }
 
   if (debridOnlyHosts.some((host) => uri.startsWith(host)))

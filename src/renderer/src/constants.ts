@@ -19,6 +19,7 @@ export const DOWNLOADER_NAME = {
   [Downloader.FileKeeper]: "FileKeeper",
   [Downloader.Buzzheavier]: "Buzzheavier",
   [Downloader.MegaDB]: "MegaDB",
+  [Downloader.AnkerGames]: "AnkerGames",
 };
 
 export const MAX_MINUTES_TO_SHOW_IN_PLAYTIME = 120;
