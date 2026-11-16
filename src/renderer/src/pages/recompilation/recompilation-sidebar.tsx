@@ -34,6 +34,7 @@ interface RecompilationSidebarProps {
   installAsset: RecompilationReleaseAsset | null;
   install: RecompilationInstall;
   rom: RecompilationRom;
+  onDownloadRom: () => void;
 }
 
 export function RecompilationSidebar({
@@ -41,6 +42,7 @@ export function RecompilationSidebar({
   installAsset,
   install,
   rom,
+  onDownloadRom,
 }: Readonly<RecompilationSidebarProps>) {
   const { t } = useTranslation("recompilation");
   const { numberFormatter } = useFormat();
@@ -80,6 +82,7 @@ export function RecompilationSidebar({
         installAsset={installAsset}
         install={install}
         rom={rom}
+        onDownloadRom={onDownloadRom}
       />
 
       <SidebarSection title={t("tested_title")}>

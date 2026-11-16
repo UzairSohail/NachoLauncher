@@ -4,7 +4,12 @@ import { orderBy } from "lodash-es";
 import { ChevronDownIcon, ChevronUpIcon } from "@primer/octicons-react";
 import { Tooltip } from "react-tooltip";
 import type { DownloadSource, GameRepack } from "@types";
-import { getRepackUriParts, pickUriForDownloader } from "@shared";
+import {
+  Downloader,
+  getRepackUriParts,
+  pickUriForDownloader,
+  type RomsFunSearchResult,
+} from "@shared";
 
 import { Button } from "@renderer/components/button/button";
 import { beginDownloadFlight } from "@renderer/components/sidebar/download-flight";
@@ -251,11 +256,142 @@ export function RomSourceList(props: Readonly<RomSourceListProps>) {
   );
 }
 
+/** RomsFun's console slugs as people know them. */
+const ROMSFUN_CONSOLE_NAMES: Record<string, string> = {
+  xbox: "Xbox",
+  "xbox-360": "Xbox 360",
+  playstation: "PS1",
+  "playstation-2": "PS2",
+  ps3: "PS3",
+  "playstation-portable": "PSP",
+  "ps-vita": "PS Vita",
+  "nintendo-64": "N64",
+  gamecube: "GameCube",
+  "nintendo-wii": "Wii",
+  "wii-u": "Wii U",
+  "nintendo-ds": "DS",
+  "nintendo-3ds": "3DS",
+  "game-boy-advance": "GBA",
+  "game-boy-color": "GBC",
+  "game-boy": "Game Boy",
+  "super-nintendo": "SNES",
+  nes: "NES",
+  "sega-genesis": "Genesis",
+  dreamcast: "Dreamcast",
+  "sega-saturn": "Saturn",
+};
+
+/**
+ * Free ROM / disc image downloads from RomsFun, found by the original game's
+ * name. Nacho reads the real file link from RomsFun's pages when the download
+ * starts, so it needs no debrid service.
+ */
+function RomsFunList({
+  objectId,
+  gameTitle,
+  platform,
+  downloadPath,
+  onStarted,
+}: Readonly<RomSourceListProps & { platform: string | null }>) {
+  const { t } = useTranslation("recompilation");
+  const { t: tGame } = useTranslation("game_details");
+  const { startDownload } = useDownload();
+  const { showErrorToast } = useToast();
+  const userPreferences = useAppSelector(
+    (state) => state.userPreferences.value
+  );
+  const [results, setResults] = useState<RomsFunSearchResult[] | null>(null);
+  const [startingUrl, setStartingUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setResults(null);
+    window.electron
+      .searchRomsFun(gameTitle, platform)
+      .then((found) => {
+        if (!cancelled) setResults(found);
+      })
+      .catch(() => {
+        if (!cancelled) setResults([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gameTitle, platform]);
+
+  const start = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+    result: RomsFunSearchResult
+  ) => {
+    const flight = beginDownloadFlight(event.currentTarget);
+    setStartingUrl(result.url);
+    const response = await startDownload({
+      objectId,
+      title: gameTitle,
+      downloader: Downloader.RomsFun,
+      shop: "launchbox",
+      downloadPath,
+      uri: result.url,
+      automaticallyExtract: true,
+      automaticallyDeleteArchiveFiles:
+        userPreferences?.deleteArchiveFilesAfterExtractionByDefault ?? true,
+    }).catch(() => ({ ok: false, error: undefined }) as const);
+    setStartingUrl(null);
+
+    if (response.ok) {
+      flight.launch(null);
+      onStarted();
+    } else {
+      flight.cancel();
+      const error = "error" in response ? response.error : undefined;
+      showErrorToast(
+        error && tGame(error) !== error
+          ? tGame(error)
+          : t("rom_download_failed")
+      );
+    }
+  };
+
+  return (
+    <div className="rom-source-list">
+      <h4 className="rom-source-list__heading">{t("romsfun_title")}</h4>
+      <p className="rom-source-list__hint">{t("romsfun_hint")}</p>
+      {results === null && (
+        <p className="rom-source-list__empty">{t("romsfun_searching")}</p>
+      )}
+      {results?.length === 0 && (
+        <p className="rom-source-list__empty">{t("romsfun_no_results")}</p>
+      )}
+      <div className="repacks-modal__repacks">
+        {results?.map((result) => (
+          <Button
+            key={result.url}
+            theme="dark"
+            className="repacks-modal__repack-button"
+            onClick={(event) => void start(event, result)}
+            disabled={!downloadPath || startingUrl !== null}
+          >
+            <p className="repacks-modal__repack-title">{result.title}</p>
+            <p className="repacks-modal__repack-info">
+              {startingUrl === result.url
+                ? t("romsfun_getting_link")
+                : `${ROMSFUN_CONSOLE_NAMES[result.console] ?? result.console} - RomsFun - ${t("romsfun_free")}`}
+            </p>
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function RomSourcesPanel({
   objectId,
   gameTitle,
+  platform = null,
   onStarted,
-}: Readonly<Omit<RomSourceListProps, "downloadPath">>) {
+}: Readonly<
+  Omit<RomSourceListProps, "downloadPath"> & { platform?: string | null }
+>) {
   const { t } = useTranslation("recompilation");
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
@@ -300,6 +436,13 @@ export function RomSourcesPanel({
       <RomSourceList
         objectId={objectId}
         gameTitle={gameTitle}
+        downloadPath={downloadPath}
+        onStarted={onStarted}
+      />
+      <RomsFunList
+        objectId={objectId}
+        gameTitle={gameTitle}
+        platform={platform}
         downloadPath={downloadPath}
         onStarted={onStarted}
       />

@@ -10,6 +10,7 @@ interface RomDownloadModalProps {
   visible: boolean;
   objectId: string;
   gameTitle: string;
+  platform: string | null;
   onStarted: () => void;
   onClose: () => void;
 }
@@ -18,6 +19,7 @@ export function RomDownloadModal({
   visible,
   objectId,
   gameTitle,
+  platform,
   onStarted,
   onClose,
 }: Readonly<RomDownloadModalProps>) {
@@ -47,6 +49,7 @@ export function RomDownloadModal({
               <RomSourcesPanel
                 objectId={objectId}
                 gameTitle={gameTitle}
+                platform={platform}
                 onStarted={onStarted}
               />
             </div>

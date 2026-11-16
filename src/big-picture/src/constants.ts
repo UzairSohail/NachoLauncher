@@ -29,4 +29,5 @@ export const DOWNLOADER_NAME: Record<Downloader, string> = {
   [Downloader.Buzzheavier]: "Buzzheavier",
   [Downloader.MegaDB]: "MegaDB",
   [Downloader.AnkerGames]: "AnkerGames",
+  [Downloader.RomsFun]: "RomsFun",
 };

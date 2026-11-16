@@ -13,6 +13,8 @@ export interface RecompilationRom {
   state: RecompilationRomState | null;
   downloadProgress: number | null;
   downloadPhase: "downloading" | "extracting" | null;
+  /** Where Nacho downloaded the game file to, once that download is done. */
+  downloadedPath: string | null;
   refresh: () => Promise<void>;
   choose: (
     source: RecompilationRomSource,
@@ -47,6 +49,14 @@ export function useRecompilationRom(
     downloadProgress = packetProgress ?? download?.progress ?? 0;
   }
   const isDownloading = downloadPhase !== null;
+  const downloadedPath =
+    !isDownloading &&
+    (download?.status === "complete" || download?.status === "seeding") &&
+    download.folderName
+      ? `${download.downloadPath.replace(/[\\/]+$/, "")}${
+          download.downloadPath.includes("\\") ? "\\" : "/"
+        }${download.folderName}`
+      : null;
 
   const refresh = useCallback(async () => {
     setState(
@@ -83,5 +93,12 @@ export function useRecompilationRom(
     [objectId, slug, refresh]
   );
 
-  return { state, downloadProgress, downloadPhase, refresh, choose };
+  return {
+    state,
+    downloadProgress,
+    downloadPhase,
+    downloadedPath,
+    refresh,
+    choose,
+  };
 }

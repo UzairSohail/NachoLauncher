@@ -375,11 +375,11 @@ const markInstallTargets = (
 ) => {
   for (const os of OS_LIST) {
     const forOs = found.filter(({ asset }) => asset.os === os);
-    // A catalog pattern names the file for that system; without one, the best
+    // A catalog pattern names the file for that system; without one, or when
+    // a release renamed its files so the pattern matches none, the best
     // archive by name wins.
-    const pool = entry.assets[os]
-      ? forOs.filter(({ fromPattern }) => fromPattern)
-      : forOs;
+    const fromPattern = forOs.filter(({ fromPattern }) => fromPattern);
+    const pool = entry.assets[os] && fromPattern.length ? fromPattern : forOs;
     const best = [...pool].sort(
       (left, right) =>
         archiveRank(left.asset.name, os) - archiveRank(right.asset.name, os)

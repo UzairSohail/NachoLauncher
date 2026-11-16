@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckIcon,
+  DownloadIcon,
   FileDirectoryIcon,
   LinkExternalIcon,
   XIcon,
@@ -9,6 +10,7 @@ import {
 import type { RecompilationDetails, RecompilationReleaseAsset } from "@types";
 import { formatBytes } from "@shared";
 
+import { Button } from "@renderer/components/button/button";
 import {
   InstallProgressBar,
   type InstallProgressLike,
@@ -122,6 +124,7 @@ interface RecompilationInstallSectionProps {
   installAsset: RecompilationReleaseAsset | null;
   install: RecompilationInstall;
   rom: RecompilationRom;
+  onDownloadRom: () => void;
 }
 
 export function RecompilationInstallSection({
@@ -129,6 +132,7 @@ export function RecompilationInstallSection({
   installAsset,
   install,
   rom,
+  onDownloadRom,
 }: Readonly<RecompilationInstallSectionProps>) {
   const { t } = useTranslation("recompilation");
   const { state, progress } = install;
@@ -208,21 +212,34 @@ export function RecompilationInstallSection({
     );
   };
 
+  const renderRomProgress = () => {
+    const isRomExtracting = rom.downloadPhase === "extracting";
+    const romProgress: InstallProgressLike = isRomExtracting
+      ? { phase: "extracting" }
+      : { phase: "downloading", loaded: romPercent, total: 100 };
+    return (
+      <>
+        <p className="recompilation-install-section__sub">
+          {isRomExtracting ? t("rom_extracting") : `${romPercent}%`}
+        </p>
+        <InstallProgressBar progress={romProgress} />
+      </>
+    );
+  };
+
+  const downloadRomButton = (
+    <Button
+      theme="outline"
+      className="recompilation-install-section__download-rom"
+      onClick={onDownloadRom}
+    >
+      <DownloadIcon size={14} />
+      {t("download_rom")}
+    </Button>
+  );
+
   const renderRom = () => {
-    if (isRomDownloading) {
-      const isRomExtracting = rom.downloadPhase === "extracting";
-      const romProgress: InstallProgressLike = isRomExtracting
-        ? { phase: "extracting" }
-        : { phase: "downloading", loaded: romPercent, total: 100 };
-      return (
-        <>
-          <p className="recompilation-install-section__sub">
-            {isRomExtracting ? t("rom_extracting") : `${romPercent}%`}
-          </p>
-          <InstallProgressBar progress={romProgress} />
-        </>
-      );
-    }
+    if (isRomDownloading) return renderRomProgress();
 
     if (romFile) {
       return (
@@ -256,13 +273,39 @@ export function RecompilationInstallSection({
     if (romState?.isReady) return null;
 
     return (
-      <p className="recompilation-install-section__sub">
-        {romName
-          ? t("rom_needs_short", {
-              rom: romDetails ? `${romName} (${romDetails})` : romName,
-            })
-          : t("not_selected")}
-      </p>
+      <>
+        <p className="recompilation-install-section__sub">
+          {romName
+            ? t("rom_needs_short", {
+                rom: romDetails ? `${romName} (${romDetails})` : romName,
+              })
+            : t("not_selected")}
+        </p>
+        {downloadRomButton}
+      </>
+    );
+  };
+
+  // A port Nacho can't hand the game file to still gets a way to download
+  // it: the person points the port at the file themselves.
+  const renderUnmanagedRom = () => {
+    if (isRomDownloading) return renderRomProgress();
+    const downloaded = rom.downloadedPath;
+    return (
+      <>
+        <p className="recompilation-install-section__sub">
+          {downloaded ? t("rom_downloaded_point_port") : t("rom_not_managed")}
+        </p>
+        {downloaded ? (
+          <LocationRow
+            path={downloaded}
+            openLabel={t("open_rom_folder")}
+            onOpen={() => void window.electron.showItemInFolder(downloaded)}
+          />
+        ) : (
+          downloadRomButton
+        )}
+      </>
     );
   };
 
@@ -283,9 +326,15 @@ export function RecompilationInstallSection({
         )}
 
         {romState && !romState.handlesRom && details.romRequirement && (
-          <p className="recompilation-install-section__sub">
-            {t("needs")} {details.romRequirement}
-          </p>
+          <Item
+            done={Boolean(rom.downloadedPath)}
+            title={romName || t("install_step_rom")}
+          >
+            {romDetails && (
+              <p className="recompilation-install-section__sub">{romDetails}</p>
+            )}
+            {renderUnmanagedRom()}
+          </Item>
         )}
       </div>
     </SidebarSection>

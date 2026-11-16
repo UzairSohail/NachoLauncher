@@ -289,4 +289,17 @@
     margin: 0;
     color: globals.$subtle-color;
   }
+
+  &__heading {
+    margin: calc(globals.$spacing-unit * 2) 0 0;
+    font-size: globals.$body-font-size;
+    font-weight: 600;
+    color: globals.$body-color;
+  }
+
+  &__hint {
+    margin: calc(globals.$spacing-unit * -1.5) 0 0;
+    font-size: globals.$small-font-size;
+    color: globals.$subtle-color;
+  }
 }

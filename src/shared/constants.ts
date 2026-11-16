@@ -21,6 +21,8 @@ export enum Downloader {
   MegaDB = 19,
   /** AnkerGames' own direct download, read from the game's page. */
   AnkerGames = 20,
+  /** A free ROM / disc image from RomsFun, read from the game's page. */
+  RomsFun = 21,
 }
 
 export enum DownloadSourceStatus {
@@ -116,6 +118,8 @@ export enum DownloadError {
   DebridHostNotSupported = "download_error_debrid_host_not_supported",
   AnkerGamesLinkNotFound = "download_error_ankergames_link_not_found",
   AnkerGamesWindowClosed = "download_error_ankergames_window_closed",
+  RomsFunLinkNotFound = "download_error_romsfun_link_not_found",
+  RomsFunWindowClosed = "download_error_romsfun_window_closed",
 }
 
 export const MINIMUM_FREE_DISK_SPACE_BYTES = 512 * 1024 * 1024;
