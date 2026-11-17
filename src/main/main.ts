@@ -51,6 +51,7 @@ import { isDebridPendingError } from "./services/download/debrid-files";
 import { GofileApi } from "./services/hosters";
 import { clearLegacyAchievementPersistence } from "./level/clear-legacy-achievements";
 import { startSteamSyncOnStartup } from "./services/steam-integration/steam-startup-sync";
+import { DriveChangeFeed } from "./services/personal-cloud/change-feed";
 import { migrateEmulatorCloudSaveDefaults } from "./services/cloud-save/automatic-sync-emulator-migration";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
 import { migrateGameVisibilityFields } from "./services/library-sync/game-visibility-migration";
@@ -79,6 +80,11 @@ const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
   const currentSize = await getDirSize(downloadTargetPath);
   return currentSize < expectedSize;
 };
+
+let apiStartup: Promise<void> = Promise.resolve();
+
+/** Settles once the background Hydra account and Epic set-up has finished. */
+export const whenApiStartupSettled = () => apiStartup.catch(() => undefined);
 
 export const loadState = async () => {
   await Lock.acquireLock();
@@ -137,10 +143,15 @@ export const loadState = async () => {
   void reconcileRecompilationDiscs();
   void syncRetroAchievementsEmulatorCredentials();
   SettingsSync.start();
+  DriveChangeFeed.start();
   void AchievementSync.start();
   CompanionLink.start();
 
-  await HydraApi.setupApi().then(async () => {
+  // Hydra account and Epic set-up can wait on the network, so they run in the
+  // background instead of holding up download resume and the main window.
+  // setupApi creates its HTTP client before its first await, so anything
+  // that calls HydraApi from here on still finds it.
+  apiStartup = HydraApi.setupApi().then(async () => {
     void ScreenshotInputService.refreshFeatureFlag();
     try {
       await initializeEpicIntegration();
@@ -173,6 +184,9 @@ export const loadState = async () => {
       void startEpicSyncOnStartup();
     }
   });
+  apiStartup.catch((error) => {
+    logger.error("Background API set-up failed on startup", error);
+  });
 
   void recoverInterruptedInstallers().catch((error) => {
     logger.error(
@@ -181,6 +195,22 @@ export const loadState = async () => {
     );
   });
 
+  void resumeDownloadsOnStartup().catch((error) => {
+    logger.error("Failed to resume downloads on startup", error);
+  });
+
+  startMainLoop();
+
+  if (process.platform === "win32") {
+    CommonRedistManager.downloadCommonRedist();
+  }
+
+  SystemPath.checkIfPathsAreAvailable();
+};
+
+// Resuming can reach a debrid service before the download starts, so it runs
+// alongside the rest of startup rather than in front of it.
+const resumeDownloadsOnStartup = async () => {
   const downloadToResume =
     await DownloadOrchestrator.bootstrapDownloadsOnStartup();
   const normalizedDownloads = await downloadsSublevel
@@ -254,12 +284,4 @@ export const loadState = async () => {
   }
 
   WindowManager.sendDownloadsUpdated();
-
-  startMainLoop();
-
-  if (process.platform === "win32") {
-    CommonRedistManager.downloadCommonRedist();
-  }
-
-  SystemPath.checkIfPathsAreAvailable();
 };

@@ -28,7 +28,6 @@ import resources from "@locales";
 import { logger } from "./logger";
 import { addCookieInterceptor } from "./cookies";
 import { clearStateFromPreviousSession } from "./session-state";
-import * as Sentry from "@sentry/react";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary";
 import { levelDBService } from "./services/leveldb.service";
 import { AchievementNotificationOverlay } from "./components/achievements/notification/achievement-notification-overlay";
@@ -104,17 +103,24 @@ const BigPictureProfile = lazy(
 
 console.log = logger.log;
 
-Sentry.init({
-  dsn: import.meta.env.RENDERER_VITE_SENTRY_DSN,
-  integrations: [
-    Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration(),
-  ],
-  tracesSampleRate: 0.5,
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
-  release: "hydra-launcher@" + (await globalThis.electron.getVersion()),
-});
+// Crash reporting only loads when a build sets a Sentry address. Without one
+// the SDK and its tracing would load and run for nothing. Session replay was
+// dropped: its sample rates were 0, so it never recorded anything.
+const sentryDsn = import.meta.env.RENDERER_VITE_SENTRY_DSN;
+if (sentryDsn) {
+  void Promise.all([import("@sentry/react"), globalThis.electron.getVersion()])
+    .then(([Sentry, version]) => {
+      Sentry.init({
+        dsn: sentryDsn,
+        integrations: [Sentry.browserTracingIntegration()],
+        tracesSampleRate: 0.5,
+        release: "hydra-launcher@" + version,
+      });
+    })
+    .catch((error) => {
+      logger.error("Failed to start crash reporting", error);
+    });
+}
 
 globalThis.addEventListener("unhandledrejection", (event) => {
   logger.error("Unhandled promise rejection", event.reason);

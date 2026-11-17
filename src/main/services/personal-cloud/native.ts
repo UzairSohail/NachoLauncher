@@ -49,4 +49,7 @@ export interface PersonalCloudNativeModule {
   ) => Promise<void>;
   personalCloudReadFile: (key: string) => Promise<Buffer | null>;
   personalCloudWriteFile: (key: string, data: Buffer) => Promise<void>;
+  personalCloudChanges: (
+    token: string | null
+  ) => Promise<{ changed: boolean; token: string } | null>;
 }

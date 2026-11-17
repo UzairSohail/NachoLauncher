@@ -660,6 +660,30 @@ pub async fn personal_cloud_write_file(key: String, data: Buffer) -> napi::Resul
     .await
 }
 
+#[napi(object)]
+pub struct PersonalCloudChanges {
+    /// Something in the Drive folder changed since the token passed in. Always
+    /// true on the first call, which has no token to compare against.
+    pub changed: bool,
+    /// Pass this to the next call.
+    pub token: String,
+}
+
+/// Asks Drive what changed since `token`, in one cheap request, so the
+/// launcher only reads its files when another device wrote something.
+/// Returns null when the store has no change feed (a local test folder).
+#[napi]
+pub async fn personal_cloud_changes(token: Option<String>) -> napi::Result<Option<PersonalCloudChanges>> {
+    blocking(move || {
+        let app = open_app()?;
+        Ok(app
+            .remote()?
+            .changes(token.as_deref())?
+            .map(|(changed, token)| PersonalCloudChanges { changed, token }))
+    })
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -73,6 +73,8 @@ const CHAT_WINDOW_MIN_SIZE = { width: 400, height: 420 };
 
 interface CreateMainWindowOptions {
   forceBigPicture?: boolean;
+  /** Open the desktop window even if Big Picture is the launch preference. */
+  skipBigPicture?: boolean;
 }
 
 export class WindowManager {
@@ -129,6 +131,25 @@ export class WindowManager {
 
   public static clearMainWindow(): void {
     this.mainWindowInstance = null;
+  }
+
+  // A hidden desktop window keeps its whole renderer in memory. When nobody
+  // can see it (Big Picture is open, or Nacho hid itself for a game) it is
+  // closed instead and created again when it is next needed, the same way
+  // closing it to the tray already works.
+  private static releasingMainWindow = false;
+  private static appQuitting = false;
+
+  public static markAppQuitting() {
+    this.appQuitting = true;
+  }
+
+  public static releaseMainWindow() {
+    const main = this.mainWindow;
+    if (!main || main.isDestroyed()) return;
+
+    this.releasingMainWindow = true;
+    main.close();
   }
 
   private static readonly DEFAULT_WINDOW_WIDTH = 1200;
@@ -238,13 +259,7 @@ export class WindowManager {
   }
 
   private static disableMainWindowWhileBigPictureIsOpen() {
-    const main = this.mainWindow;
-
-    if (!main || main.isDestroyed()) return;
-
-    main.setFocusable(false);
-    main.setIgnoreMouseEvents(true);
-    main.hide();
+    this.releaseMainWindow();
   }
 
   private static restoreMainWindowAfterBigPictureCloses() {
@@ -387,7 +402,9 @@ export class WindowManager {
     mainWindow.on("unmaximize", emitMaximizeState);
 
     const shouldLaunchInBigPicture =
-      options?.forceBigPicture || Boolean(userPreferences?.launchInBigPicture);
+      !options?.skipBigPicture &&
+      (options?.forceBigPicture ||
+        Boolean(userPreferences?.launchInBigPicture));
 
     if (shouldLaunchInBigPicture) {
       mainWindow.setOpacity(0);
@@ -494,6 +511,10 @@ export class WindowManager {
     });
 
     mainWindow.on("close", async () => {
+      const isRelease = this.releasingMainWindow;
+      // A window opened straight into Big Picture was never maximized yet.
+      const wasDeferredMaximize = this.deferredMainMaximize;
+      this.releasingMainWindow = false;
       this.mainWindowInstance = null;
 
       const userPreferences = await db.get<string, UserPreferences>(
@@ -506,7 +527,8 @@ export class WindowManager {
       mainWindow.setProgressBar(-1);
 
       const lastBounds = mainWindow.getBounds();
-      const isMaximized = mainWindow.isMaximized() ?? false;
+      const isMaximized =
+        (mainWindow.isMaximized() ?? false) || wasDeferredMaximize;
       const screenConfig = isMaximized
         ? {
             x: undefined,
@@ -523,7 +545,7 @@ export class WindowManager {
 
       await this.saveScreenConfig(screenConfig);
 
-      if (userPreferences?.preferQuitInsteadOfHiding) {
+      if (userPreferences?.preferQuitInsteadOfHiding && !isRelease) {
         app.quit();
       }
     });
@@ -604,15 +626,20 @@ export class WindowManager {
     this.bigPicture.on("closed", () => {
       this.bigPicture = null;
       const main = this.mainWindow;
-      if (main && !main.isDestroyed()) {
-        this.restoreMainWindowAfterBigPictureCloses();
-        if (WindowManager.deferredMainMaximize) {
-          main.maximize();
-          WindowManager.deferredMainMaximize = false;
+      if (!main || main.isDestroyed()) {
+        // The desktop window was closed while Big Picture was open.
+        if (!this.appQuitting) {
+          void this.createMainWindow({ skipBigPicture: true });
         }
-        main.show();
-        main.focus();
+        return;
       }
+      this.restoreMainWindowAfterBigPictureCloses();
+      if (WindowManager.deferredMainMaximize) {
+        main.maximize();
+        WindowManager.deferredMainMaximize = false;
+      }
+      main.show();
+      main.focus();
     });
   }
 
