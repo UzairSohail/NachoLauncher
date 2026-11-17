@@ -19,6 +19,7 @@ import {
 
 import { logger } from "../logger";
 import { PersonalCloud } from "../personal-cloud";
+import { DriveChangeFeed } from "../personal-cloud/change-feed";
 import { WindowManager } from "../window-manager";
 import { getUserPreferences } from "../user-preferences";
 import { generateSyncKey } from "./secret-box";
@@ -43,7 +44,9 @@ import { SYNCED_SECRET_KEYS } from "./synced-keys";
 const SETTINGS_FILE = "hydra/settings.json";
 const KEY_FILE = "hydra/sync-key";
 const PUSH_DELAY_MS = 5_000;
-const PERIODIC_SYNC_MS = 15 * 60_000;
+// Other devices' changes normally arrive through DriveChangeFeed; this is
+// only a safety net in case a change notice is missed.
+const PERIODIC_SYNC_MS = 60 * 60_000;
 
 interface LocalSyncRecord {
   deviceId: string;
@@ -96,6 +99,7 @@ export class SettingsSync {
   private static rerun = false;
   private static pushTimer: NodeJS.Timeout | null = null;
   private static periodicTimer: NodeJS.Timeout | null = null;
+  private static unsubscribeFeed: (() => void) | null = null;
   private static applying = false;
   private static lastError: SettingsSyncError | null = null;
 
@@ -511,9 +515,14 @@ export class SettingsSync {
     }, PUSH_DELAY_MS);
   }
 
-  /** Syncs on launch and then periodically, to pick up other devices' changes. */
+  /** Syncs on launch and whenever Drive reports a change. */
   public static start() {
     void this.syncNow();
+    if (!this.unsubscribeFeed) {
+      this.unsubscribeFeed = DriveChangeFeed.subscribe(
+        () => void this.syncNow()
+      );
+    }
     this.periodicTimer ??= setInterval(
       () => void this.syncNow(),
       PERIODIC_SYNC_MS

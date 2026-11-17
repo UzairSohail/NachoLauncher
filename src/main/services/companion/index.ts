@@ -42,6 +42,7 @@ import {
 
 import { logger } from "../logger";
 import { PersonalCloud } from "../personal-cloud";
+import { DriveChangeFeed } from "../personal-cloud/change-feed";
 import { WindowManager } from "../window-manager";
 import { getUserPreferences } from "../user-preferences";
 import { DownloadManager } from "../download";
@@ -180,7 +181,22 @@ export class CompanionLink {
   public static start() {
     if (this.timer) return;
     setTimeout(() => void this.checkNow(), FIRST_CHECK_DELAY_MS);
-    this.timer = setInterval(() => void this.checkNow(), POLL_MS);
+    // New requests from the phone arrive through DriveChangeFeed. The timer
+    // only keeps the phone's view of this launcher fresh: often while a
+    // download it can show is running, and a heartbeat otherwise.
+    DriveChangeFeed.subscribe(() => void this.checkNow());
+    this.timer = setInterval(() => void this.tick(), POLL_MS);
+  }
+
+  private static async tick() {
+    const record = await this.load();
+    const hasOpenRequest = Object.values(record.requests).some(
+      (status) => !isFinishedRequestState(status.state)
+    );
+    const isStale = Date.now() - (record.lastCheckedAt ?? 0) >= HEARTBEAT_MS;
+    if (hasOpenRequest || DownloadManager.hasActiveDownload() || isStale) {
+      await this.checkNow();
+    }
   }
 
   /** Looks for requests and updates this launcher's file. One run at a time. */

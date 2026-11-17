@@ -11,6 +11,7 @@ import { db, gamesSublevel, levelKeys } from "@main/level";
 
 import { logger } from "../logger";
 import { PersonalCloud } from "../personal-cloud";
+import { DriveChangeFeed } from "../personal-cloud/change-feed";
 import { WindowManager } from "../window-manager";
 import { describeSettingsSyncError } from "../settings-sync/sync-error";
 import {
@@ -26,7 +27,9 @@ export { SyncedUnlocksStore } from "./synced-unlocks-store";
 
 const ACHIEVEMENTS_FILE = "hydra/achievements.json";
 const PUSH_DELAY_MS = 10_000;
-const PERIODIC_SYNC_MS = 15 * 60_000;
+// Other devices' unlocks normally arrive through DriveChangeFeed; this is
+// only a safety net in case a change notice is missed.
+const PERIODIC_SYNC_MS = 60 * 60_000;
 
 interface LocalAchievementRecord {
   deviceId: string;
@@ -64,6 +67,7 @@ export class AchievementSync {
   private static rerun = false;
   private static pushTimer: NodeJS.Timeout | null = null;
   private static periodicTimer: NodeJS.Timeout | null = null;
+  private static unsubscribeFeed: (() => void) | null = null;
   private static lastError: SettingsSyncError | null = null;
   private static writeQueue: Promise<void> = Promise.resolve();
 
@@ -256,6 +260,11 @@ export class AchievementSync {
       logger.error("Achievement sync could not load its local copy", error)
     );
     void this.syncNow();
+    if (!this.unsubscribeFeed) {
+      this.unsubscribeFeed = DriveChangeFeed.subscribe(
+        () => void this.syncNow()
+      );
+    }
     this.periodicTimer ??= setInterval(
       () => void this.syncNow(),
       PERIODIC_SYNC_MS

@@ -375,4 +375,12 @@ export class PersonalCloud {
   public static writeFile(key: string, data: Buffer) {
     return native().personalCloudWriteFile(key, data);
   }
+
+  /**
+   * Whether anything in the Drive folder changed since `token`, plus the token
+   * for next time. Null when there's no change feed to ask.
+   */
+  public static changes(token: string | null) {
+    return native().personalCloudChanges(token);
+  }
 }

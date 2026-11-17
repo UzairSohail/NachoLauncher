@@ -552,7 +552,9 @@ async function onOpenGame(game: Game, matchedPath: string) {
   })
     .then((userPreferences) => {
       if (userPreferences?.hideToTrayOnGameStart) {
-        WindowManager.mainWindow?.hide();
+        // Close rather than hide, so its renderer isn't held in memory
+        // while the game runs. The tray opens it again.
+        WindowManager.releaseMainWindow();
       }
     })
     .catch(() => {});

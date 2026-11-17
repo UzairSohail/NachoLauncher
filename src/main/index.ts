@@ -39,7 +39,7 @@ import { isWaylandSession } from "./services/linux-game-capture-session";
 import { recompilationGameSessions } from "./services/game-running-state";
 import { refreshPortableShortcutLauncher } from "./helpers/shortcut-launch";
 import { lookupCachedPlatform } from "./events/library/get-library";
-import { loadState } from "./main";
+import { loadState, whenApiStartupSettled } from "./main";
 import {
   loadSocialWindowsBounds,
   restoreSocialWindows,
@@ -210,10 +210,14 @@ const initializeApp = async () => {
   } catch (error) {
     logger.error("Failed to load app state during startup", error);
   }
-  // Optional integration failures must not interrupt launcher startup.
-  await initializeEpicIntegration().catch((error) => {
-    logger.warn("Epic integration initialization unavailable", error);
-  });
+  // Optional integration failures must not interrupt launcher startup, and
+  // the window shouldn't wait for it either.
+  // It runs after loadState's own Epic set-up so the two never overlap.
+  void whenApiStartupSettled()
+    .then(() => initializeEpicIntegration())
+    .catch((error) => {
+      logger.warn("Epic integration initialization unavailable", error);
+    });
 
   // Suspend can outlive the 60s stall watchdog; reconnect right away instead
   powerMonitor.on("suspend", suspendEpicPlaytime);
@@ -463,6 +467,7 @@ let canAppBeClosed = false;
 let isAppClosing = false;
 
 app.on("before-quit", async (e) => {
+  WindowManager.markAppQuitting();
   if (!canAppBeClosed) {
     e.preventDefault();
     if (isAppClosing) return;
