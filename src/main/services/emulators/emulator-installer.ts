@@ -34,6 +34,7 @@ import {
   writeShadps4VersionRecord,
 } from "./shadps4-files";
 import { assertValidEmulatorExecutable } from "./validate-emulator-executable";
+import { writeXeniaVersionRecord } from "./xenia-files";
 
 const execFileAsync = promisify(execFile);
 
@@ -80,14 +81,26 @@ const BINARY_TO_SYSTEM: Record<EmulatorBinary, EmulatorSystem> = {
   shadps4: "ps4",
   ppsspp: "psp",
   dolphin: "dolphin",
+  xenia: "xbox360",
 };
 
+// Xenia's native Linux build goes in its own folder so it never shadows the
+// Windows build (the recommended one on Linux) when Nacho looks for Xenia.
+const XENIA_NATIVE_DIRECTORY = "Native";
+
 const emulatorInstallDirectory = async (
-  binary: EmulatorBinary
+  binary: EmulatorBinary,
+  option?: ResolvedInstallOption
 ): Promise<string> => {
   const downloadsRoot = await getDownloadsPath();
   const system = BINARY_TO_SYSTEM[binary];
-  return path.join(downloadsRoot, KNOWN_BINARIES[system].displayName);
+  const directory = path.join(
+    downloadsRoot,
+    KNOWN_BINARIES[system].displayName
+  );
+  return option?.variant === "native"
+    ? path.join(directory, XENIA_NATIVE_DIRECTORY)
+    : directory;
 };
 
 const installMacosDmg = async (
@@ -175,7 +188,7 @@ const extractManagedEmulator = async (
   await SevenZip.extractFile({ filePath: archivePath, outputPath: extractDir });
 
   const knownBinary = KNOWN_BINARIES[BINARY_TO_SYSTEM[binary]];
-  if (binary === "shadps4") {
+  if (binary === "shadps4" || binary === "xenia") {
     await ensureExtractedExecutableBit(extractDir, knownBinary);
   }
 
@@ -225,6 +238,11 @@ const installShadps4Core = async (
   }
 };
 
+const recordXeniaVersion = (executable: string, version: string | null) =>
+  writeXeniaVersionRecord(executable, version).catch((error) => {
+    logger.warn("Failed to record Xenia version", error);
+  });
+
 /**
  * Downloads the resolved installer for an emulator option and runs it. The
  * option id is re-resolved server-side so the renderer never supplies the URL.
@@ -246,7 +264,7 @@ export const downloadAndInstallEmulator = async (
 
   const fileName = path.basename(option.fileName ?? option.downloadUrl);
   const isAppImage = option.kind === "linux-appimage";
-  const installDirectory = await emulatorInstallDirectory(binary);
+  const installDirectory = await emulatorInstallDirectory(binary, option);
   const dest = isAppImage
     ? path.join(installDirectory, fileName)
     : path.join(SystemPath.getPath("temp"), fileName);
@@ -289,6 +307,7 @@ export const downloadAndInstallEmulator = async (
     if (option.kind === "linux-appimage") {
       await addOwnerExecuteBit(dest);
       assertValidEmulatorExecutable(dest);
+      if (binary === "xenia") await recordXeniaVersion(dest, option.version);
       shell.showItemInFolder(dest);
       sendProgress({ binary, optionId, phase: "done", path: dest });
       return { ok: true, path: dest };
@@ -310,6 +329,8 @@ export const downloadAndInstallEmulator = async (
     if (binary === "shadps4") {
       await installShadps4Core(executable, installDirectory, optionId);
     }
+    if (binary === "xenia")
+      await recordXeniaVersion(executable, option.version);
     shell.showItemInFolder(executable);
     sendProgress({ binary, optionId, phase: "done", path: extractDir });
     return { ok: true, path: extractDir };

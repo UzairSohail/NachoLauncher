@@ -104,6 +104,7 @@ export const SYSTEM_TO_BINARY: Record<EmulatorSystem, EmulatorBinary> = {
   ps4: "shadps4",
   psp: "ppsspp",
   dolphin: "dolphin",
+  xbox360: "xenia",
 };
 
 export {
@@ -158,6 +159,7 @@ export const CLASSICS_PS_PLATFORM_LABELS: Partial<
   ps4: "PS4",
   psp: "PSP",
   dolphin: "GC/Wii",
+  xbox360: "X360",
 };
 
 export const resolveClassicsBadge = (

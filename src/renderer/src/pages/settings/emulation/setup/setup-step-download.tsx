@@ -30,6 +30,7 @@ const OFFICIAL_WEBSITES: Record<EmulatorBinary, string> = {
   shadps4: "https://shadps4.net/",
   ppsspp: "https://www.ppsspp.org/",
   dolphin: "https://dolphin-emu.org/",
+  xenia: "https://xenia.jp/",
 };
 
 const ARTICLE_KEYS: Partial<Record<EmulatorBinary, string>> = {
@@ -105,6 +106,8 @@ export function SetupStepDownload({ binary }: Readonly<Props>) {
   );
 
   const channelLabel = (option: ResolvedInstallOption): string | null => {
+    if (option.variant === "proton") return t("setup_install_variant_proton");
+    if (option.variant === "native") return t("setup_install_variant_native");
     if (option.channel === "release") return t("setup_install_channel_stable");
     if (option.channel === "prerelease")
       return t("setup_install_channel_prerelease");
@@ -166,6 +169,10 @@ export function SetupStepDownload({ binary }: Readonly<Props>) {
         <LinkExternalIcon size={12} />
       </button>
 
+      {binary === "xenia" && window.electron.platform === "linux" && (
+        <p className="setup-modal__body-intro">{t("setup_xenia_linux_note")}</p>
+      )}
+
       <div className="setup-modal__download-grid">
         {options === null && <InstallLoadingCard />}
 
@@ -194,11 +201,12 @@ export function SetupStepDownload({ binary }: Readonly<Props>) {
                   <span className="setup-modal__download-card-title">
                     {t("setup_install_with_hydra")}
                     {label ? ` · ${label}` : ""}
-                    {option.channel !== "prerelease" && (
-                      <span className="setup-modal__recommended-pill">
-                        {t("setup_recommended")}
-                      </span>
-                    )}
+                    {option.channel !== "prerelease" &&
+                      option.variant !== "native" && (
+                        <span className="setup-modal__recommended-pill">
+                          {t("setup_recommended")}
+                        </span>
+                      )}
                   </span>
                   <span className="setup-modal__download-card-desc">
                     {installStatusText(t, name, progress[option.id])}

@@ -31,6 +31,7 @@ import {
   levelKeys,
 } from "@main/level";
 import { AchievementWatcherManager } from "@main/services/achievements/achievement-watcher-manager";
+import { matchXbox360GamesByTitle } from "@main/services/emulators/xbox360-title-match";
 import type {
   ClassicsDisc,
   EmulatorSystem,
@@ -170,6 +171,7 @@ const SYSTEM_DEFAULT_PLATFORM: Record<EmulatorSystem, string | null> = {
   ps4: "PlayStation 4",
   psp: "PlayStation Portable",
   dolphin: null,
+  xbox360: "Microsoft Xbox 360",
 };
 
 export const persistEntryLocally = async (
@@ -370,6 +372,7 @@ const SYSTEM_CATALOGUE_PLATFORMS: Record<EmulatorSystem, string[]> = {
   ps4: ["Sony Playstation 4"],
   psp: ["Sony PSP"],
   dolphin: ["Nintendo GameCube", "Nintendo Wii"],
+  xbox360: ["Microsoft Xbox 360"],
 };
 
 const normalizePlatformName = (value: string): string =>
@@ -566,10 +569,40 @@ const resolveSkus = async (
   return { gameSkus, ps3Exe, ps3ExtractedForYml };
 };
 
+// Xbox 360 games the catalogue has no title ID for are looked up by name.
+const matchUnresolvedXbox360Titles = async (
+  gameSkus: GameSku[],
+  skuLookup: SkuLookup,
+  language: string,
+  signal: CancelSignal
+): Promise<TitleMatches> => {
+  const queries = gameSkus
+    .filter(
+      ({ game, sku }) =>
+        !game.wrongPlatform && !(sku && skuLookup.has(normalizeSku(sku)))
+    )
+    .map(({ game }) => ({ key: game.primaryPath, name: game.name }));
+  if (queries.length === 0) return new Map();
+
+  const matches = await matchXbox360GamesByTitle(
+    queries,
+    language,
+    signal.abortController?.signal
+  );
+  logger.log("[launchbox-import] Xbox 360 title fallback", {
+    searched: queries.length,
+    matched: matches.size,
+  });
+  return matches;
+};
+
+type TitleMatches = Map<string, LaunchboxShopDetailsEntry>;
+
 const buildEnriched = (
   system: EmulatorSystem,
   gameSkus: GameSku[],
-  skuLookup: SkuLookup
+  skuLookup: SkuLookup,
+  titleMatches: TitleMatches = new Map()
 ): {
   enriched: EnrichedGame[];
   groupCanonical: Map<string, LaunchboxShopDetailsEntry>;
@@ -592,7 +625,10 @@ const buildEnriched = (
       return { game, sku, entry: null, groupKey, reason: "wrong_platform" };
     }
 
-    const entry = sku ? (skuLookup.get(normalizeSku(sku)) ?? null) : null;
+    const entry =
+      (sku ? skuLookup.get(normalizeSku(sku)) : undefined) ??
+      titleMatches.get(game.primaryPath) ??
+      null;
     const platformOk = entry
       ? entryMatchesSystemPlatform(entry, system)
       : false;
@@ -883,10 +919,22 @@ export async function runLaunchboxImport(
   );
   if (signal.cancelled) return cancelledResult();
 
+  const titleMatches =
+    system === "xbox360"
+      ? await matchUnresolvedXbox360Titles(
+          gameSkus,
+          skuLookup,
+          language,
+          signal
+        )
+      : new Map<string, LaunchboxShopDetailsEntry>();
+  if (signal.cancelled) return cancelledResult();
+
   const { enriched, groupCanonical } = buildEnriched(
     system,
     gameSkus,
-    skuLookup
+    skuLookup,
+    titleMatches
   );
 
   const matchedEntries = new Map<string, LaunchboxShopDetailsEntry>();

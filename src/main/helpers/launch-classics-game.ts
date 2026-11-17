@@ -24,6 +24,15 @@ import { prepareEmulatorSouvenirs } from "@main/services/emulators/prepare-emula
 import { cleanupEmulatorSouvenirSession } from "@main/services/emulators/emulator-souvenir-config";
 import { buildShadps4LaunchArguments } from "@main/services/emulators/shadps4-files";
 import {
+  buildXeniaLaunchArguments,
+  xeniaNeedsProton,
+} from "@main/services/emulators/xenia-files";
+import {
+  findGodContainerFile,
+  GOD_CONTENT_DIRECTORY,
+} from "@main/services/emulators/xbox360-disc-reader";
+import { buildXeniaProtonLaunch } from "./xenia-proton-launch";
+import {
   holdGameHelpersBeforeLaunch,
   releaseGameHelpersIfIdle,
 } from "@main/services/screenshots";
@@ -148,7 +157,16 @@ const buildEmulatorArgs = (
       return ["--pause-menu-exit", "--fullscreen", discPath];
     case "dolphin":
       return ["--batch", "--exec", discPath];
+    case "xenia":
+      return buildXeniaLaunchArguments(discPath, executablePath);
   }
+};
+
+// A Games on Demand game is stored as a folder; Xenia boots the package file
+// inside it.
+const resolveXbox360BootTarget = async (discPath: string): Promise<string> => {
+  if (path.basename(discPath) !== GOD_CONTENT_DIRECTORY) return discPath;
+  return (await findGodContainerFile(discPath)) ?? discPath;
 };
 
 const assertBiosInstalled = async (
@@ -240,6 +258,7 @@ export const launchClassicsGame = async (
     if (config.binary === "pcsx2" && isMdsPath(discPath)) {
       return resolvePs2MdsBootTarget(discPath);
     }
+    if (system === "xbox360") return resolveXbox360BootTarget(discPath);
     return discPath;
   };
 
@@ -272,12 +291,32 @@ export const launchClassicsGame = async (
     homePath: os.homedir(),
   });
 
+  // On Linux the Windows build of Xenia runs through Proton (umu-run).
+  const protonLaunch =
+    config.binary === "xenia" && xeniaNeedsProton(executableTarget)
+      ? await buildXeniaProtonLaunch({
+          executableTarget,
+          args: baseArgs,
+          preferences: userPreferences,
+          useMangohud: wrapperCommands.includes("mangohud"),
+        })
+      : null;
+
   const resolvedLaunchCommand = resolveLaunchCommand({
-    baseCommand: flatpakLaunch?.command ?? executableTarget,
-    baseArgs: flatpakLaunch?.args ?? baseArgs,
+    baseCommand:
+      protonLaunch?.command ?? flatpakLaunch?.command ?? executableTarget,
+    baseArgs: protonLaunch?.args ?? flatpakLaunch?.args ?? baseArgs,
     launchOptions: null,
-    wrapperCommands,
+    wrapperCommands: protonLaunch
+      ? wrapperCommands.filter((command) => command !== "mangohud")
+      : wrapperCommands,
   });
+  if (protonLaunch) {
+    resolvedLaunchCommand.env = {
+      ...protonLaunch.env,
+      ...resolvedLaunchCommand.env,
+    };
+  }
 
   const workingDirectory = path.dirname(executableTarget);
 

@@ -5,6 +5,7 @@ import type {
   EmulatorInstallChannel,
   EmulatorInstallKind,
   EmulatorInstallLinkKind,
+  EmulatorInstallVariant,
   ResolvedInstallOption,
 } from "@types";
 
@@ -29,6 +30,7 @@ interface GithubAssetSource {
   channelLabel: EmulatorInstallChannel | null;
   assetPattern: RegExp;
   kind: Exclude<EmulatorInstallKind, "link">;
+  variant?: EmulatorInstallVariant;
 }
 
 interface LinkSource {
@@ -294,6 +296,50 @@ const shadps4Entries = (
   ];
 };
 
+const XENIA_REPO = "xenia-canary/xenia-canary";
+
+/**
+ * Xenia Canary publishes a Windows build and an experimental native Linux
+ * AppImage. On Linux (SteamOS included) the Windows build running through
+ * Proton is the more compatible choice, so it is offered first and the native
+ * build second. There is no macOS or ARM build.
+ */
+const xeniaEntries = (
+  os: InstallOs,
+  arch: InstallArch
+): EmulatorSourceEntry[] => {
+  if (arch !== "x64" || os === "darwin") return [];
+
+  const windowsBuild: GithubAssetSource = {
+    type: "github",
+    id: os === "win32" ? "xenia-install" : "xenia-proton",
+    binary: "xenia",
+    repo: XENIA_REPO,
+    channel: "latest",
+    channelLabel: null,
+    assetPattern: /^xenia_canary_windows\.(7z|zip)$/i,
+    kind: "portable-archive",
+    ...(os === "linux" ? { variant: "proton" as const } : {}),
+  };
+
+  if (os === "win32") return [windowsBuild];
+
+  return [
+    windowsBuild,
+    {
+      type: "github",
+      id: "xenia-native",
+      binary: "xenia",
+      repo: XENIA_REPO,
+      channel: "latest",
+      channelLabel: null,
+      assetPattern: /^xenia_canary_linux\.AppImage$/i,
+      kind: "linux-appimage",
+      variant: "native",
+    },
+  ];
+};
+
 interface GithubTag {
   name: string;
 }
@@ -368,6 +414,7 @@ const githubEntries = (
   if (binary === "rpcs3") return rpcs3Entries(os, arch);
   if (binary === "shadps4") return shadps4Entries(os, arch);
   if (binary === "ppsspp") return ppssppEntries(os, arch);
+  if (binary === "xenia") return xeniaEntries(os, arch);
   return [];
 };
 
@@ -445,6 +492,7 @@ const resolveGithubOption = async (
       htmlUrl: null,
       linkUrl: `https://github.com/${entry.repo}/releases`,
       linkKind: "release_page",
+      variant: entry.variant ?? null,
     };
   }
 
@@ -464,6 +512,7 @@ const resolveGithubOption = async (
       htmlUrl: release.html_url,
       linkUrl: release.html_url,
       linkKind: "release_page",
+      variant: entry.variant ?? null,
     };
   }
 
@@ -478,6 +527,7 @@ const resolveGithubOption = async (
     htmlUrl: release.html_url,
     linkUrl: null,
     linkKind: null,
+    variant: entry.variant ?? null,
   };
 };
 

@@ -12,5 +12,6 @@ export const platformToSystem = (
   if (/playstation(?!\s*(?:[5-9]|vita))|\bps1\b|\bpsx\b/.test(p)) return "ps1";
   if (/game\s*cube/.test(p)) return "dolphin";
   if (/^(nintendo\s+)?wii$/.test(p.trim())) return "dolphin";
+  if (/xbox\s*360|\bx360\b/.test(p)) return "xbox360";
   return null;
 };

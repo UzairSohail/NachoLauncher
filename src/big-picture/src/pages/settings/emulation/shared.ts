@@ -8,6 +8,7 @@ import ps3Art from "@renderer/assets/emulation/ps3.png";
 import ps4Art from "@renderer/assets/emulation/ps4.png";
 import pspArt from "@renderer/assets/emulation/icons/ppsspp.png";
 import dolphinArt from "@renderer/assets/emulation/icons/dolphin.png";
+import xeniaArt from "@renderer/assets/emulation/icons/xenia.png";
 
 export { EMULATOR_ICONS, KNOWN_BINARY_LABELS };
 
@@ -24,6 +25,7 @@ export const EMULATION_SYSTEM_LABELS: Record<EmulatorSystem, string> = {
   ps4: "PlayStation 4",
   psp: "PlayStation Portable",
   dolphin: "GameCube & Wii",
+  xbox360: "Xbox 360",
 };
 
 export const EMULATION_SYSTEM_ART: Record<EmulatorSystem, string> = {
@@ -33,6 +35,7 @@ export const EMULATION_SYSTEM_ART: Record<EmulatorSystem, string> = {
   ps4: ps4Art,
   psp: pspArt,
   dolphin: dolphinArt,
+  xbox360: xeniaArt,
 };
 
 export function formatBytes(bytes: number): string {

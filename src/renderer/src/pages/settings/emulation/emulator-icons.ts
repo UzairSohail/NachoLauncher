@@ -7,6 +7,7 @@ import rpcs3Icon from "@renderer/assets/emulation/icons/rpcs3.png";
 import shadps4Icon from "@renderer/assets/emulation/icons/shadps4.png";
 import ppssppIcon from "@renderer/assets/emulation/icons/ppsspp.png";
 import dolphinIcon from "@renderer/assets/emulation/icons/dolphin.png";
+import xeniaIcon from "@renderer/assets/emulation/icons/xenia.png";
 
 export const EMULATOR_ICONS: Partial<Record<EmulatorBinary, string>> = {
   duckstation: duckstationIcon,
@@ -15,6 +16,7 @@ export const EMULATOR_ICONS: Partial<Record<EmulatorBinary, string>> = {
   shadps4: shadps4Icon,
   ppsspp: ppssppIcon,
   dolphin: dolphinIcon,
+  xenia: xeniaIcon,
 };
 
 export const RETROARCH_EMULATOR_ICON = retroarchIcon;

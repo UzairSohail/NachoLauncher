@@ -29,6 +29,7 @@ const LOG_FORMATS: Record<
     titleFirst: true,
   },
   dolphin: RCHEEVOS_AWARD_FORMAT,
+  xbox360: null,
   nes: RCHEEVOS_AWARD_FORMAT,
   snes: RCHEEVOS_AWARD_FORMAT,
   n64: RCHEEVOS_AWARD_FORMAT,

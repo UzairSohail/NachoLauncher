@@ -104,7 +104,8 @@ export const prepareEmulatorSouvenirs = async (
     return null;
   }
 
-  if (system === "ps2" || system === "ps4") {
+  // Xenia has no RetroAchievements support to track.
+  if (system === "ps2" || system === "ps4" || system === "xbox360") {
     return null;
   }
 

@@ -381,10 +381,14 @@ export function EmulationSettingsSection({
       },
       dolphin: {
         left: getItemFocusTarget(EMULATION_OVERVIEW_CARD_FOCUS_IDS.psp),
+        right: getItemFocusTarget(EMULATION_OVERVIEW_CARD_FOCUS_IDS.xbox360),
+      },
+      xbox360: {
+        left: getItemFocusTarget(EMULATION_OVERVIEW_CARD_FOCUS_IDS.dolphin),
         right: getItemFocusTarget(EMULATION_OVERVIEW_CARD_FOCUS_IDS.retroarch),
       },
       retroarch: {
-        left: getItemFocusTarget(EMULATION_OVERVIEW_CARD_FOCUS_IDS.dolphin),
+        left: getItemFocusTarget(EMULATION_OVERVIEW_CARD_FOCUS_IDS.xbox360),
         right: { type: "block" },
       },
     }),

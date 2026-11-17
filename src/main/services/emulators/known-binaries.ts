@@ -1,6 +1,7 @@
 import type { EmulatorBinary, EmulatorSystem } from "@types";
 
 import { readShadps4InstalledVersion } from "./shadps4-files.js";
+import { readXeniaInstalledVersion } from "./xenia-files.js";
 
 export interface KnownBinary {
   system: EmulatorSystem;
@@ -140,6 +141,30 @@ export const KNOWN_BINARIES: Record<EmulatorSystem, KnownBinary> = {
       ".wad",
     ],
     romDirectoryMarkers: [],
+  },
+  xbox360: {
+    system: "xbox360",
+    binary: "xenia",
+    displayName: "Xenia Canary",
+    // Xenia Canary ships a native (experimental) Linux AppImage, but most
+    // Linux and SteamOS players run the Windows build through Proton, so the
+    // Windows executable is a valid pick on Linux too.
+    linuxNames: [
+      "xenia_canary_linux.AppImage",
+      "xenia_canary",
+      "xenia_canary.exe",
+    ],
+    windowsNames: ["xenia_canary.exe", "xenia.exe"],
+    macosBundleNames: [],
+    flatpakIds: [],
+    // Xenia has no version flag; the installed release tag is recorded at
+    // install time instead.
+    versionFlags: [],
+    readVersion: readXeniaInstalledVersion,
+    // Disc images, extracted games (default.xex) and Xenia's .zar archives.
+    // Games on Demand packages are found through their 00007000 folder.
+    romExtensions: [".iso", ".xex", ".zar"],
+    romDirectoryMarkers: ["00007000"],
   },
 };
 

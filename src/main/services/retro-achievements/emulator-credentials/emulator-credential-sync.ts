@@ -67,6 +67,7 @@ const SYSTEM_TO_EMULATOR: Partial<
   ps4: null,
   psp: "ppsspp",
   dolphin: "dolphin",
+  xbox360: null,
 };
 
 export const getCredentialEmulatorForSystem = (
