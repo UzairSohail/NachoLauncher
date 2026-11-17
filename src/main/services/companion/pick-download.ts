@@ -36,7 +36,6 @@ const isConfigured = (
     case Downloader.VikingFile:
     case Downloader.Hydra:
     case Downloader.Torrent:
-    case Downloader.Epic:
       return false;
     default:
       return true;

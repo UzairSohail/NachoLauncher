@@ -7,10 +7,6 @@ import type {
   ScreenshotHotkeyBinding,
 } from "./screenshot.types";
 import type { ProfileVisibility } from "./index";
-import type {
-  EpicDownloadMetadata,
-  EpicInstallation,
-} from "./epic-managed.types";
 
 export type SubscriptionStatus = "active" | "pending" | "cancelled";
 
@@ -67,7 +63,6 @@ export interface Game extends LibraryCatalogueMetadata {
   playTimeInMilliseconds: number;
   steamPlayTimeInMilliseconds?: number;
   epicPlayTimeInMilliseconds?: number;
-  epicInstallation?: EpicInstallation;
   hasActiveEpicImport?: boolean;
   epicImportScope?: {
     environment: string;
@@ -143,7 +138,6 @@ export interface DownloadFile {
 }
 
 export interface Download {
-  epic?: EpicDownloadMetadata;
   shop: GameShop;
   objectId: string;
   uri: string;

@@ -63,7 +63,7 @@ const runDownload = async (
     "node:fs": fs,
     "node:path": path,
     "node:stream/promises": { pipeline },
-    "@main/services/epic/cloud-saves": {
+    "@main/services/cloud-save/save-file-gate": {
       runWithHydraSaveGuard: <T>(task: () => Promise<T>) => task(),
     },
     yaml: YAML,

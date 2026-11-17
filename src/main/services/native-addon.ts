@@ -5,7 +5,6 @@ import { Worker } from "node:worker_threads";
 
 import { app } from "electron";
 import type { ProcessPayload } from "./download/types";
-import type { EpicProcessNode } from "./epic/managed-process-tracker";
 import type { PersonalCloudNativeModule } from "./personal-cloud/native";
 import type {
   BuildLocalGameSnapshotInput,
@@ -125,9 +124,22 @@ export type InPlaceExtractionResult = {
   message?: string | null;
 };
 
+export interface ProcessTreeNode {
+  pid: number;
+  parentPid?: number | null;
+  exe: string | null;
+  /** Linux kernel start ticks, kept as text to avoid loss of integer precision. */
+  startTime?: string | null;
+  invocationId?: string | null;
+  winePrefixPath?: string | null;
+  peExecutablePath?: string | null;
+  inspectionComplete?: boolean;
+  cwd?: string | null;
+}
+
 export type NativeProcessPayload = ProcessPayload &
   Pick<
-    EpicProcessNode,
+    ProcessTreeNode,
     | "startTime"
     | "invocationId"
     | "winePrefixPath"
@@ -239,7 +251,7 @@ type HydraNativeModule = PersonalCloudNativeModule & {
 export type SystemProcessMap = {
   processMap: Record<string, string[]>;
   winePrefixMap: Record<string, string>;
-  processTree?: EpicProcessNode[];
+  processTree?: ProcessTreeNode[];
   linuxProcesses: Array<{
     name: string;
     cwd: string;

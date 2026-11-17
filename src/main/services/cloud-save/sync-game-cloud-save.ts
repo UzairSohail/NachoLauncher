@@ -39,7 +39,7 @@ import {
   shouldRetryCloudSaveStateChange,
 } from "./snapshot-retry-policy";
 import { cloudSaveOperationGate } from "./operation-gate";
-import { runWithHydraSaveGuard } from "../epic/cloud-saves";
+import { runWithHydraSaveGuard } from "./save-file-gate";
 import { assertCloudSaveDeletionNotPending } from "./pending-deletion";
 import {
   type ProgressCallback,

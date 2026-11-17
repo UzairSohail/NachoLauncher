@@ -4,7 +4,6 @@ export type GameSettingsCategoryId =
   | "assets"
   | "personal_cloud"
   | "hydra_cloud"
-  | "epic_cloud"
   | "hydra_cloud_legacy"
   | "compatibility"
   | "downloads"

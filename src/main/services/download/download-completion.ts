@@ -2,7 +2,6 @@ import type { Download } from "@types";
 
 interface DownloadCompletionInput {
   usingJsDownloader: boolean;
-  usingEpicDownloader?: boolean;
   isCheckingFiles: boolean;
   isDownloadingMetadata: boolean;
   progress: number;
@@ -11,7 +10,6 @@ interface DownloadCompletionInput {
 
 export function shouldFinalizeDownload({
   usingJsDownloader,
-  usingEpicDownloader,
   isCheckingFiles,
   isDownloadingMetadata,
   progress,
@@ -21,7 +19,7 @@ export function shouldFinalizeDownload({
     return false;
   }
 
-  if (usingJsDownloader || usingEpicDownloader) {
+  if (usingJsDownloader) {
     return downloadStatus === "complete";
   }
 

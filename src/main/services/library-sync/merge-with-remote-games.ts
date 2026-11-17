@@ -6,7 +6,6 @@ import {
   getCollectionOrderRevision,
 } from "./library-write-queue";
 import type { HydraApiAuthContext } from "../hydra-auth-context";
-import type { EpicConnection } from "../../../types/epic-integration.types";
 import type {
   ArtworkAssetType,
   Game,
@@ -627,23 +626,8 @@ const mergeWithRemoteGamesOnce = async (
       HydraApi.isLoggedIn() && HydraApi.hasActiveSubscription();
     const remoteGames = await fetchRemoteGames(context, networkOptions);
     if (!current()) return false;
-    let epicConnectionId = expectedEpicConnectionId;
-    if (
-      !epicConnectionId &&
-      remoteGames.some((game) => game.hasActiveEpicImport)
-    ) {
-      const connection = await HydraApi.get<EpicConnection>(
-        "/profile/integrations/epic",
-        undefined,
-        {
-          ...networkOptions,
-          ...(context ? { authContext: context } : {}),
-          logResponseBody: false,
-        }
-      );
-      if (!connection.connected) return false;
-      epicConnectionId = connection.connectionId;
-    }
+    // Epic linking was removed, so only a caller-supplied connection counts.
+    const epicConnectionId = expectedEpicConnectionId;
     if (!current()) return false;
     const remoteKeys = new Set(
       remoteGames.map((game) => levelKeys.game(game.shop, game.objectId))

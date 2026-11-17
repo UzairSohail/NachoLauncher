@@ -1,5 +1,3 @@
-import { getContextualEpicGame } from "@main/services/epic/import-visibility";
-import { HydraApi } from "@main/services/hydra-api";
 import { registerEvent } from "../register-event";
 import { gamesSublevel, levelKeys } from "@main/level";
 import { getDisplayedPlayTimeInMilliseconds } from "@shared";
@@ -15,9 +13,7 @@ const getGameReviewPlaytime = async (
   );
   if (!recordIncludingRemoved) return 0;
 
-  return getDisplayedPlayTimeInMilliseconds(
-    getContextualEpicGame(recordIncludingRemoved, HydraApi.getAuthContext())
-  );
+  return getDisplayedPlayTimeInMilliseconds(recordIncludingRemoved);
 };
 
 registerEvent("getGameReviewPlaytime", getGameReviewPlaytime);

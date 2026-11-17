@@ -151,11 +151,7 @@ export function GameDetailsContextProvider({
 
   useEffect(() => {
     const members = presentation?.members ?? (game ? [game] : []);
-    const eligible = members.filter(
-      (member) =>
-        member.shop === "steam" ||
-        (member.shop === "epic" && member.hasActiveEpicImport)
-    );
+    const eligible = members.filter((member) => member.shop === "steam");
     const key = JSON.stringify([
       userDetails?.id,
       shop,
@@ -165,14 +161,9 @@ export function GameDetailsContextProvider({
     if (pageSyncKey.current === key) return;
     pageSyncKey.current = key;
     for (const member of eligible) {
-      if (member.shop === "epic")
-        void window.electron
-          .syncEpicGameOnGamePage?.(member.objectId)
-          .catch(() => {});
-      else
-        void window.electron
-          .syncSteamGameOnGamePage?.(member.objectId)
-          .catch(() => {});
+      void window.electron
+        .syncSteamGameOnGamePage?.(member.objectId)
+        .catch(() => {});
     }
   }, [presentation, game, shop, objectId, userDetails?.id]);
 

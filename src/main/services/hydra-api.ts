@@ -1,5 +1,4 @@
 import { clearGamesPlaytimeState } from "./game-running-state";
-import { clearStaleEpicImports } from "./epic/import-cleanup";
 import axios, { AxiosError, AxiosInstance } from "axios";
 import jwt from "jsonwebtoken";
 import { WindowManager } from "./window-manager";
@@ -228,10 +227,6 @@ export class HydraApi {
       this.secondsToMilliseconds(expiresIn) -
       this.EXPIRATION_OFFSET_IN_MS;
 
-    await clearStaleEpicImports(
-      null,
-      () => generation === this.authContexts.generation
-    );
     await clearGamesRemoteIds(
       () => generation === this.authContexts.generation
     );
@@ -244,10 +239,6 @@ export class HydraApi {
       subscription: null,
     };
     this.activateAuthContext(generation);
-    await clearStaleEpicImports(
-      this.getAuthContext(),
-      () => generation === this.authContexts.generation
-    );
 
     const { AchievementWatcherManager } = await import(
       "./achievements/achievement-watcher-manager"
@@ -296,9 +287,6 @@ export class HydraApi {
     );
     if (generation !== this.authContexts.generation) return;
     void startSteamSyncOnStartup();
-    const { startEpicSyncOnStartup } = await import("./epic");
-    if (generation !== this.authContexts.generation) return;
-    void startEpicSyncOnStartup();
 
     if (WindowManager.mainWindow) {
       WindowManager.mainWindow.webContents.send("on-signin");
@@ -323,10 +311,6 @@ export class HydraApi {
       subscription: null,
     };
 
-    await clearStaleEpicImports(
-      null,
-      () => generation === this.authContexts.generation
-    );
     const persistence = this.clearPersistedAuth(cleanupUserData);
     try {
       const { AchievementWatcherManager } = await import(
@@ -470,10 +454,6 @@ export class HydraApi {
     const generation = this.authContexts.invalidate();
     clearGamesPlaytimeState();
     this.activateAuthContext(generation);
-    await clearStaleEpicImports(
-      this.getAuthContext(),
-      () => generation === this.authContexts.generation
-    );
 
     const updatedUserData = await getUserData();
     if (generation !== this.authContexts.generation) return;
@@ -600,10 +580,6 @@ export class HydraApi {
         refreshToken: "",
         subscription: null,
       };
-      await clearStaleEpicImports(
-        null,
-        () => signedOutGeneration === this.authContexts.generation
-      );
       const persistence = this.clearPersistedAuth();
       try {
         const { AchievementWatcherManager } = await import(

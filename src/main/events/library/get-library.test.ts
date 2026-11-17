@@ -6,7 +6,6 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import type { IpcMainInvokeEvent } from "electron";
 import type { Game, LibraryGame, ShopAssets } from "@types";
-import { getContextualEpicGame } from "../../services/epic/import-visibility.js";
 import { belongsToLibraryCollection } from "../../services/library-sync/game-visibility.js";
 import { EpicLibraryArtworkQueue } from "../../services/epic-library-artwork-queue.js";
 
@@ -113,7 +112,6 @@ function fixture(
     "@main/services/hydra-api": {
       HydraApi: { getAuthContext: () => null, isLoggedIn: () => true },
     },
-    "@main/services/epic/import-visibility": { getContextualEpicGame },
     "@main/services/library-sync/game-visibility": {
       belongsToLibraryCollection,
     },

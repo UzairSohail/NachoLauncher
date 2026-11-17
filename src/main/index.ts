@@ -4,7 +4,6 @@ import {
   app,
   BrowserWindow,
   crashReporter,
-  dialog,
   net,
   powerMonitor,
   protocol,
@@ -39,7 +38,7 @@ import { isWaylandSession } from "./services/linux-game-capture-session";
 import { recompilationGameSessions } from "./services/game-running-state";
 import { refreshPortableShortcutLauncher } from "./helpers/shortcut-launch";
 import { lookupCachedPlatform } from "./events/library/get-library";
-import { loadState, whenApiStartupSettled } from "./main";
+import { loadState } from "./main";
 import {
   loadSocialWindowsBounds,
   restoreSocialWindows,
@@ -56,12 +55,6 @@ import {
 } from "./services/steam-integration/steam-openid-return";
 import { steamSyncOrchestrator } from "./services/steam-integration/steam-sync-orchestrator";
 import { achievementNotificationPresenter } from "./services/achievement-notification-presenter-electron";
-import {
-  initializeEpicIntegration,
-  shutdownEpicIntegration,
-  suspendEpicPlaytime,
-  resumeEpicPlaytime,
-} from "./services/epic";
 import { removeAppImageLibraryPath } from "./helpers/remove-appimage-library-path";
 
 if (process.platform === "linux") removeAppImageLibraryPath();
@@ -210,19 +203,8 @@ const initializeApp = async () => {
   } catch (error) {
     logger.error("Failed to load app state during startup", error);
   }
-  // Optional integration failures must not interrupt launcher startup, and
-  // the window shouldn't wait for it either.
-  // It runs after loadState's own Epic set-up so the two never overlap.
-  void whenApiStartupSettled()
-    .then(() => initializeEpicIntegration())
-    .catch((error) => {
-      logger.warn("Epic integration initialization unavailable", error);
-    });
-
   // Suspend can outlive the 60s stall watchdog; reconnect right away instead
-  powerMonitor.on("suspend", suspendEpicPlaytime);
   powerMonitor.on("resume", () => {
-    resumeEpicPlaytime();
     SSEClient.reconnectNow();
     DownloadOrchestrator.onNetworkStatusChanged({
       online: true,
@@ -473,19 +455,6 @@ app.on("before-quit", async (e) => {
     if (isAppClosing) return;
     isAppClosing = true;
     await saveSocialWindowsSession();
-    try {
-      await shutdownEpicIntegration();
-    } catch {
-      isAppClosing = false;
-      logger.error(
-        "Epic operation shutdown is unconfirmed; application remains open"
-      );
-      dialog.showErrorBox(
-        i18n.t("settings.epic_games"),
-        i18n.t("settings.epic_shutdown_failed")
-      );
-      return;
-    }
     DownloadOrchestrator.cancelPendingDebridPreparations();
     PowerSaveBlockerManager.reset();
     ScreenshotInputService.shutdown();

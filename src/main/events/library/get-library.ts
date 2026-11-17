@@ -1,4 +1,3 @@
-import { getContextualEpicGame } from "@main/services/epic/import-visibility";
 import { epicLibraryArtworkQueue } from "@main/services/epic-library-artwork";
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { logger } from "@main/services/logger";
@@ -91,13 +90,8 @@ const resolveInstallerSize = (
 const getLibrary = async (
   collection: "visible" | "hidden" | "all" = "visible"
 ): Promise<LibraryGame[]> => {
-  const authContext = HydraApi.getAuthContext();
   const entries = (await gamesSublevel.iterator().all())
     .filter(([_key, game]) => belongsToLibraryCollection(game, collection))
-    .map(
-      ([key, storedGame]) =>
-        [key, getContextualEpicGame(storedGame, authContext)] as const
-    )
     .filter(([_key, game]) => !game.isDeleted);
   const keys = entries.map(([key]) => key);
   const catalogueKeys = entries.map(([key, game]) =>

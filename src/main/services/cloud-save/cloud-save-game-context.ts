@@ -34,7 +34,6 @@ const getCloudSavePlatform = (): CloudSavePathContext["platform"] => {
 
 const getRequestedWinePrefixPath = async (
   usesWindowsCompatibility: boolean,
-  shop: GameShop,
   game: Game | undefined,
   objectId: string,
   overrides?: CloudSaveGameContextOverrides
@@ -42,17 +41,6 @@ const getRequestedWinePrefixPath = async (
   if (!usesWindowsCompatibility) return null;
   if (overrides && "winePrefixPath" in overrides) {
     return overrides.winePrefixPath ?? null;
-  }
-  // Managed Epic games run in an owner/artifact prefix, not the per-game default.
-  if (shop === "epic" && game?.epicInstallation) {
-    const { resolveEpicLinuxPrefixPath } = await import(
-      "../epic/linux-runtime"
-    );
-    return resolveEpicLinuxPrefixPath(
-      game,
-      game.epicInstallation.owner,
-      game.epicInstallation.artifactId
-    );
   }
   return Wine.getEffectivePrefixPath(game?.winePrefixPath, objectId);
 };
@@ -94,7 +82,6 @@ export const getCloudSaveGameContext = async (
     executablePath?.toLowerCase().endsWith(".exe") === true;
   const requestedWinePrefixPath = await getRequestedWinePrefixPath(
     usesWindowsCompatibility,
-    shop,
     game,
     objectId,
     overrides

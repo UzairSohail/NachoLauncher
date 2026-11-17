@@ -10,13 +10,8 @@ import {
   PlusCircleIcon,
   SyncIcon,
 } from "@primer/octicons-react";
-import { Button, ConfirmationModal, Modal } from "@renderer/components";
+import { Button, ConfirmationModal } from "@renderer/components";
 import type { LibraryGame } from "@types";
-import {
-  canRetryEpicLaunchWithLocalSaves,
-  getEpicLaunchError,
-  getEpicManagedError,
-} from "@renderer/helpers/epic-managed-error";
 import { FileArchive, XCircle } from "lucide-react";
 import {
   useAppSelector,
@@ -27,8 +22,6 @@ import {
   useToast,
   useUserDetails,
 } from "@renderer/hooks";
-import { useEpicManagedConnection } from "@renderer/hooks/use-epic-managed";
-import { useEpicGameUpdate } from "@renderer/hooks/use-epic-game-update";
 import { useCallback, useContext, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -39,17 +32,12 @@ import {
   handleClassicsLaunchError,
 } from "@renderer/helpers";
 import { DiscSelectionModal } from "../modals/disc-selection-modal";
-import { EpicCloudSaveConflictModal } from "../modals/epic-cloud-save-conflict-modal";
 
 import "./hero-panel-actions.scss";
 import { useEffect } from "react";
 import {
   applyLibraryGroupAction,
-  isEpicMemberInCurrentScope,
-  isEpicUpdateInterrupted,
   isLibraryGameDownloading,
-  getEpicLaunchOptions,
-  getEpicMemberDownload,
   getOfficialStoreMembers,
 } from "@shared";
 
@@ -57,7 +45,7 @@ export function HeroPanelActions() {
   const [toggleLibraryGameDisabled, setToggleLibraryGameDisabled] =
     useState(false);
 
-  const { isGameDeleting, lastPacket, resumeDownload } = useDownload();
+  const { isGameDeleting } = useDownload();
   const { userDetails } = useUserDetails();
 
   const {
@@ -81,17 +69,6 @@ export function HeroPanelActions() {
   } = useContext(gameDetailsContext);
 
   const isGameDownloading = isLibraryGameDownloading(downloadGame);
-  const { installationAvailable: epicInstallationAvailable, connection } =
-    useEpicManagedConnection();
-  const epicDownload =
-    game?.shop === "epic" ? getEpicMemberDownload(game, downloadGame) : null;
-  const epicUpdate = useEpicGameUpdate(
-    game,
-    epicInstallationAvailable && isEpicMemberInCurrentScope(game, connection),
-    epicDownload?.status
-  );
-  const epicUpdateInterrupted =
-    !!epicDownload && isEpicUpdateInterrupted(epicDownload);
 
   const pickGameExecutable = useGameExecutablePicker();
   const finishedDownloadStep = useFinishedDownloadStep(downloadGame);
@@ -113,15 +90,6 @@ export function HeroPanelActions() {
     setShowDiscSelectionModal(true);
     navigate(location.pathname + location.search, { replace: true, state: {} });
   }, [location, game?.shop, game?.discs?.length, navigate]);
-  const [localSaveRetry, setLocalSaveRetry] = useState<{
-    member: LibraryGame;
-    skipUpdateCheck: boolean;
-  } | null>(null);
-  const [epicSaveConflict, setEpicSaveConflict] = useState<LibraryGame | null>(
-    null
-  );
-  const [canRetryOffline, setCanRetryOffline] = useState(false);
-  const [canRetryLocalSaves, setCanRetryLocalSaves] = useState(false);
   const officialMembers = getOfficialStoreMembers(
     presentation?.members ?? (game ? [game] : [])
   );
@@ -140,16 +108,9 @@ export function HeroPanelActions() {
     launchGeneration.current++;
   }, []);
   useEffect(() => {
-    const invalidate = () => {
-      invalidateLaunch();
-      setLocalSaveRetry(null);
-      setEpicSaveConflict(null);
-    };
-    invalidate();
-    const stop = window.electron?.onEpicConnectionChanged?.(invalidate);
+    invalidateLaunch();
     return () => {
       invalidateLaunch();
-      stop?.();
     };
   }, [shop, objectId, invalidateLaunch]);
 
@@ -368,96 +329,20 @@ export function HeroPanelActions() {
         game.launchOptions
       );
   };
-  const launchMember = async (
-    member: LibraryGame,
-    localOnce = false,
-    offline = false,
-    skipUpdateCheck = false
-  ) => {
+  const launchMember = async (member: LibraryGame) => {
     if (!member.executablePath) return;
-    setLocalSaveRetry(null);
-    setEpicSaveConflict(null);
-    setCanRetryOffline(false);
-    setCanRetryLocalSaves(false);
     const generation = launchGeneration.current;
     try {
       await window.electron.openGame(
         member.shop,
         member.objectId,
         member.executablePath,
-        member.launchOptions,
-        getEpicLaunchOptions(localOnce, offline, skipUpdateCheck)
+        member.launchOptions
       );
-    } catch (error) {
-      if (generation !== launchGeneration.current) return;
-      const code =
-        member.shop === "epic" ? getEpicLaunchError(error) : undefined;
-      if (code === "save-conflict") {
-        setEpicSaveConflict(member);
-        return;
-      }
-      if (code === "update-required") void epicUpdate.refresh(true);
-      const translation = code ? getEpicManagedError(code) : null;
-      showErrorToast(
-        translation
-          ? t(translation.key, { ns: translation.ns })
-          : t("epic_launch_failed")
-      );
-      if (
-        member.shop === "epic" &&
-        typeof window.electron.getEpicCloudSaveState === "function"
-      ) {
-        const state = await window.electron
-          .getEpicCloudSaveState(member.objectId)
-          .catch(() => null);
-        if (generation !== launchGeneration.current) return;
-        if (state?.status === "conflict") {
-          setEpicSaveConflict(member);
-          return;
-        }
-        if (
-          canRetryEpicLaunchWithLocalSaves(state) ||
-          state?.canRunOffline === true
-        ) {
-          setLocalSaveRetry({ member, skipUpdateCheck });
-          setCanRetryOffline(state?.canRunOffline === true);
-          setCanRetryLocalSaves(canRetryEpicLaunchWithLocalSaves(state));
-        }
-      }
-    }
-  };
-
-  const startEpicUpdate = async (resume = false) => {
-    const result = await epicUpdate.start(lastPacket !== null, resume);
-    if (result.ok) {
-      await Promise.all([updateLibrary(), updateGame()]);
-      return;
-    }
-    const translation = getEpicManagedError(result.error);
-    showErrorToast(
-      t("epic_update_failed"),
-      t(translation.key, { ns: translation.ns })
-    );
-  };
-
-  const resumeEpicUpdate = async () => {
-    if (!game) return;
-    if (epicDownload?.status !== "paused" && epicDownload?.status !== "error") {
-      await startEpicUpdate(true);
-      return;
-    }
-    try {
-      const resumed = await resumeDownload(
-        game.shop,
-        game.objectId,
-        "queueIfActive"
-      );
-      if (resumed === false) showErrorToast(t("epic_update_failed"));
     } catch {
-      showErrorToast(t("epic_update_failed"));
-      await updateLibrary();
+      if (generation !== launchGeneration.current) return;
+      showErrorToast(t("launch_failed"));
     }
-    await updateGame();
   };
 
   const closeGame = () => {
@@ -624,69 +509,6 @@ export function HeroPanelActions() {
     const isPlayableClassics =
       game?.shop === "launchbox" && (game?.discs?.length ?? 0) > 0;
 
-    if (game?.executablePath && epicDownload?.epic?.update) {
-      if (
-        isLibraryGameDownloading({ download: epicDownload }) ||
-        epicDownload.queued
-      )
-        return (
-          <Button
-            theme="outline"
-            disabled
-            className="hero-panel-actions__action"
-          >
-            <DownloadIcon />
-            {t("epic_updating")}
-          </Button>
-        );
-      if (epicUpdateInterrupted)
-        return (
-          <Button
-            onClick={resumeEpicUpdate}
-            theme="outline"
-            disabled={deleting || epicUpdate.starting}
-            className="hero-panel-actions__action"
-          >
-            <DownloadIcon />
-            {t("epic_update_resume")}
-          </Button>
-        );
-    }
-
-    if (
-      game?.executablePath &&
-      epicUpdate.update &&
-      !isLibraryGameDownloading({ download: epicDownload })
-    ) {
-      return (
-        <>
-          <Button
-            onClick={() => void startEpicUpdate()}
-            theme="outline"
-            disabled={deleting || epicUpdate.starting}
-            className="hero-panel-actions__action"
-            title={t("epic_update_available", {
-              version: epicUpdate.update.publishedVersion,
-            })}
-          >
-            <DownloadIcon />
-            {t("epic_update")}
-          </Button>
-          <Button
-            onClick={() => {
-              if (game) void launchMember(game, false, false, true);
-            }}
-            theme="outline"
-            disabled={deleting || epicUpdate.starting}
-            className="hero-panel-actions__action"
-          >
-            <PlayIcon />
-            {t("epic_play_without_update")}
-          </Button>
-        </>
-      );
-    }
-
     if (game?.executablePath || isPlayableClassics) {
       const playButton = (
         <Button
@@ -727,7 +549,7 @@ export function HeroPanelActions() {
         onClick={() => setShowRepacksModal(true)}
         theme="outline"
         disabled={isGameDownloading}
-        className={`hero-panel-actions__action ${repacks.length === 0 && !canDownloadOnSteam(officialMembers.steam) && !officialMembers.epic ? "hero-panel-actions__action--disabled" : ""}`}
+        className={`hero-panel-actions__action ${repacks.length === 0 && !canDownloadOnSteam(officialMembers.steam) ? "hero-panel-actions__action--disabled" : ""}`}
       >
         <DownloadIcon />
         {t("download")}
@@ -747,54 +569,6 @@ export function HeroPanelActions() {
   if (game) {
     return (
       <div className="hero-panel-actions__container">
-        <EpicCloudSaveConflictModal
-          game={epicSaveConflict}
-          isGameRunning={isGameRunning}
-          onClose={() => setEpicSaveConflict(null)}
-        />
-        <Modal
-          visible={!!localSaveRetry}
-          title={
-            canRetryLocalSaves
-              ? t("epic_play_local_saves")
-              : t("epic_play_offline_title")
-          }
-          description={
-            canRetryLocalSaves
-              ? t("epic_play_local_saves_description")
-              : t("epic_play_offline_description")
-          }
-          onClose={() => setLocalSaveRetry(null)}
-        >
-          <div className="hero-panel-actions__epic-actions">
-            {canRetryLocalSaves && (
-              <Button
-                onClick={() => {
-                  if (localSaveRetry)
-                    void launchMember(
-                      localSaveRetry.member,
-                      true,
-                      false,
-                      localSaveRetry.skipUpdateCheck
-                    );
-                }}
-              >
-                {t("epic_play_local_saves")}
-              </Button>
-            )}
-            {canRetryOffline && (
-              <Button
-                theme="outline"
-                onClick={() => {
-                  if (localSaveRetry)
-                    void launchMember(localSaveRetry.member, false, true);
-                }}
-              >
-                {t("epic_play_offline")}
-              </Button>
-            )}
-          </div>
-        </Modal>
         {gameActionButton()}
         <div className="hero-panel-actions__separator" />
         <Button

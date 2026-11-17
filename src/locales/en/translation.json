@@ -1187,6 +1187,7 @@
     "choose_game_store": "Choose where to play",
     "play_on_steam": "Play — Steam",
     "play_on_epic": "Play — Epic Games",
+    "launch_failed": "Failed to launch game",
     "epic_launch_failed": "Failed to launch game",
     "epic_play_local_saves": "Play with local saves",
     "epic_play_local_saves_description": "Open this session without restoring cloud saves. Local changes remain pending for synchronization.",

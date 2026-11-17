@@ -17,7 +17,6 @@ import {
   findLibraryGamePresentation,
   getOfficialStoreMembers,
   getRepackUriParts,
-  isEpicMemberInCurrentScope,
   pickDefaultDownloader,
   getDownloadAttempts,
   DownloadError,
@@ -40,13 +39,7 @@ import {
   SourceAnchorSkeleton,
 } from "../../skeletons";
 import { MeasurementContext } from "../../context/measurement.context";
-import type {
-  DiskUsage,
-  DownloadSource,
-  Game,
-  GameRepack,
-  LibraryGame,
-} from "@types";
+import type { DiskUsage, DownloadSource, Game, GameRepack } from "@types";
 import {
   type DownloadOptionsEmptyStateReason,
   useGameDownloadOptions,
@@ -82,10 +75,6 @@ import {
 
 import "./styles.scss";
 import { readActiveLibraryDownload } from "./download-queue";
-import { EpicInstallModal } from "../epic-install-modal";
-import { epicInstallTiming } from "@renderer/helpers/epic-install-timing";
-import { EpicDownloadOption } from "../../common/download-source-option/epic-download-option";
-import { useEpicManagedConnection } from "@renderer/hooks/use-epic-managed";
 import { useLibrary } from "../../../hooks/use-library.hook";
 
 interface DownloadGameModalProps {
@@ -111,7 +100,6 @@ interface SteamDownloadOptionData {
 interface DownloadGameSourceListProps {
   onClose: () => void;
   steamOption: SteamDownloadOptionData | null;
-  epicOption: SteamDownloadOptionData | null;
   onSelectOption: (option: GameRepack) => void;
   downloadOptions: GameRepack[];
   localDownloadSources: DownloadSource[];
@@ -582,15 +570,10 @@ function DownloadGameModalSession({
     isLoading,
     emptyStateReason,
   } = useGameDownloadOptions(game, visible);
-  const { downloadLibrary, updateLibrary } = useLibrary();
+  const { downloadLibrary } = useLibrary();
   const presentation = findLibraryGamePresentation(downloadLibrary, game);
-  const { steam: libraryGame, epic: epicGame } = getOfficialStoreMembers(
+  const { steam: libraryGame } = getOfficialStoreMembers(
     presentation?.members ?? []
-  );
-  const { installationAvailable: epicAvailable, connection } =
-    useEpicManagedConnection();
-  const [epicInstallGame, setEpicInstallGame] = useState<LibraryGame | null>(
-    null
   );
   const isNonSteamExecutable = useIsNonSteamExecutable(libraryGame);
 
@@ -613,22 +596,6 @@ function DownloadGameModalSession({
       },
     };
   }, [game.title, isNonSteamExecutable, libraryGame, onClose]);
-  const epicOption = useMemo(
-    () =>
-      epicAvailable &&
-      isEpicMemberInCurrentScope(epicGame, connection) &&
-      epicGame
-        ? {
-            title: game.title,
-            onSelect: () => {
-              epicInstallTiming.beginOptions(epicGame.objectId);
-              setEpicInstallGame(epicGame);
-            },
-          }
-        : null,
-    [epicAvailable, epicGame, connection, game.title]
-  );
-
   const isntFirstStep = useMemo(() => {
     return activeStep !== DownloadGameStep.SourceList;
   }, [activeStep]);
@@ -831,7 +798,6 @@ function DownloadGameModalSession({
       <DownloadGameSourceList
         onClose={onClose}
         steamOption={steamOption}
-        epicOption={epicOption}
         onSelectOption={handleNextStep}
         downloadOptions={downloadOptions}
         localDownloadSources={localDownloadSources}
@@ -859,7 +825,6 @@ function DownloadGameModalSession({
       selectedSortOption,
       selectedSources,
       steamOption,
-      epicOption,
     ]
   );
   const renderOptionsStep = useCallback(
@@ -909,16 +874,6 @@ function DownloadGameModalSession({
 
   return (
     <>
-      <EpicInstallModal
-        game={epicInstallGame}
-        onClose={() => setEpicInstallGame(null)}
-        onStarted={() => {
-          setEpicInstallGame(null);
-          void updateLibrary();
-          globalThis.window.dispatchEvent(new Event("library-update"));
-          onClose();
-        }}
-      />
       <Modal
         visible={visible}
         onClose={onClose}
@@ -1011,7 +966,6 @@ function DownloadGameModalSession({
 function DownloadGameSourceList({
   onClose,
   steamOption,
-  epicOption,
   onSelectOption,
   downloadOptions,
   localDownloadSources,
@@ -1098,14 +1052,7 @@ function DownloadGameSourceList({
     (!steamOptionTerm ||
       "steam".includes(steamOptionTerm) ||
       steamOption.title.toLowerCase().includes(steamOptionTerm));
-  const showEpicOption =
-    epicOption !== null &&
-    !isSourceListLoading &&
-    selectedSources.length === 0 &&
-    (!steamOptionTerm ||
-      "epic games".includes(steamOptionTerm) ||
-      epicOption.title.toLowerCase().includes(steamOptionTerm));
-  const hasOfficialOption = showSteamOption || showEpicOption;
+  const hasOfficialOption = showSteamOption;
   const showStructuralEmptyState =
     hasStructuralEmptyState && !hasOfficialOption;
   const showSearchEmptyState = hasSearchEmptyState && !hasOfficialOption;
@@ -1419,15 +1366,6 @@ function DownloadGameSourceList({
                     : undefined
                 }
                 onSelect={steamOption.onSelect}
-              />
-            )}
-
-            {showEpicOption && (
-              <EpicDownloadOption
-                title={epicOption.title}
-                label={t("download_on_epic", { ns: "game_details" })}
-                onSelect={epicOption.onSelect}
-                stealFocusOnAppear={!showSteamOption}
               />
             )}
 

@@ -1,7 +1,7 @@
 import { CloudSync } from "@main/services";
 import { registerEvent } from "../register-event";
 import type { GameShop } from "@types";
-import { runWithHydraSaveGuard } from "@main/services/epic/cloud-saves";
+import { runWithHydraSaveGuard } from "@main/services/cloud-save/save-file-gate";
 
 const uploadSaveGame = async (
   _event: Electron.IpcMainInvokeEvent,

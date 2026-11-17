@@ -146,20 +146,6 @@ import type {
   ChatUnreadState,
   ChatWindowState,
   PendingChatFriend,
-  EpicConnectionState,
-  EpicSyncState,
-  EpicSyncFinished,
-  EpicOperationResult,
-  EpicStartAuthResult,
-  EpicGameInstallOptions,
-  StartEpicGameDownloadPayload,
-  StartEpicGameUpdatePayload,
-  EpicManagedOperationResult,
-  EpicCloudSaveState,
-  EpicCloudSaveSettings,
-  ResolveEpicCloudSaveConflictPayload,
-  EpicLaunchOptions,
-  EpicLinuxCompatibility,
   PersonalCloudDeviceCode,
   PersonalCloudGameState,
   PersonalCloudStatus,
@@ -672,8 +658,7 @@ declare global {
       shop: GameShop,
       objectId: string,
       executablePath: string,
-      launchOptions?: string | null,
-      epicLaunchOptions?: EpicLaunchOptions
+      launchOptions?: string | null
     ) => Promise<void>;
     openClassicsGame: (
       shop: GameShop,
@@ -704,7 +689,7 @@ declare global {
     deleteGameFolder: (
       shop: GameShop,
       objectId: string,
-      options?: { deleteSourceArchive?: boolean; keepEpicUpdateFiles?: boolean }
+      options?: { deleteSourceArchive?: boolean }
     ) => Promise<unknown>;
     hasSourceArchive: (shop: GameShop, objectId: string) => Promise<boolean>;
     recheckInstalledExecutable: (
@@ -1557,49 +1542,6 @@ declare global {
     onRetroAchievementsConnected: (
       cb: () => void
     ) => () => Electron.IpcRenderer;
-    startEpicSync: (connectionId: string) => Promise<EpicSyncState>;
-    getEpicSyncState: () => Promise<EpicSyncState>;
-    cancelEpicSync: (connectionId: string) => Promise<EpicOperationResult>;
-    syncEpicGameOnGamePage: (objectId: string) => Promise<boolean>;
-    onEpicSyncProgress: (cb: (state: EpicSyncState) => void) => () => void;
-    onEpicSyncFinished: (cb: (result: EpicSyncFinished) => void) => () => void;
-    getEpicConnection: () => Promise<EpicConnectionState>;
-    getGameLinuxCompatibility?: (
-      shop: GameShop,
-      objectId: string
-    ) => Promise<EpicLinuxCompatibility | null>;
-    getEpicGameInstallOptions: (
-      epicObjectId: string,
-      requestId?: string
-    ) => Promise<EpicGameInstallOptions>;
-    cancelEpicGameInstallOptions?: (requestId: string) => Promise<void>;
-    invalidateEpicGameInstallOptions?: (epicObjectId: string) => Promise<void>;
-    startEpicGameDownload: (
-      payload: StartEpicGameDownloadPayload
-    ) => Promise<EpicManagedOperationResult>;
-    startEpicGameUpdate?: (
-      payload: StartEpicGameUpdatePayload
-    ) => Promise<EpicManagedOperationResult>;
-    getEpicCloudSaveState: (
-      epicObjectId: string
-    ) => Promise<EpicCloudSaveState>;
-    setEpicCloudSaveSettings: (
-      epicObjectId: string,
-      settings: EpicCloudSaveSettings
-    ) => Promise<EpicManagedOperationResult>;
-    syncEpicCloudSaves: (epicObjectId: string) => Promise<EpicCloudSaveState>;
-    resolveEpicCloudSaveConflict: (
-      payload: ResolveEpicCloudSaveConflictPayload
-    ) => Promise<EpicCloudSaveState>;
-    onEpicCloudSaveStateChanged: (
-      callback: (state: EpicCloudSaveState) => void
-    ) => () => void;
-    startEpicAuth: () => Promise<EpicStartAuthResult>;
-    cancelEpicAuth: (operationId: string) => Promise<EpicOperationResult>;
-    disconnectEpic: (connectionId: string) => Promise<EpicOperationResult>;
-    onEpicConnectionChanged: (
-      cb: (state: EpicConnectionState) => void
-    ) => () => void;
     startSteamOAuth: (lng: string) => Promise<void>;
     disconnectSteam: (deleteImportedData: boolean) => Promise<void>;
     startSteamSync: () => Promise<SteamSyncState>;

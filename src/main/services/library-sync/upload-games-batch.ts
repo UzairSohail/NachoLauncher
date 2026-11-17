@@ -3,7 +3,6 @@ import {
   HYDRA_GAME_REQUEST_TIMEOUT_MS,
 } from "./game-request-queue";
 import { levelKeys } from "@main/level";
-import { clearStaleEpicImports } from "../epic/import-cleanup";
 import { chunk } from "lodash-es";
 import { HydraApi } from "../hydra-api";
 import { mergeWithRemoteGames } from "./merge-with-remote-games";
@@ -18,7 +17,6 @@ const uploadLocalGamesAndMerge = async () => {
     context
       ? HydraApi.isAuthContextCurrent(context)
       : HydraApi.getAuthContext() === null;
-  await clearStaleEpicImports(context, current);
   if (!current()) return;
   const games = await gamesSublevel
     .values()
