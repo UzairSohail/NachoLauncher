@@ -1,29 +1,19 @@
 import { useTranslation } from "react-i18next";
-import type {
-  LocalScreenshot,
-  ProfileVisibility,
-  ScreenshotQuality,
-} from "@types";
+import type { LocalScreenshot, ProfileVisibility } from "@types";
 import {
   sanitizeScreenshotDescriptionInput,
   SCREENSHOT_DESCRIPTION_MAX_LENGTH,
   SCREENSHOT_CUSTOM_GAME_TITLE_MAX_LENGTH,
   SCREENSHOT_VISIBILITY_OPTIONS,
 } from "@shared";
-import {
-  CheckboxField,
-  InlineEditField,
-  HydraCloudBadge,
-} from "@renderer/components";
-import { useFeature, useUserDetails } from "@renderer/hooks";
-import { useSubscription } from "@renderer/hooks/use-subscription";
+import { CheckboxField, InlineEditField } from "@renderer/components";
+import { useFeature } from "@renderer/hooks";
 
 import {
   ReviewSegmentedControl,
   type ReviewSegmentedOption,
 } from "./review-segmented-control";
 import {
-  SCREENSHOT_QUALITY_LABELS,
   isScreenshotEditable,
   type ScreenshotReviewDraft,
 } from "./screenshot-review-state";
@@ -52,8 +42,6 @@ export function ScreenshotReviewFields({
   onDraftCommit,
 }: Readonly<ScreenshotReviewFieldsProps>) {
   const { t } = useTranslation("screenshots_capture");
-  const { hasActiveSubscription } = useUserDetails();
-  const { showHydraCloudModal } = useSubscription();
   const { isFeatureEnabled, Feature } = useFeature();
   const isCommentsEnabled = isFeatureEnabled(Feature.ScreenshotComments);
 
@@ -66,16 +54,6 @@ export function ScreenshotReviewFields({
       value: option,
       label: t(VISIBILITY_LABEL_KEYS[option]),
     }));
-  const qualityOptions: ReviewSegmentedOption<ScreenshotQuality>[] = [
-    { value: "STANDARD", label: SCREENSHOT_QUALITY_LABELS.STANDARD },
-    {
-      value: "CLOUD",
-      label: SCREENSHOT_QUALITY_LABELS.CLOUD,
-      isLocked: true,
-      addon: <HydraCloudBadge />,
-    },
-  ];
-
   const handleDescriptionSave = (description: string) => {
     onDraftChange({ ...draft, description });
     onDraftCommit?.();
@@ -86,10 +64,6 @@ export function ScreenshotReviewFields({
     onDraftChange({ ...draft, customGameTitle: customGameTitle.trim() });
     onDraftCommit?.();
     return true;
-  };
-
-  const handleQualityChange = (quality: ScreenshotQuality) => {
-    if (quality === "CLOUD") showHydraCloudModal("achievements");
   };
 
   return (
@@ -127,16 +101,6 @@ export function ScreenshotReviewFields({
         disabled={isFormDisabled}
         onChange={(visibility) => onDraftChange({ ...draft, visibility })}
       />
-
-      {!hasActiveSubscription && (
-        <ReviewSegmentedControl
-          label={t("upload_quality")}
-          options={qualityOptions}
-          value="STANDARD"
-          disabled={isFormDisabled}
-          onChange={handleQualityChange}
-        />
-      )}
 
       <div className="screenshot-review-item__checkbox">
         <CheckboxField

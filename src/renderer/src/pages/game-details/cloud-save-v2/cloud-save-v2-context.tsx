@@ -28,7 +28,6 @@ import {
   useToast,
   useUserDetails,
 } from "@renderer/hooks";
-import { useSubscription } from "@renderer/hooks/use-subscription";
 import type {
   CloudSaveConflictResolution,
   CloudSaveCustomPathApproval,
@@ -193,7 +192,6 @@ export function CloudSaveV2Provider({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { userDetails, hasActiveSubscription } = useUserDetails();
-  const { showHydraCloudModal } = useSubscription();
   const { showErrorToast, showSuccessToast, showWarningToast } = useToast();
   const detailsContext = useContext(gameDetailsContext);
   const { setShowGameOptionsModal, setGameOptionsInitialCategory } =
@@ -494,10 +492,7 @@ export function CloudSaveV2Provider({
       openSignIn();
       return;
     }
-    if (cloudSaveAccessAction === "paywall") {
-      showHydraCloudModal("backup");
-      return;
-    }
+    if (cloudSaveAccessAction === "paywall") return;
 
     setIsFileBrowserVisible(false);
     setWasOpenedFromLaunchConflict(true);
@@ -509,7 +504,6 @@ export function CloudSaveV2Provider({
     searchParams,
     setSearchParams,
     shop,
-    showHydraCloudModal,
   ]);
 
   useEffect(() => {
@@ -680,13 +674,10 @@ export function CloudSaveV2Provider({
       openSignIn();
       return;
     }
-    if (cloudSaveAccessAction === "paywall") {
-      showHydraCloudModal("backup");
-      return;
-    }
+    if (cloudSaveAccessAction === "paywall") return;
     setWasOpenedFromLaunchConflict(false);
     setIsModalVisible(true);
-  }, [cloudSaveAccessAction, openSignIn, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, openSignIn]);
 
   const handleSelectExecutable = () => {
     setIsModalVisible(false);
@@ -834,11 +825,7 @@ export function CloudSaveV2Provider({
         throw new Error("cloud_save_retroarch_not_configured");
       }
       if (cloudSaveAccessAction !== "open") {
-        if (cloudSaveAccessAction === "sign-in") {
-          openSignIn();
-        } else {
-          showHydraCloudModal("backup");
-        }
+        if (cloudSaveAccessAction === "sign-in") openSignIn();
         throw new Error("Cloud Saves require an active subscription");
       }
       try {
@@ -865,7 +852,6 @@ export function CloudSaveV2Provider({
       refresh,
       shop,
       showErrorToast,
-      showHydraCloudModal,
       t,
     ]
   );
@@ -1110,10 +1096,8 @@ export function CloudSaveV2Provider({
       setIsFileBrowserVisible(true);
     } else if (cloudSaveAccessAction === "sign-in") {
       openSignIn();
-    } else {
-      showHydraCloudModal("backup");
     }
-  }, [cloudSaveAccessAction, openSignIn, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, openSignIn]);
   const value = useMemo<CloudSaveV2ContextValue>(
     () => ({
       overview,

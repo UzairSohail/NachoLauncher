@@ -23,7 +23,6 @@ import {
 import { Button, Link, ProgressBar } from "@renderer/components";
 import { ComparedAchievementList } from "./compared-achievement-list";
 import { AchievementList } from "./achievement-list";
-import { useSubscription } from "@renderer/hooks/use-subscription";
 import "./achievements-content.scss";
 
 interface UserInfo {
@@ -49,7 +48,6 @@ interface AchievementSummaryProps {
 function AchievementSummary({ user, isComparison }: AchievementSummaryProps) {
   const { t } = useTranslation("achievement");
   const { userDetails, hasActiveSubscription } = useUserDetails();
-  const { showHydraCloudModal } = useSubscription();
 
   const getProfileImage = (
     user: Pick<UserInfo, "profileImageUrl" | "displayName">
@@ -74,14 +72,7 @@ function AchievementSummary({ user, isComparison }: AchievementSummaryProps) {
       <div className="achievements-content__comparison">
         <div className="achievements-content__comparison__container">
           <LockIcon size={24} />
-          <h3>
-            <button
-              className="achievements-content__comparison__container__subscription-required-button"
-              onClick={() => showHydraCloudModal("achievements")}
-            >
-              {t("subscription_needed")}
-            </button>
-          </h3>
+          <h3>{t("subscription_needed")}</h3>
         </div>
         <div className="achievements-content__comparison__blured-avatar">
           {getProfileImage(user)}
@@ -151,14 +142,10 @@ export function AchievementsContent({
   const dispatch = useAppDispatch();
 
   const { userDetails, hasActiveSubscription } = useUserDetails();
-  const { showHydraCloudModal } = useSubscription();
   const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
 
   const handleCompareClick = () => {
-    if (!isComparing && !hasActiveSubscription) {
-      showHydraCloudModal("achievements");
-      return;
-    }
+    if (!isComparing && !hasActiveSubscription) return;
 
     onComparingChange(!isComparing);
   };

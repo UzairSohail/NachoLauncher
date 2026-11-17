@@ -1426,8 +1426,8 @@ function LockedAchievements({
         <SparkleIcon size={24} weight="fill" />
         <p>
           {isOwnProfile
-            ? "You need Nacho Cloud in order to display achievements in your own profile."
-            : "This user is required to have Nacho Cloud in order to display achievements in his profile."}
+            ? "Recent achievements aren't shown on Nacho profiles."
+            : "This user's recent achievements are hidden."}
         </p>
       </div>
     </div>

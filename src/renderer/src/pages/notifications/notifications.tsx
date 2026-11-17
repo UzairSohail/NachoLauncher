@@ -166,6 +166,7 @@ export default function Notifications() {
     const isShown = ({ type }: Notification) => {
       if (isLeaderboardNotificationType(type)) return false;
       if (type.startsWith("FRIEND_REQUEST_")) return false;
+      if (type === "CLOUD_GIFT_RECEIVED") return false;
       if (!isScreenshotNotificationType(type)) return true;
       if (!isFeatureEnabled(Feature.Screenshots)) return false;
       return (

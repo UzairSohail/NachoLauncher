@@ -21,7 +21,7 @@ import {
   NavigationService,
   type FocusOverrideTarget,
 } from "../../../../services";
-import { useBigPictureToast, useUserDetails } from "../../../../hooks";
+import { useBigPictureToast } from "../../../../hooks";
 import { formatScreenshotDate } from "../../screenshots";
 import { isLocalScreenshotUploadInFlight } from "./local-screenshot-tile";
 
@@ -67,7 +67,6 @@ export function LocalScreenshotSidebar({
   const { t, i18n } = useTranslation("big_picture");
   const language = i18n.resolvedLanguage ?? i18n.language ?? "en";
   const { showErrorToast } = useBigPictureToast();
-  const { hasActiveSubscription } = useUserDetails();
   const [pendingAction, setPendingAction] = useState<"delete" | null>(null);
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const { clientId } = screenshot;
@@ -75,10 +74,7 @@ export function LocalScreenshotSidebar({
   const isBusy = pendingAction !== null;
   const deleteFocusId = getDeleteFocusId(clientId);
   const fieldFocusIds = getFieldFocusIds(clientId);
-  const lastFieldFocusId = getLastReviewFieldFocusId(
-    fieldFocusIds,
-    hasActiveSubscription
-  );
+  const lastFieldFocusId = getLastReviewFieldFocusId(fieldFocusIds);
   const isEditable = EDITABLE_STATES.has(screenshot.state);
   const isUploading = isLocalScreenshotUploadInFlight(screenshot);
   const hasForm = isEditable || isUploading;

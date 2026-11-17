@@ -33,7 +33,6 @@ import {
   ScrollArea,
   VerticalFocusGroup,
 } from "../../components";
-import { openBigPictureCloudGiftModal } from "../../components/cloud-gift-modal.events";
 import { FocusRegionContext } from "../../components/context";
 import { IS_DESKTOP } from "../../constants";
 import {
@@ -57,7 +56,6 @@ import {
   buildScreenshotNotificationTarget,
   buildSouvenirNotificationTarget,
   isScreenshotNotificationType,
-  CLOUD_GIFT_ID_VARIABLE,
   CLOUD_GIFT_RECEIVED_NOTIFICATION,
   NOTIFICATIONS_FETCH_FILTER,
   NOTIFICATIONS_FETCH_TAKE,
@@ -493,7 +491,9 @@ export function SidebarNotificationsDropdown({
   const mergedNotifications = useMemo<MergedNotification[]>(() => {
     const apiWithSource = apiNotifications
       .filter(
-        (notification) => !notification.type.startsWith("FRIEND_REQUEST_")
+        (notification) =>
+          !notification.type.startsWith("FRIEND_REQUEST_") &&
+          notification.type !== CLOUD_GIFT_RECEIVED_NOTIFICATION
       )
       .map((notification) => ({
         ...notification,
@@ -691,16 +691,6 @@ export function SidebarNotificationsDropdown({
   const openNotification = async (notification: MergedNotification) => {
     if (!notification.isRead) {
       await markAsRead(notification);
-    }
-
-    if (
-      notification.source === "api" &&
-      notification.type === CLOUD_GIFT_RECEIVED_NOTIFICATION &&
-      notification.variables[CLOUD_GIFT_ID_VARIABLE]
-    ) {
-      openBigPictureCloudGiftModal(notification);
-      closeAndRestoreFocus();
-      return;
     }
 
     const url = isNotificationContentEnabled(

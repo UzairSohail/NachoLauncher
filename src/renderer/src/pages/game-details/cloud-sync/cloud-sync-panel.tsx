@@ -193,9 +193,6 @@ export function CloudSyncPanel({
     return (
       <div className="cloud-sync-panel__upgrade">
         <p>{tHydraCloud("hydra_cloud_feature_found")}</p>
-        <Button onClick={() => window.electron.openCheckout()}>
-          {tHydraCloud("learn_more")}
-        </Button>
       </div>
     );
   }

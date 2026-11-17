@@ -21,7 +21,6 @@ import {
 } from "@shared";
 
 import type { Notification, Badge } from "@types";
-import { openCloudGiftModal } from "../shared-modals/cloud-gift-modal.events";
 import "./notification-item.scss";
 
 const PROFILE_DEEP_LINK_PARAMS = ["tab", "souvenir", "screenshot"];
@@ -124,14 +123,6 @@ export function NotificationItem({
   const handleClick = useCallback(() => {
     if (!notification.isRead) {
       onMarkAsRead(notification.id);
-    }
-
-    if (
-      notification.type === "CLOUD_GIFT_RECEIVED" &&
-      notification.variables.giftId
-    ) {
-      openCloudGiftModal(notification);
-      return;
     }
 
     const target = getNotificationTarget(notification);
