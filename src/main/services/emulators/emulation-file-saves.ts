@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import type {
+  EmulationFileSavePlatform,
   EmulationSaveMetadata,
   EmulationSavePlatform,
   EmulatorSystem,
@@ -11,6 +12,15 @@ import type {
 import { parseParamSfoValue } from "./param-sfo.js";
 import { ppssppConfigCandidates } from "./ppsspp-paths.js";
 import { dolphinUserDirectoryCandidates } from "./emulator-log-paths.js";
+import { Wine } from "../wine";
+import {
+  findXeniaSaveFolders,
+  xeniaContentRootCandidates,
+} from "./xenia-saves.js";
+import { xeniaNeedsProton } from "./xenia-files.js";
+
+/** Must match XENIA_PREFIX_ID in src/main/helpers/xenia-proton-launch.ts. */
+const XENIA_PROTON_PREFIX_ID = "xenia-canary";
 
 const PSP_DISC_ID_RE = /^[A-Z]{4}\d{5}$/;
 const DOLPHIN_GAME_ID_RE = /^[A-Z0-9]{6}$/;
@@ -49,7 +59,7 @@ export const emulationSavePlatformToSystem = (
 };
 
 export interface DiscoveredEmulationFileSave {
-  platform: Extract<EmulationSavePlatform, "psp" | "gamecube" | "wii">;
+  platform: EmulationFileSavePlatform;
   sourcePath: string;
   sourceLabel: string;
   saveIdentity: string;
@@ -482,10 +492,55 @@ const discoverDolphinWiiSaves = async (
   );
 };
 
+/** Xenia's content folders, including the one in its Proton prefix. */
+export const xeniaContentRoots = async (
+  executablePath: string
+): Promise<string[]> => {
+  const prefixes: string[] = [];
+  if (xeniaNeedsProton(executablePath)) {
+    const prefix = Wine.getDefaultPrefixPathForGame(XENIA_PROTON_PREFIX_ID);
+    if (prefix) prefixes.push(prefix);
+  }
+  return xeniaContentRootCandidates(executablePath, prefixes);
+};
+
+const discoverXeniaSaves = async (
+  executablePath: string
+): Promise<DiscoveredEmulationFileSave[]> => {
+  const folders = await findXeniaSaveFolders(
+    await xeniaContentRoots(executablePath)
+  );
+  const discovered: DiscoveredEmulationFileSave[] = [];
+  for (const folder of folders) {
+    const stats = await readDirectoryStats(folder.sourcePath);
+    if (stats.fileCount === 0) continue;
+    discovered.push({
+      platform: "xbox360",
+      sourcePath: folder.sourcePath,
+      sourceLabel: folder.profileId
+        ? `Profile ${folder.profileId}`
+        : "Xenia content",
+      saveIdentity: folder.titleId,
+      sku: folder.titleId,
+      ...stats,
+      metadata: {
+        schemaVersion: 1,
+        artifactFormat: "xenia-content-zip",
+        titleId: folder.titleId,
+        profileId: folder.profileId,
+      },
+    });
+  }
+  return Array.from(
+    new Map(discovered.map((save) => [save.sourcePath, save])).values()
+  );
+};
+
 export const discoverEmulationFileSaves = (
-  platform: Extract<EmulationSavePlatform, "psp" | "gamecube" | "wii">,
+  platform: EmulationFileSavePlatform,
   executablePath: string
 ) => {
+  if (platform === "xbox360") return discoverXeniaSaves(executablePath);
   if (platform === "psp") return discoverPpssppSaves(executablePath);
   if (platform === "wii") return discoverDolphinWiiSaves(executablePath);
   return discoverDolphinGamecubeSaves(executablePath);

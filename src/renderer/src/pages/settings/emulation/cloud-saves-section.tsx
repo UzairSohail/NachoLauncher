@@ -19,7 +19,7 @@ import {
   getSkuRegionFlag,
   getSkuRegionFromSaveIdentity,
 } from "@renderer/helpers";
-import { useToast, useUserDetails } from "@renderer/hooks";
+import { useToast, useGoogleDriveSignedIn } from "@renderer/hooks";
 import { useCloudConnector } from "@renderer/hooks/use-cloud-connector";
 import type {
   EmulationCloudSave,
@@ -48,7 +48,7 @@ const getDolphinSavePlatformLabel = (
 export function CloudSavesSection({ config, refreshKey }: Readonly<Props>) {
   const { t } = useTranslation("settings");
   const { showSuccessToast } = useToast();
-  const { hasActiveSubscription } = useUserDetails();
+  const driveSignedIn = useGoogleDriveSignedIn();
   const platforms = useMemo<EmulationSavePlatform[]>(
     () =>
       config.system === "dolphin"
@@ -66,7 +66,7 @@ export function CloudSavesSection({ config, refreshKey }: Readonly<Props>) {
   const { stageRef, consoleRef, gridRef, connector } = useCloudConnector(saves);
 
   const load = useCallback(async () => {
-    if (!hasActiveSubscription) {
+    if (!driveSignedIn) {
       setSaves([]);
       return;
     }
@@ -81,7 +81,7 @@ export function CloudSavesSection({ config, refreshKey }: Readonly<Props>) {
     } finally {
       setRefreshing(false);
     }
-  }, [hasActiveSubscription, platforms]);
+  }, [driveSignedIn, platforms]);
 
   useEffect(() => {
     load();
@@ -95,9 +95,8 @@ export function CloudSavesSection({ config, refreshKey }: Readonly<Props>) {
     load();
   }, [deleteFor, showSuccessToast, t, load]);
 
-  // Emulator save backups need a paid Hydra Cloud account, which Nacho
-  // Launcher can't sign in to, so the paywall preview is never shown.
-  if (!hasActiveSubscription) return null;
+  // Backups live in the user's Google Drive; nothing to list until signed in.
+  if (!driveSignedIn) return null;
 
   if (saves.length === 0) return null;
 

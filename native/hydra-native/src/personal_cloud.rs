@@ -660,6 +660,18 @@ pub async fn personal_cloud_write_file(key: String, data: Buffer) -> napi::Resul
     .await
 }
 
+/// Removes one of Hydra's own files from the Drive folder. Missing files are
+/// not an error.
+#[napi]
+pub async fn personal_cloud_delete_file(key: String) -> napi::Result<()> {
+    blocking(move || {
+        let key = hydra_key(&key)?;
+        let app = open_app()?;
+        app.remote()?.delete(&key)
+    })
+    .await
+}
+
 #[napi(object)]
 pub struct PersonalCloudChanges {
     /// Something in the Drive folder changed since the token passed in. Always

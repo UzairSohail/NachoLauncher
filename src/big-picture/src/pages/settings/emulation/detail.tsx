@@ -432,7 +432,8 @@ export function EmulationDetail({
 
       {hasMemoryCardsSection ||
       config.system === "psp" ||
-      config.system === "dolphin" ? (
+      config.system === "dolphin" ||
+      config.system === "xbox360" ? (
         <CloudSavesSection
           config={config}
           refreshKey={cloudRefreshKey}

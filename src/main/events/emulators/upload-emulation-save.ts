@@ -12,6 +12,7 @@ import {
   ps2MemoryCardSavesSublevel,
 } from "@main/level";
 import type {
+  EmulationFileSavePlatform,
   EmulationBackupProgress,
   EmulationCloudSave,
   EmulationSavePlatform,
@@ -27,10 +28,7 @@ import {
 const BACKUP_PROGRESS_CHANNEL = "on-emulation-backup-progress";
 const MIN_WII_DATA_BIN_SIZE = 0xf140;
 
-type FileSavePlatform = Extract<
-  EmulationSavePlatform,
-  "psp" | "gamecube" | "wii"
->;
+type FileSavePlatform = EmulationFileSavePlatform;
 
 const activeBackups = new Map<string, EmulationBackupProgress>();
 const backupKey = (platform: EmulationSavePlatform, cardFilePath: string) =>
@@ -94,6 +92,32 @@ const buildArtifact = async (
   return { buffer: emulators.buildMcsBuffer(contents), ext: "mcs" };
 };
 
+/** Zips `sourcePath` so the archive holds one top-level `folderName`. */
+const zipFolder = async (
+  sourcePath: string,
+  folderName: string,
+  fileName: string
+): Promise<{ buffer: Buffer; fileName: string }> => {
+  const temporaryDirectory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "nacho-emulator-save-")
+  );
+  try {
+    const archivePath = path.join(temporaryDirectory, fileName);
+    const stagingPath = path.join(temporaryDirectory, "staging");
+    await fs.mkdir(stagingPath);
+    await fs.cp(sourcePath, path.join(stagingPath, folderName), {
+      recursive: true,
+    });
+    await SevenZip.createZip({
+      sourcePath: stagingPath,
+      destinationPath: archivePath,
+    });
+    return { buffer: await fs.readFile(archivePath), fileName };
+  } finally {
+    await fs.rm(temporaryDirectory, { recursive: true, force: true });
+  }
+};
+
 const buildFileSaveArtifact = async (
   platform: FileSavePlatform,
   discovered: DiscoveredEmulationFileSave
@@ -118,31 +142,26 @@ const buildFileSaveArtifact = async (
     };
   }
 
+  if (platform === "xbox360") {
+    if (discovered.metadata.artifactFormat !== "xenia-content-zip") {
+      throw new Error("Invalid Xenia save metadata");
+    }
+    return zipFolder(
+      discovered.sourcePath,
+      emulators.XENIA_SAVED_GAME_FOLDER,
+      `${discovered.metadata.titleId}.zip`
+    );
+  }
+
   if (discovered.metadata.artifactFormat !== "ppsspp-savedata-zip") {
     throw new Error("Invalid PPSSPP save metadata");
   }
 
-  const temporaryDirectory = await fs.mkdtemp(
-    path.join(os.tmpdir(), "hydra-ppsspp-save-")
+  return zipFolder(
+    discovered.sourcePath,
+    discovered.metadata.savedataDirectory,
+    `${sanitize(discovered.metadata.savedataDirectory)}.zip`
   );
-  try {
-    const fileName = `${sanitize(discovered.metadata.savedataDirectory)}.zip`;
-    const archivePath = path.join(temporaryDirectory, fileName);
-    const stagingPath = path.join(temporaryDirectory, "staging");
-    await fs.mkdir(stagingPath);
-    await fs.cp(
-      discovered.sourcePath,
-      path.join(stagingPath, discovered.metadata.savedataDirectory),
-      { recursive: true }
-    );
-    await SevenZip.createZip({
-      sourcePath: stagingPath,
-      destinationPath: archivePath,
-    });
-    return { buffer: await fs.readFile(archivePath), fileName };
-  } finally {
-    await fs.rm(temporaryDirectory, { recursive: true, force: true });
-  }
 };
 
 const uploadFileSave = async (
@@ -179,7 +198,9 @@ const uploadFileSave = async (
   if (!assets && remoteEntry) {
     assets = emulators.mapEntryToAssets(remoteEntry);
   }
-  if (!assets) {
+  // Xbox 360 games are often matched by name rather than title ID, so an
+  // unmatched Xenia save is still backed up, under its title ID.
+  if (!assets && platform !== "xbox360") {
     throw new Error(`Could not map save "${saveIdentity}" to a catalogue game`);
   }
 
@@ -196,11 +217,11 @@ const uploadFileSave = async (
   return emulators.uploadEmulationSave({
     platform,
     emulator: emulators.toEmulationSaveEmulator(config.binary),
-    shop: "launchbox",
-    objectId: assets.objectId,
+    shop: assets ? "launchbox" : null,
+    objectId: assets?.objectId ?? null,
     saveIdentity: discovered.saveIdentity,
     fileName: artifact.fileName,
-    label: assets.title || discovered.saveIdentity,
+    label: assets?.title || discovered.saveIdentity,
     localLastModifiedAt: new Date(discovered.modifiedAt).toISOString(),
     buffer: artifact.buffer,
     metadata: metadata as EmulationSaveMetadata,
@@ -212,7 +233,12 @@ const uploadOne = async (
   cardFilePath: string,
   folderName: string
 ): Promise<EmulationCloudSave> => {
-  if (platform === "psp" || platform === "gamecube" || platform === "wii") {
+  if (
+    platform === "psp" ||
+    platform === "gamecube" ||
+    platform === "wii" ||
+    platform === "xbox360"
+  ) {
     return uploadFileSave(platform, cardFilePath, folderName);
   }
 

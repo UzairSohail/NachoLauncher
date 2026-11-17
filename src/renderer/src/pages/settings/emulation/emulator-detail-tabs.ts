@@ -19,7 +19,7 @@ export const supportsMemoryCards = (system: EmulatorSystem): boolean =>
   system === "ps1" || system === "ps2";
 
 export const supportsEmulatorSaves = (system: EmulatorSystem): boolean =>
-  system === "psp" || system === "dolphin";
+  system === "psp" || system === "dolphin" || system === "xbox360";
 
 export const availableEmulatorTabs = (system: EmulatorSystem): EmulatorTab[] =>
   EMULATOR_TABS.filter((tab) => {

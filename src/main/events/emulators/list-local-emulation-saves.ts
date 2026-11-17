@@ -2,7 +2,11 @@ import os from "node:os";
 
 import { registerEvent } from "../register-event";
 import { emulators, logger } from "@main/services";
-import type { EmulationSavePlatform, MemoryCardSaveRecord } from "@types";
+import type {
+  EmulationFileSavePlatform,
+  EmulationSavePlatform,
+  MemoryCardSaveRecord,
+} from "@types";
 import {
   buildLocalLaunchboxAssetIndex,
   findUniqueLocalAssetBySkuPrefix,
@@ -12,7 +16,12 @@ const listLocalEmulationSaves = async (
   _event: Electron.IpcMainInvokeEvent,
   platform: EmulationSavePlatform
 ): Promise<MemoryCardSaveRecord[]> => {
-  if (platform !== "psp" && platform !== "gamecube" && platform !== "wii") {
+  if (
+    platform !== "psp" &&
+    platform !== "gamecube" &&
+    platform !== "wii" &&
+    platform !== "xbox360"
+  ) {
     return [];
   }
 
@@ -28,7 +37,7 @@ const listLocalEmulationSaves = async (
 };
 
 const discoverAndMapFileSaves = async (
-  platform: Extract<EmulationSavePlatform, "psp" | "gamecube" | "wii">
+  platform: EmulationFileSavePlatform
 ): Promise<MemoryCardSaveRecord[]> => {
   const config = await emulators.getEmulatorConfig(
     emulators.emulationSavePlatformToSystem(platform)

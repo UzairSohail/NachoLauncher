@@ -68,6 +68,20 @@ const isWiiMetadata = (
     (typeof metadata.gameId === "string" &&
       /^[A-Za-z0-9]{6}$/.test(metadata.gameId)));
 
+const isXeniaMetadata = (
+  metadata: EmulationSaveMetadataInput
+): metadata is Extract<
+  EmulationSaveMetadata,
+  { artifactFormat: "xenia-content-zip" }
+> =>
+  metadata?.schemaVersion === 1 &&
+  metadata.artifactFormat === "xenia-content-zip" &&
+  typeof metadata.titleId === "string" &&
+  emulators.isXeniaTitleId(metadata.titleId) &&
+  (metadata.profileId === null ||
+    (typeof metadata.profileId === "string" &&
+      emulators.isXeniaProfileId(metadata.profileId)));
+
 const gamecubeRegionDirectory = (region: string): string => {
   if (region === "JPN") return "JAP";
   return ["USA", "EUR", "KOR", "DEV"].includes(region) ? region : "USA";
@@ -124,6 +138,17 @@ const restoreTargets = async (
   if (platform === "wii" && isWiiMetadata(metadata)) {
     const cardFilePath = path.join(await getDownloadsPath(), "Nacho Wii Saves");
     return [{ cardFilePath, cardLabel: "Wii data.bin export" }];
+  }
+
+  if (platform === "xbox360" && isXeniaMetadata(metadata)) {
+    const targets = await emulators.xeniaRestoreTargets(
+      await emulators.xeniaContentRoots(config.executablePath),
+      metadata.profileId
+    );
+    return targets.map((target) => ({
+      cardFilePath: target.directory,
+      cardLabel: target.label,
+    }));
   }
 
   return [];
@@ -288,10 +313,73 @@ const restoreWiiSaveExport = async (
   return outputPath;
 };
 
+/**
+ * Writes a Xenia save zip (one top-level 00000001 folder) into
+ * `<profile folder>/<title ID>/00000001`, moving any existing saves aside
+ * first so they can be recovered.
+ */
+const restoreXeniaSave = async (
+  bytes: Buffer,
+  profileDirectory: string,
+  metadata: Extract<
+    EmulationSaveMetadata,
+    { artifactFormat: "xenia-content-zip" }
+  >
+): Promise<void> => {
+  const folder = emulators.XENIA_SAVED_GAME_FOLDER;
+  const titleDirectory = path.join(
+    profileDirectory,
+    metadata.titleId.toUpperCase()
+  );
+  await fs.mkdir(titleDirectory, { recursive: true });
+  const temporaryRoot = await fs.mkdtemp(
+    path.join(titleDirectory, ".nacho-restore-")
+  );
+  const archivePath = path.join(temporaryRoot, "save.zip");
+  const extractionPath = path.join(temporaryRoot, "extracted");
+  const targetPath = path.join(titleDirectory, folder);
+  const backupPath = path.join(
+    titleDirectory,
+    `${folder}.nacho-backup-${Date.now()}`
+  );
+  let movedExisting = false;
+
+  try {
+    await fs.writeFile(archivePath, bytes);
+    const entries = await SevenZip.listFiles(archivePath);
+    if (!emulators.archiveEntriesBelongToDirectory(entries, folder)) {
+      throw new Error("The Xenia save archive has an invalid layout");
+    }
+    await SevenZip.extractFile({
+      filePath: archivePath,
+      outputPath: extractionPath,
+    });
+    const sourcePath = path.join(extractionPath, folder);
+    if (!(await fs.stat(sourcePath)).isDirectory()) {
+      throw new Error("The Xenia save archive has no saves folder");
+    }
+
+    if (existsSync(targetPath)) {
+      await fs.rename(targetPath, backupPath);
+      movedExisting = true;
+    }
+    await fs.rename(sourcePath, targetPath);
+  } catch (error) {
+    if (movedExisting) {
+      await fs.rm(targetPath, { recursive: true, force: true }).catch(() => {});
+      await fs.rename(backupPath, targetPath).catch(() => {});
+    }
+    throw error;
+  } finally {
+    await fs.rm(temporaryRoot, { recursive: true, force: true });
+  }
+};
+
 const FILE_SAVE_PLATFORMS = new Set<EmulationSavePlatform>([
   "psp",
   "gamecube",
   "wii",
+  "xbox360",
 ]);
 
 const assertValidRestoreDestination = async (
@@ -347,6 +435,14 @@ const restoreFileSave = async (
       metadata
     );
     return { ok: true, reason: "manual-import-required", location };
+  }
+
+  if (platform === "xbox360") {
+    if (!isXeniaMetadata(metadata)) {
+      throw new Error("Invalid Xenia save metadata");
+    }
+    await restoreXeniaSave(bytes, targetCardFilePath, metadata);
+    return { ok: true };
   }
 
   return null;
