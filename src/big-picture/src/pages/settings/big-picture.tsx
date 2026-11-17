@@ -13,6 +13,7 @@ import {
   BIG_PICTURE_DIAGNOSTICS_POSITION_SELECT_ID,
   BIG_PICTURE_DIAGNOSTICS_SECTION_REGION_ID,
   BIG_PICTURE_ITEM_FOCUS_IDS,
+  BIG_PICTURE_PERFORMANCE_SECTION_REGION_ID,
   BIG_PICTURE_SECTION_REGION_ID,
   BIG_PICTURE_STARTUP_SECTION_REGION_ID,
   SETTINGS_HEADER_RETURN_TARGET,
@@ -27,6 +28,7 @@ interface BigPictureForm {
   launchInBigPicture: boolean;
   bigPictureLaunchToLibraryPage: boolean;
   bigPictureSoundsEnabled: boolean;
+  bigPictureReduceEffects: boolean;
   bigPictureVirtualKeyboardEnabled: boolean;
   bigPictureDiagnosticsEnabled: boolean;
   bigPictureDiagnosticsPosition: BigPictureDiagnosticsPosition;
@@ -44,6 +46,7 @@ const DEFAULT_FORM: BigPictureForm = {
   launchInBigPicture: false,
   bigPictureLaunchToLibraryPage: false,
   bigPictureSoundsEnabled: true,
+  bigPictureReduceEffects: false,
   bigPictureVirtualKeyboardEnabled: true,
   bigPictureDiagnosticsEnabled: false,
   bigPictureDiagnosticsPosition: "bottom-center",
@@ -58,6 +61,7 @@ const buildForm = (preferences: UserPreferences | null): BigPictureForm =>
           preferences.launchToLibraryPage ??
           false,
         bigPictureSoundsEnabled: preferences.bigPictureSoundsEnabled ?? true,
+        bigPictureReduceEffects: preferences.bigPictureReduceEffects ?? false,
         bigPictureVirtualKeyboardEnabled:
           preferences.bigPictureVirtualKeyboardEnabled ?? true,
         bigPictureDiagnosticsEnabled:
@@ -115,6 +119,13 @@ export function BigPictureSettingsSection({
   const handleBigPictureSoundsChange = useCallback(
     (checked: boolean) => {
       updateUserPreferences({ bigPictureSoundsEnabled: checked });
+    },
+    [updateUserPreferences]
+  );
+
+  const handleReduceEffectsChange = useCallback(
+    (checked: boolean) => {
+      updateUserPreferences({ bigPictureReduceEffects: checked });
     },
     [updateUserPreferences]
   );
@@ -188,6 +199,18 @@ export function BigPictureSettingsSection({
     ];
   }, [form.bigPictureSoundsEnabled, handleBigPictureSoundsChange]);
 
+  const performanceItems = useMemo<BigPictureItem[]>(() => {
+    return [
+      {
+        id: "reduce-effects",
+        focusId: BIG_PICTURE_ITEM_FOCUS_IDS.reduceEffects,
+        label: t("settings_reduce_effects"),
+        checked: form.bigPictureReduceEffects,
+        onChange: handleReduceEffectsChange,
+      },
+    ];
+  }, [form.bigPictureReduceEffects, handleReduceEffectsChange]);
+
   const diagnosticsItems = useMemo<BigPictureItem[]>(() => {
     return [
       {
@@ -223,7 +246,7 @@ export function BigPictureSettingsSection({
   >(() => {
     const previousFallback: FocusOverrideTarget = {
       type: "item",
-      itemId: BIG_PICTURE_ITEM_FOCUS_IDS.enableSounds,
+      itemId: BIG_PICTURE_ITEM_FOCUS_IDS.reduceEffects,
     };
 
     return Object.fromEntries(
@@ -284,13 +307,42 @@ export function BigPictureSettingsSection({
                 }
               : {
                   type: "item",
-                  itemId: BIG_PICTURE_ITEM_FOCUS_IDS.enableVirtualKeyboard,
+                  itemId: BIG_PICTURE_ITEM_FOCUS_IDS.reduceEffects,
                 },
           } satisfies FocusOverrides,
         ];
       })
     );
   }, [audioItems]);
+
+  const performanceNavigationOverridesByFocusId = useMemo<
+    Record<string, FocusOverrides>
+  >(() => {
+    return Object.fromEntries(
+      performanceItems.map((item, index) => {
+        const previousItem = performanceItems[index - 1];
+        const nextItem = performanceItems[index + 1];
+
+        return [
+          item.focusId,
+          {
+            up: previousItem
+              ? { type: "item", itemId: previousItem.focusId }
+              : {
+                  type: "item",
+                  itemId: BIG_PICTURE_ITEM_FOCUS_IDS.enableSounds,
+                },
+            down: nextItem
+              ? { type: "item", itemId: nextItem.focusId }
+              : {
+                  type: "item",
+                  itemId: BIG_PICTURE_ITEM_FOCUS_IDS.enableVirtualKeyboard,
+                },
+          } satisfies FocusOverrides,
+        ];
+      })
+    );
+  }, [performanceItems]);
 
   const startupNavigationOverridesByFocusId = useMemo<
     Record<string, FocusOverrides>
@@ -430,6 +482,33 @@ export function BigPictureSettingsSection({
                 focusId={item.focusId}
                 navigationOverrides={
                   audioNavigationOverridesByFocusId[item.focusId]
+                }
+                block
+                onChange={item.onChange}
+              />
+            ))}
+          </div>
+        </VerticalFocusGroup>
+      </SettingsSection>
+
+      <SettingsSection
+        title={t("settings_performance_section_title")}
+        description={t("settings_performance_section_description")}
+      >
+        <VerticalFocusGroup
+          regionId={BIG_PICTURE_PERFORMANCE_SECTION_REGION_ID}
+          asChild
+        >
+          <div className="big-picture-settings-section__content">
+            {performanceItems.map((item) => (
+              <Checkbox
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                checked={item.checked}
+                focusId={item.focusId}
+                navigationOverrides={
+                  performanceNavigationOverridesByFocusId[item.focusId]
                 }
                 block
                 onChange={item.onChange}

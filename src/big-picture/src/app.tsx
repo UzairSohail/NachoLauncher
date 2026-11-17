@@ -1,4 +1,5 @@
-import { Fragment, Suspense, useEffect, useState } from "react";
+import { MotionConfig } from "framer-motion";
+import { Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -237,6 +238,22 @@ export default function App() {
     setFocusRegion,
   ]);
 
+  const reduceEffects = userPreferences?.bigPictureReduceEffects ?? false;
+
+  useEffect(() => {
+    // On the root element so portalled modals and menus are covered too.
+    const root = globalThis.document.documentElement;
+    if (reduceEffects) {
+      root.dataset.reduceEffects = "true";
+    } else {
+      delete root.dataset.reduceEffects;
+    }
+
+    return () => {
+      delete root.dataset.reduceEffects;
+    };
+  }, [reduceEffects]);
+
   useEffect(() => {
     NavigationAudioService.getInstance().setEnabled(
       (userPreferences?.bigPictureSoundsEnabled ?? true) &&
@@ -245,7 +262,7 @@ export default function App() {
   }, [userPreferences?.bigPictureSoundsEnabled, inputMode]);
 
   return (
-    <Fragment>
+    <MotionConfig reducedMotion={reduceEffects ? "always" : "user"}>
       <NavigationStateBridge />
       <NavigationAutoScrollBridge />
       <NavigationHistoryBridge />
@@ -296,6 +313,6 @@ export default function App() {
           <ScreenshotUploadFailureToast />
         </div>
       </NavigationInputProvider>
-    </Fragment>
+    </MotionConfig>
   );
 }

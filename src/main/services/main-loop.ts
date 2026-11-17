@@ -8,7 +8,7 @@ import { PowerSaveBlockerManager } from "./power-save-blocker";
 import { logger } from "./logger";
 import { DownloadOrchestrator } from "./download-orchestrator";
 
-const wrapInLoop = (fn: () => unknown, interval: number) => {
+const wrapInLoop = (fn: () => unknown, interval: number | (() => number)) => {
   const loop = async () => {
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -20,14 +20,20 @@ const wrapInLoop = (fn: () => unknown, interval: number) => {
         );
       }
 
-      await sleep(interval);
+      await sleep(typeof interval === "function" ? interval() : interval);
     }
   };
   loop();
 };
 
 export const startMainLoop = async () => {
-  wrapInLoop(() => watchProcesses(), INTERVALS.processWatcher);
+  wrapInLoop(
+    () => watchProcesses(),
+    () =>
+      gamesPlaytime.size > 0
+        ? INTERVALS.processWatcherWhilePlaying
+        : INTERVALS.processWatcher
+  );
   wrapInLoop(() => DownloadManager.watchDownloads(), INTERVALS.downloadWatcher);
   wrapInLoop(
     () => DownloadOrchestrator.pollAwaitingDebridDownloads(),

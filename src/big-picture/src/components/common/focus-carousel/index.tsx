@@ -512,7 +512,11 @@ function FocusCarouselCard({
     isFocused
   );
   const defaultLibraryDominantColor = useDominantColor(
-    cardMode === "library" ? (coverImageUrl ?? null) : null
+    cardMode === "library" ? (coverImageUrl ?? null) : null,
+    {
+      enabled: libraryPresentation.achievementProgress.value != null,
+      background: true,
+    }
   );
 
   if (cardMode === "library") {

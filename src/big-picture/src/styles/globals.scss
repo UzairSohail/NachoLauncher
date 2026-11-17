@@ -172,3 +172,19 @@ li {
   outline: none !important;
   box-shadow: none !important;
 }
+
+// "Reduce effects" (Big Picture settings > Performance). Blur behind panels is
+// one of the most expensive things to draw on a handheld APU, and long
+// transitions keep the GPU busy while you scroll with a controller.
+:root[data-reduce-effects="true"] {
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -18,7 +18,6 @@ import { PowerSaveBlockerManager } from "./power-save-blocker";
 import path from "node:path";
 import { AchievementWatcherManager } from "./achievements/achievement-watcher-manager";
 import { abortAchievementMetadataExport } from "./achievements/metadata-export";
-import { INTERVALS } from "@main/constants";
 import { Wine } from "./wine";
 import { NativeAddon } from "./native-addon";
 import { emulatorSessions } from "./emulators/emulator-session-tracker";
@@ -161,8 +160,11 @@ export const getGamesRunning = () => {
   return gamesRunning;
 };
 
-const TICKS_TO_UPDATE_API = (3 * 60 * 1000) / INTERVALS.processWatcher; // 3 minutes
-let currentTick = 1;
+const PLAYTIME_API_SYNC_INTERVAL_MS = 3 * 60 * 1000;
+// The watcher's interval changes while a game runs, so time the periodic
+// playtime sync by the clock rather than by counting ticks.
+let lastPlaytimeApiSyncAt = performance.now();
+let isPlaytimeApiSyncTick = false;
 
 const platform = process.platform;
 
@@ -366,6 +368,11 @@ export const watchProcesses = async () => {
   }
   const { processMap, winePrefixMap, linuxProcesses } = systemProcessMap;
 
+  const tickStartedAt = performance.now();
+  isPlaytimeApiSyncTick =
+    tickStartedAt - lastPlaytimeApiSyncAt >= PLAYTIME_API_SYNC_INTERVAL_MS;
+  if (isPlaytimeApiSyncTick) lastPlaytimeApiSyncAt = tickStartedAt;
+
   const pidToProcess = new Map<number, LinuxProcessInfo>(
     linuxProcesses.map((process) => [process.pid, process])
   );
@@ -441,8 +448,6 @@ export const watchProcesses = async () => {
       onCloseGame(game);
     }
   }
-
-  currentTick++;
 
   WindowManager.sendToAppWindows("on-games-running", getGamesRunning());
 };
@@ -648,7 +653,7 @@ function onTickGame(game: Game) {
     lastTick: now,
   });
 
-  if (currentTick % TICKS_TO_UPDATE_API === 0 && game.shop !== "custom") {
+  if (isPlaytimeApiSyncTick && game.shop !== "custom") {
     logPlaytimeTrace("periodic-sync-request", game, {
       method: game.remoteId ? "track" : "create",
       deltaToSync,

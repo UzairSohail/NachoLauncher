@@ -67,6 +67,9 @@ export const THEMES_PATH = path.join(SystemPath.getPath("userData"), "themes");
 
 export const INTERVALS = {
   processWatcher: 2_000,
+  // While a game runs we only need to notice it closing, and a full process
+  // scan steals CPU from the game on handhelds.
+  processWatcherWhilePlaying: 5_000,
   downloadWatcher: 2_000,
   debridReadinessWatcher: 5_000,
   achievementWatcher: 2_000,

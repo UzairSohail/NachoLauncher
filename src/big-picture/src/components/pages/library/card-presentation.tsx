@@ -29,11 +29,13 @@ export function useFocusAnimatedCover(
 ): string {
   const userPreferences = useUserPreferences();
   const autoplay = userPreferences?.autoplayAnimatedArtwork ?? false;
+  const reduceEffects = userPreferences?.bigPictureReduceEffects ?? false;
 
   const isAnimated = isAnimatedCoverCandidate(coverUrl);
   const poster = useCoverPoster(coverUrl, isAnimated);
 
-  const shouldHoldFrame = isAnimated && !isFocused && !autoplay;
+  const shouldHoldFrame =
+    isAnimated && (reduceEffects || (!isFocused && !autoplay));
 
   if (shouldHoldFrame && poster) {
     return resolveImageSource(poster);
@@ -160,8 +162,12 @@ export function useLibraryGameCardPresentation(
   const isChosenCoverActive = Boolean(
     activeImageSource && isChosenCoverSource(game, activeImageSource)
   );
-  const dominantColor = useDominantColor(activeImageSource);
   const achievementProgress = getGameAchievementProgress(game);
+  // The colour only tints the achievement bar, so games without one skip it.
+  const dominantColor = useDominantColor(activeImageSource, {
+    enabled: achievementProgress.value != null,
+    background: true,
+  });
   const userPreferences = useUserPreferences();
   const hideClassicsBadges =
     userPreferences?.hideLibraryClassicsBadges ?? false;
@@ -241,12 +247,16 @@ export function ClassicsVerticalCoverMedia({
         src={imageUrl}
         alt=""
         className="vertical-game-card__classics-backdrop"
+        loading="lazy"
+        decoding="async"
         draggable={false}
       />
       <img
         src={imageUrl}
         alt={gameTitle}
         className="vertical-game-card__classics-image"
+        loading="lazy"
+        decoding="async"
         draggable={false}
         onError={onImageError}
       />

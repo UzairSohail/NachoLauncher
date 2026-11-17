@@ -91,6 +91,32 @@ const getWatchedGames = async (onlyWithWinePrefix = false) => {
   );
 };
 
+const filterToRecentlyRunning = (games: Game[], recentKeys: Set<string>) =>
+  games.filter((game) =>
+    recentKeys.has(levelKeys.game(game.shop, game.objectId))
+  );
+
+// Only the running games can be unlocking achievements, so the frequent ticks
+// read just their files. The full scan of every game still runs now and then.
+const watchRunningGamesAchievements = async (recentKeys: Set<string>) => {
+  const games = filterToRecentlyRunning(
+    await getWatchedGames(process.platform !== "win32"),
+    recentKeys
+  );
+
+  if (games.length === 0) return;
+
+  const includeSteamCache = await getEnableSteamAchievements();
+
+  for (const game of games) {
+    const gameAchievementFiles = await collectGameAchievementFiles(game, {
+      includeSteamCache,
+    });
+
+    await processChangedAchievementFiles(game, gameAchievementFiles);
+  }
+};
+
 const watchAchievementsWindows = async () => {
   const games = await getWatchedGames();
 
@@ -468,28 +494,45 @@ export class AchievementWatcherManager {
   }
 
   private static lastScanAt = 0;
-  private static lastGameRunningAt = 0;
+  private static readonly lastSeenRunningAt = new Map<string, number>();
 
   /**
    * Scanning every game's achievement files is costly, and they only change
-   * while a game is running. So scan on every tick while a game runs (and for
-   * a short while after it closes), and only now and then otherwise.
+   * while a game is running. So read the running games' files on every tick
+   * (and for a short while after they close), and scan every game only now
+   * and then.
    */
-  private static shouldScanNow(now: number) {
-    if (gamesPlaytime.size > 0) this.lastGameRunningAt = now;
-    const recentlyPlaying =
-      now - this.lastGameRunningAt < RECENTLY_PLAYING_WINDOW_MS;
-    if (recentlyPlaying || now - this.lastScanAt >= IDLE_SCAN_INTERVAL_MS) {
-      this.lastScanAt = now;
-      return true;
+  private static getScanScope(
+    now: number
+  ): { kind: "all" } | { kind: "running"; keys: Set<string> } | null {
+    for (const key of gamesPlaytime.keys()) {
+      this.lastSeenRunningAt.set(key, now);
     }
-    return false;
+    for (const [key, seenAt] of this.lastSeenRunningAt) {
+      if (now - seenAt >= RECENTLY_PLAYING_WINDOW_MS) {
+        this.lastSeenRunningAt.delete(key);
+      }
+    }
+
+    if (now - this.lastScanAt >= IDLE_SCAN_INTERVAL_MS) {
+      this.lastScanAt = now;
+      return { kind: "all" };
+    }
+    if (this.lastSeenRunningAt.size > 0) {
+      return { kind: "running", keys: new Set(this.lastSeenRunningAt.keys()) };
+    }
+    return null;
   }
 
   public static watchAchievements() {
     void achievementSyncWorker.trigger();
     if (!this.hasFinishedPreSearch || this.batchDepth > 0) return;
-    if (!this.shouldScanNow(Date.now())) return;
+    const scope = this.getScanScope(Date.now());
+    if (!scope) return;
+
+    if (scope.kind === "running") {
+      return watchRunningGamesAchievements(scope.keys);
+    }
 
     if (process.platform === "win32") {
       return watchAchievementsWindows();
