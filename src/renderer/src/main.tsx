@@ -60,10 +60,6 @@ const AchievementNotification = lazy(() =>
   )
 );
 const GameLauncher = lazy(() => import("./pages/game-launcher/game-launcher"));
-const FriendsWindow = lazy(
-  () => import("./pages/friends-window/friends-window")
-);
-const ChatWindow = lazy(() => import("./pages/chat-window/chat-window"));
 const AuthWindow = lazy(() => import("./pages/auth-window/auth-window"));
 const RetroAchievementsConnectionWindow = lazy(
   () =>
@@ -215,8 +211,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                     element={<AchievementNotification />}
                   />
                   <Route path="/game-launcher" element={<GameLauncher />} />
-                  <Route path="/friends-window" element={<FriendsWindow />} />
-                  <Route path="/chat-window" element={<ChatWindow />} />
                   <Route path="/auth-window" element={<AuthWindow />} />
                   <Route
                     path="/retroachievements-connection"

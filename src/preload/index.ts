@@ -19,11 +19,8 @@ import type {
   SeedingStatus,
   UserAchievement,
   Theme,
-  FriendRequestSync,
-  FriendPresenceSync,
   Notification,
   NotificationSync,
-  UserFriend,
   ShortcutLocation,
   CreateSteamShortcutOptions,
   AchievementCustomNotificationPosition,
@@ -89,17 +86,6 @@ import type {
   SteamSyncRunStatus,
   SteamConnectErrorCode,
   ExtractionFailure,
-  FriendsSnapshot,
-  ChatAttachmentUploadProgress,
-  ChatAttachmentUploadRequest,
-  ChatMessageRejectedSync,
-  ChatMessageSync,
-  ChatMessageVisibilitySync,
-  ChatReactionSync,
-  ChatTypingSync,
-  ChatUnreadState,
-  ChatWindowState,
-  PendingChatFriend,
   LocalScreenshot,
   LocalScreenshotDraft,
   LocalScreenshotUploadOptions,
@@ -2048,15 +2034,6 @@ contextBridge.exposeInMainWorld("electron", {
       rotation?: number;
     }
   ) => ipcRenderer.invoke("cropProfileImage", imagePath, params),
-  onSyncFriendRequests: (cb: (friendRequests: FriendRequestSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      friendRequests: FriendRequestSync
-    ) => cb(friendRequests);
-    ipcRenderer.on("on-sync-friend-requests", listener);
-    return () =>
-      ipcRenderer.removeListener("on-sync-friend-requests", listener);
-  },
   onSyncNotificationCount: (cb: (notification: NotificationSync) => void) => {
     const listener = (
       _event: Electron.IpcRendererEvent,
@@ -2075,8 +2052,6 @@ contextBridge.exposeInMainWorld("electron", {
     return () =>
       ipcRenderer.removeListener("on-leaderboard-notification", listener);
   },
-  syncFriendRequests: (friendRequestCount: number) =>
-    ipcRenderer.invoke("syncFriendRequests", friendRequestCount),
 
   onCloudGiftResolved: (cb: (giftId: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, giftId: string) =>
@@ -2371,165 +2346,6 @@ contextBridge.exposeInMainWorld("electron", {
   executeSystemPowerAction: (action: SystemPowerAction) =>
     ipcRenderer.invoke("executeSystemPowerAction", action),
 
-  /* Friends */
-  openFriendsWindow: () => ipcRenderer.invoke("openFriendsWindow"),
-  minimizeFriendsWindow: () => ipcRenderer.invoke("minimizeFriendsWindow"),
-  closeFriendsWindow: () => ipcRenderer.invoke("closeFriendsWindow"),
-  friendsWindowReady: () => ipcRenderer.invoke("friendsWindowReady"),
-  prefetchFriends: () => ipcRenderer.invoke("prefetchFriends"),
-  getFriendsSnapshot: () =>
-    ipcRenderer.invoke("getFriendsSnapshot") as Promise<FriendsSnapshot | null>,
-  openFriendProfileInMainWindow: (userId: string) =>
-    ipcRenderer.invoke("openFriendProfileInMainWindow", userId),
-  openAddFriendModalInMainWindow: () =>
-    ipcRenderer.invoke("openAddFriendModalInMainWindow"),
-  showToastInMainWindow: (toast: {
-    title: string;
-    message?: string;
-    type: "success" | "error" | "warning";
-    duration?: number;
-  }) => ipcRenderer.invoke("showToastInMainWindow", toast),
-  onShowToast: (
-    cb: (toast: {
-      title: string;
-      message?: string;
-      type: "success" | "error" | "warning";
-      duration?: number;
-    }) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      toast: Parameters<typeof cb>[0]
-    ) => cb(toast);
-    ipcRenderer.on("on-show-toast", listener);
-    return () => ipcRenderer.removeListener("on-show-toast", listener);
-  },
-
-  /* Chat */
-  openChatWindow: (friend: UserFriend) =>
-    ipcRenderer.invoke("openChatWindow", friend),
-  minimizeChatWindow: () => ipcRenderer.invoke("minimizeChatWindow"),
-  closeChatWindow: () => ipcRenderer.invoke("closeChatWindow"),
-  openGameInMainWindow: (gamePath: string) =>
-    ipcRenderer.invoke("openGameInMainWindow", gamePath),
-  openChatNotificationSettings: () =>
-    ipcRenderer.invoke("openChatNotificationSettings"),
-  consumePendingChatFriends: () =>
-    ipcRenderer.invoke("consumePendingChatFriends") as Promise<
-      PendingChatFriend[]
-    >,
-  onChatFriendsPending: (cb: () => void) => {
-    const listener = () => cb();
-    ipcRenderer.on("on-chat-friends-pending", listener);
-    return () =>
-      ipcRenderer.removeListener("on-chat-friends-pending", listener);
-  },
-  setChatWindowState: (state: ChatWindowState) =>
-    ipcRenderer.invoke("setChatWindowState", state),
-  getChatUnreadState: () =>
-    ipcRenderer.invoke("getChatUnreadState") as Promise<ChatUnreadState>,
-  markChatRead: (friendId: string, seq: number) =>
-    ipcRenderer.invoke("markChatRead", friendId, seq),
-  refreshOfficialChat: () =>
-    ipcRenderer.invoke("refreshOfficialChat") as Promise<void>,
-  onChatMessage: (cb: (sync: ChatMessageSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      sync: ChatMessageSync
-    ) => cb(sync);
-    ipcRenderer.on("on-chat-message", listener);
-    return () => ipcRenderer.removeListener("on-chat-message", listener);
-  },
-  onChatTyping: (cb: (sync: ChatTypingSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      sync: ChatTypingSync
-    ) => cb(sync);
-    ipcRenderer.on("on-chat-typing", listener);
-    return () => ipcRenderer.removeListener("on-chat-typing", listener);
-  },
-  onChatReaction: (cb: (sync: ChatReactionSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      sync: ChatReactionSync
-    ) => cb(sync);
-    ipcRenderer.on("on-chat-reaction", listener);
-    return () => ipcRenderer.removeListener("on-chat-reaction", listener);
-  },
-  onChatMessageVisibility: (cb: (sync: ChatMessageVisibilitySync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      sync: ChatMessageVisibilitySync
-    ) => cb(sync);
-    ipcRenderer.on("on-chat-message-visibility", listener);
-    return () =>
-      ipcRenderer.removeListener("on-chat-message-visibility", listener);
-  },
-  onChatMessageRejected: (cb: (sync: ChatMessageRejectedSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      sync: ChatMessageRejectedSync
-    ) => cb(sync);
-    ipcRenderer.on("on-chat-message-rejected", listener);
-    return () =>
-      ipcRenderer.removeListener("on-chat-message-rejected", listener);
-  },
-  uploadChatAttachment: (request: ChatAttachmentUploadRequest) =>
-    ipcRenderer.invoke("uploadChatAttachment", request) as Promise<{
-      id: string;
-    }>,
-  onChatAttachmentUploadProgress: (
-    cb: (progress: ChatAttachmentUploadProgress) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      progress: ChatAttachmentUploadProgress
-    ) => cb(progress);
-    ipcRenderer.on("on-chat-attachment-upload-progress", listener);
-    return () =>
-      ipcRenderer.removeListener(
-        "on-chat-attachment-upload-progress",
-        listener
-      );
-  },
-  onChatMessageSound: (cb: () => void) => {
-    const listener = () => cb();
-    ipcRenderer.on("on-chat-message-sound", listener);
-    return () => ipcRenderer.removeListener("on-chat-message-sound", listener);
-  },
-  onChatUnreadUpdated: (cb: (state: ChatUnreadState) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      state: ChatUnreadState
-    ) => cb(state);
-    ipcRenderer.on("on-chat-unread-updated", listener);
-    return () => ipcRenderer.removeListener("on-chat-unread-updated", listener);
-  },
-  onChatResync: (cb: () => void) => {
-    const listener = () => cb();
-    ipcRenderer.on("on-chat-resync", listener);
-    return () => ipcRenderer.removeListener("on-chat-resync", listener);
-  },
-
-  onOpenAddFriendModal: (cb: () => void) => {
-    const listener = () => cb();
-    ipcRenderer.on("on-open-add-friend-modal", listener);
-    return () =>
-      ipcRenderer.removeListener("on-open-add-friend-modal", listener);
-  },
-  onFriendsUpdated: (cb: () => void) => {
-    const listener = () => cb();
-    ipcRenderer.on("on-friends-updated", listener);
-    return () => ipcRenderer.removeListener("on-friends-updated", listener);
-  },
-  onFriendPresence: (cb: (presence: FriendPresenceSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      presence: FriendPresenceSync
-    ) => cb(presence);
-    ipcRenderer.on("on-friend-presence", listener);
-    return () => ipcRenderer.removeListener("on-friend-presence", listener);
-  },
   onProfileUpdated: (cb: () => void) => {
     const listener = () => cb();
     ipcRenderer.on("on-profile-updated", listener);

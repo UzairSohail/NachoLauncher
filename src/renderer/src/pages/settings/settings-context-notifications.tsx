@@ -137,39 +137,6 @@ export function SettingsContextNotifications() {
             })
           }
         />
-
-        <CheckboxField
-          label={t("enable_friend_request_notifications")}
-          checked={form.friendRequestNotificationsEnabled}
-          onChange={() =>
-            handleChange({
-              friendRequestNotificationsEnabled:
-                !form.friendRequestNotificationsEnabled,
-            })
-          }
-        />
-
-        <CheckboxField
-          label={t("enable_friend_start_game_notifications")}
-          checked={form.friendStartGameNotificationsEnabled}
-          onChange={() =>
-            handleChange({
-              friendStartGameNotificationsEnabled:
-                !form.friendStartGameNotificationsEnabled,
-            })
-          }
-        />
-
-        <CheckboxField
-          label={t("enable_chat_message_notifications")}
-          checked={form.chatMessageNotificationsEnabled}
-          onChange={() =>
-            handleChange({
-              chatMessageNotificationsEnabled:
-                !form.chatMessageNotificationsEnabled,
-            })
-          }
-        />
       </div>
 
       <div className="settings-context-panel__group">

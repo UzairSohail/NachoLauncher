@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { IS_DESKTOP } from "../constants";
-import type {
-  FriendRequestAction,
-  UpdateProfileRequest,
-  UserDetails,
-  UserProfile,
-} from "@types";
+import type { UpdateProfileRequest, UserDetails, UserProfile } from "@types";
 import { useBigPictureUserDetailsStore } from "../stores";
 
 function mergeUserProfileIntoDetails(
@@ -98,41 +93,6 @@ export function useUserDetails() {
     return globalThis.window.electron.hydraApi.post(`/users/${userId}/unblock`);
   }, []);
 
-  const sendFriendRequest = useCallback(async (userId: string) => {
-    return globalThis.window.electron.hydraApi.post(
-      "/profile/friend-requests",
-      {
-        data: { friendCode: userId },
-      }
-    );
-  }, []);
-
-  const updateFriendRequestState = useCallback(
-    async (userId: string, action: FriendRequestAction) => {
-      if (action === "CANCEL") {
-        return globalThis.window.electron.hydraApi.delete(
-          `/profile/friend-requests/${userId}`
-        );
-      }
-
-      return globalThis.window.electron.hydraApi.patch(
-        `/profile/friend-requests/${userId}`,
-        {
-          data: {
-            requestState: action,
-          },
-        }
-      );
-    },
-    []
-  );
-
-  const undoFriendship = useCallback(async (userId: string) => {
-    return globalThis.window.electron.hydraApi.delete(
-      `/profile/friend-requests/${userId}`
-    );
-  }, []);
-
   const blockUser = useCallback(async (userId: string) => {
     return globalThis.window.electron.hydraApi.post(`/users/${userId}/block`);
   }, []);
@@ -174,9 +134,6 @@ export function useUserDetails() {
     signOut,
     updateUserDetails,
     patchUser,
-    sendFriendRequest,
-    updateFriendRequestState,
-    undoFriendship,
     blockUser,
     unblockUser,
   };

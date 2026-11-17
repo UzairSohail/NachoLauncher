@@ -10,8 +10,6 @@ import {
   ThumbsUpIcon,
   TrashIcon,
   TrophyIcon,
-  UserCheckIcon,
-  UserMinusIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import cn from "classnames";
@@ -48,7 +46,6 @@ import {
 } from "../../hooks";
 import { getPreferredGameAssets } from "../../helpers";
 import type {
-  FriendRequestAction,
   LibraryGame,
   LocalNotification,
   MergedNotification,
@@ -494,13 +491,17 @@ export function SidebarNotificationsDropdown({
   }, [fetchApiNotifications, refreshNotifications]);
 
   const mergedNotifications = useMemo<MergedNotification[]>(() => {
-    const apiWithSource = apiNotifications.map((notification) => ({
-      ...notification,
-      isRead: apiUnreadOverrides.has(notification.id)
-        ? false
-        : notification.isRead,
-      source: "api" as const,
-    }));
+    const apiWithSource = apiNotifications
+      .filter(
+        (notification) => !notification.type.startsWith("FRIEND_REQUEST_")
+      )
+      .map((notification) => ({
+        ...notification,
+        isRead: apiUnreadOverrides.has(notification.id)
+          ? false
+          : notification.isRead,
+        source: "api" as const,
+      }));
     const localWithSource = localNotifications.map((notification) => ({
       ...notification,
       source: "local" as const,
@@ -734,51 +735,6 @@ export function SidebarNotificationsDropdown({
     setMenuPosition({ x: event.clientX, y: event.clientY });
   };
 
-  const updateFriendRequest = (
-    senderId: string,
-    action: FriendRequestAction
-  ) => {
-    return globalThis.window.electron.hydraApi.patch(
-      `/profile/friend-requests/${senderId}`,
-      {
-        data: {
-          requestState: action,
-        },
-        needsAuth: true,
-      }
-    );
-  };
-
-  const acceptFriendRequest = async (notification: MergedNotification) => {
-    if (
-      notification.source !== "api" ||
-      notification.type !== "FRIEND_REQUEST_RECEIVED"
-    ) {
-      return;
-    }
-
-    const senderId = notification.variables.senderId;
-    if (!senderId) return;
-
-    await updateFriendRequest(senderId, "ACCEPTED");
-    await dismissNotification(notification);
-  };
-
-  const refuseFriendRequest = async (notification: MergedNotification) => {
-    if (
-      notification.source !== "api" ||
-      notification.type !== "FRIEND_REQUEST_RECEIVED"
-    ) {
-      return;
-    }
-
-    const senderId = notification.variables.senderId;
-    if (!senderId) return;
-
-    await updateFriendRequest(senderId, "REFUSED");
-    await dismissNotification(notification);
-  };
-
   const buildMenuItems = (
     notification: MergedNotification
   ): ContextMenuItem[] => {
@@ -812,26 +768,6 @@ export function SidebarNotificationsDropdown({
           closeAndRestoreFocus();
         },
       });
-    }
-
-    if (
-      notification.source === "api" &&
-      notification.type === "FRIEND_REQUEST_RECEIVED"
-    ) {
-      items.push(
-        {
-          id: "accept-friend-request",
-          label: "Accept Request",
-          icon: <UserCheckIcon size={18} />,
-          onSelect: () => acceptFriendRequest(notification),
-        },
-        {
-          id: "refuse-friend-request",
-          label: "Refuse Request",
-          icon: <UserMinusIcon size={18} />,
-          onSelect: () => refuseFriendRequest(notification),
-        }
-      );
     }
 
     items.push(

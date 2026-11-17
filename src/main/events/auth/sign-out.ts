@@ -2,8 +2,6 @@ import { registerEvent } from "../register-event";
 import {
   DownloadManager,
   HydraApi,
-  SSEClient,
-  WindowManager,
   emulators,
   retroarch,
 } from "@main/services";
@@ -15,8 +13,6 @@ import {
 } from "@main/level";
 
 const signOut = async (_event: Electron.IpcMainInvokeEvent) => {
-  SSEClient.close();
-
   /* Cancels any ongoing downloads */
   DownloadManager.cancelDownload();
 
@@ -34,12 +30,6 @@ const signOut = async (_event: Electron.IpcMainInvokeEvent) => {
     const failed = results.find((result) => result.status === "rejected");
     if (failed?.status === "rejected") throw failed.reason;
   });
-
-  /* The friends and chat windows are only meaningful while signed in */
-  if (!HydraApi.isLoggedIn()) {
-    WindowManager.closeFriendsWindow();
-    WindowManager.closeChatWindow();
-  }
 };
 
 registerEvent("signOut", signOut);

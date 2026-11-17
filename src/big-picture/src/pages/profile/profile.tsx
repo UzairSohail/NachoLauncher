@@ -2,11 +2,9 @@ import "./profile.scss";
 
 import {
   ArrowsClockwiseIcon,
-  CheckCircleIcon,
   ClockIcon,
   EyeClosedIcon,
   GameControllerIcon,
-  GiftIcon,
   HeartIcon,
   ImageIcon,
   ProhibitIcon,
@@ -15,10 +13,7 @@ import {
   TrophyIcon,
   TrashIcon,
   UserCircleIcon,
-  UserMinusIcon,
-  UserPlusIcon,
   WarningCircleIcon,
-  XCircleIcon,
 } from "@phosphor-icons/react";
 import type {
   AchievementSouvenirSyncItem,
@@ -26,7 +21,6 @@ import type {
   ArtworkAssetType,
   Badge,
   CatalogueGameIdentity,
-  FriendRequestAction,
   ProfileSouvenir,
   SouvenirsHiddenReason,
   SouvenirReportValues,
@@ -93,8 +87,6 @@ import {
   PROFILE_HERO_EXTERNAL_TERTIARY_ACTION_ID,
   PROFILE_HERO_SIGN_OUT_BUTTON_ID,
   PROFILE_ACHIEVEMENTS_REGION_ID,
-  PROFILE_FRIENDS_REGION_ID,
-  PROFILE_FRIENDS_VIEW_ALL_ID,
   PROFILE_RECENT_ACTIVITY_REGION_ID,
   PROFILE_SOCIAL_REGION_ID,
   PROFILE_SOUVENIRS_REGION_ID,
@@ -109,7 +101,6 @@ import {
   type ProfileRecentAchievementGroup,
   useExternalProfile,
   useProfileBadges,
-  useProfileFriends,
   useProfileLibraryData,
   useProfileSouvenirs,
   useRecentAchievements,
@@ -205,11 +196,7 @@ type ProfileClassicsAssetFields = {
   customLibraryImageUrl?: string | null;
 };
 
-type ProfileFriendAction =
-  | FriendRequestAction
-  | "BLOCK"
-  | "UNDO_FRIENDSHIP"
-  | "SEND";
+type ProfileFriendAction = "BLOCK";
 
 type ProfileHeroAction = {
   label: string;
@@ -446,27 +433,6 @@ function getProfileAchievementFocusId(game: UserGame) {
   return getProfileAchievementGameItemId(getProfileGameFocusKey(game));
 }
 
-function getFriendGameIcon(game: UserFriend["currentGame"]) {
-  return game?.iconUrl ?? game?.coverImageUrl ?? game?.libraryImageUrl ?? null;
-}
-
-function formatSessionDuration(valueInSeconds: number | null | undefined) {
-  const safeValue = Math.max(0, valueInSeconds ?? 0);
-
-  if (safeValue < 60) {
-    const seconds = Math.max(1, Math.floor(safeValue));
-    return `${seconds} ${seconds === 1 ? "second" : "seconds"} in session`;
-  }
-
-  const minutes = Math.floor(safeValue / 60);
-  if (minutes < 60) {
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} in session`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  return `${hours} ${hours === 1 ? "hour" : "hours"} in session`;
-}
-
 function getLibraryCarouselPlaytimeInMilliseconds(
   game: LibraryGame | UserGame
 ) {
@@ -597,78 +563,7 @@ function getExternalProfileActions(
   onAction: (userId: string, action: ProfileFriendAction) => void
 ): ProfileHeroAction[] {
   if (!profile) return [];
-
-  const giftActions: ProfileHeroAction[] = profile.canReceiveCloudGift
-    ? [
-        {
-          label: "Gift Nacho Cloud",
-          variant: "secondary",
-          icon: <GiftIcon size={20} />,
-          onClick: () => {
-            void globalThis.window.electron.openCheckout({
-              path: "/gift",
-              recipientId: profile.id,
-            });
-          },
-        },
-      ]
-    : [];
-
-  if (profile.relation === null) {
-    return [
-      ...giftActions,
-      {
-        label: "Add Friend",
-        variant: "secondary",
-        icon: <UserPlusIcon size={20} />,
-        onClick: () => onAction(profile.id, "SEND"),
-      },
-      getBlockUserAction(profile, onAction),
-    ];
-  }
-
-  const relation = profile.relation;
-
-  if (relation.status === "ACCEPTED") {
-    return [
-      ...giftActions,
-      {
-        label: "Remove Friend",
-        variant: "secondary",
-        icon: <UserMinusIcon size={20} />,
-        onClick: () => onAction(profile.id, "UNDO_FRIENDSHIP"),
-      },
-      getBlockUserAction(profile, onAction),
-    ];
-  }
-
-  if (relation.BId === profile.id) {
-    return [
-      ...giftActions,
-      {
-        label: "Cancel Request",
-        variant: "secondary",
-        icon: <XCircleIcon size={20} />,
-        onClick: () => onAction(relation.BId, "CANCEL"),
-      },
-    ];
-  }
-
-  return [
-    ...giftActions,
-    {
-      label: "Accept Request",
-      variant: "secondary",
-      icon: <CheckCircleIcon size={20} />,
-      onClick: () => onAction(relation.AId, "ACCEPTED"),
-    },
-    {
-      label: "Ignore Request",
-      variant: "danger",
-      icon: <XCircleIcon size={20} />,
-      onClick: () => onAction(relation.AId, "REFUSED"),
-    },
-  ];
+  return [getBlockUserAction(profile, onAction)];
 }
 
 interface ProfileHeroProps {
@@ -1536,184 +1431,6 @@ function LockedAchievements({
         </p>
       </div>
     </div>
-  );
-}
-
-interface ProfileFriendsProps {
-  friends: UserFriend[];
-  totalFriends: number;
-  firstFocusId: string | null;
-  lastFocusId: string | null;
-  socialUpFocusId: string | null;
-  firstAchievementFocusId: string | null;
-  showViewAll: boolean;
-  onOpenFriend: (friendId: string) => void;
-  onViewAll: () => void;
-}
-
-function ProfileFriends({
-  friends,
-  totalFriends,
-  firstFocusId,
-  lastFocusId,
-  socialUpFocusId,
-  firstAchievementFocusId,
-  showViewAll,
-  onOpenFriend,
-  onViewAll,
-}: Readonly<ProfileFriendsProps>) {
-  return (
-    <VerticalFocusGroup
-      regionId={PROFILE_FRIENDS_REGION_ID}
-      className="profile-page__friends-section"
-      style={{ gap: "calc(var(--spacing-unit) * 5)" }}
-    >
-      <div className="profile-page__section-header">
-        <h2>Friends</h2>
-        <span>{formatCompactNumber(totalFriends)}</span>
-      </div>
-
-      {friends.length > 0 ? (
-        <div className="profile-page__friends-list">
-          {friends.map((friend) => (
-            <ProfileFriend
-              key={friend.id}
-              friend={friend}
-              firstFocusId={firstFocusId}
-              lastFocusId={lastFocusId}
-              socialUpFocusId={socialUpFocusId}
-              firstAchievementFocusId={firstAchievementFocusId}
-              showViewAll={showViewAll}
-              onOpen={onOpenFriend}
-            />
-          ))}
-          {showViewAll ? (
-            <ProfileFriendsViewAll
-              lastFocusId={lastFocusId}
-              firstAchievementFocusId={firstAchievementFocusId}
-              onViewAll={onViewAll}
-            />
-          ) : null}
-        </div>
-      ) : (
-        <p className="profile-page__activity-empty">No friends</p>
-      )}
-    </VerticalFocusGroup>
-  );
-}
-
-interface ProfileFriendProps {
-  friend: UserFriend;
-  firstFocusId: string | null;
-  lastFocusId: string | null;
-  socialUpFocusId: string | null;
-  firstAchievementFocusId: string | null;
-  showViewAll: boolean;
-  onOpen: (friendId: string) => void;
-}
-
-function ProfileFriend({
-  friend,
-  firstFocusId,
-  lastFocusId,
-  socialUpFocusId,
-  firstAchievementFocusId,
-  showViewAll,
-  onOpen,
-}: Readonly<ProfileFriendProps>) {
-  const focusId = getProfileFriendItemId(friend.id);
-  const gameIconUrl = getFriendGameIcon(friend.currentGame);
-  const navigationOverrides: FocusOverrides = {
-    left: firstAchievementFocusId
-      ? { type: "item", itemId: firstAchievementFocusId }
-      : undefined,
-  };
-
-  if (focusId === firstFocusId) {
-    navigationOverrides.up = socialUpFocusId
-      ? { type: "item", itemId: socialUpFocusId }
-      : { type: "block" };
-  }
-
-  if (focusId === lastFocusId) {
-    navigationOverrides.down = showViewAll
-      ? { type: "item", itemId: PROFILE_FRIENDS_VIEW_ALL_ID }
-      : { type: "block" };
-  }
-
-  return (
-    <FocusItem
-      id={focusId}
-      actions={{ primary: () => onOpen(friend.id) }}
-      navigationOverrides={navigationOverrides}
-      asChild
-    >
-      <button
-        type="button"
-        className="profile-page__friend-row"
-        onClick={() => onOpen(friend.id)}
-      >
-        <div className="profile-page__friend-profile">
-          {friend.profileImageUrl ? (
-            <img src={friend.profileImageUrl} alt="" draggable={false} />
-          ) : (
-            <UserCircleIcon size={56} />
-          )}
-          <span>{friend.displayName}</span>
-        </div>
-
-        {friend.currentGame ? (
-          <div className="profile-page__friend-game">
-            <div className="profile-page__friend-game-title">
-              {gameIconUrl ? (
-                <img src={gameIconUrl} alt="" draggable={false} />
-              ) : null}
-              <span>{friend.currentGame.title}</span>
-            </div>
-            <span>
-              {formatSessionDuration(
-                friend.currentGame.sessionDurationInSeconds
-              )}
-            </span>
-          </div>
-        ) : null}
-      </button>
-    </FocusItem>
-  );
-}
-
-interface ProfileFriendsViewAllProps {
-  lastFocusId: string | null;
-  firstAchievementFocusId: string | null;
-  onViewAll: () => void;
-}
-
-function ProfileFriendsViewAll({
-  lastFocusId,
-  firstAchievementFocusId,
-  onViewAll,
-}: Readonly<ProfileFriendsViewAllProps>) {
-  return (
-    <FocusItem
-      id={PROFILE_FRIENDS_VIEW_ALL_ID}
-      actions={{ primary: onViewAll }}
-      navigationOverrides={{
-        up: lastFocusId ? { type: "item", itemId: lastFocusId } : undefined,
-        left: firstAchievementFocusId
-          ? { type: "item", itemId: firstAchievementFocusId }
-          : undefined,
-        down: { type: "block" },
-      }}
-      asChild
-    >
-      <button
-        type="button"
-        className="profile-page__friends-view-all"
-        onClick={onViewAll}
-      >
-        View All
-      </button>
-    </FocusItem>
   );
 }
 
@@ -2674,15 +2391,8 @@ function ProfileContent({ userId }: Readonly<ProfileContentProps>) {
   const attemptedDeepLinkPagesRef = useRef(new Set<string>());
   const { t } = useTranslation("user_profile");
   const { t: tSettings } = useTranslation("settings");
-  const {
-    userDetails,
-    hasActiveSubscription,
-    signOut,
-    sendFriendRequest,
-    updateFriendRequestState,
-    undoFriendship,
-    blockUser,
-  } = useUserDetails();
+  const { userDetails, hasActiveSubscription, signOut, blockUser } =
+    useUserDetails();
   const { library } = useLibrary();
   const userPreferences = useUserPreferences();
   const { isFeatureEnabled } = useFeature();
@@ -2693,11 +2403,8 @@ function ProfileContent({ userId }: Readonly<ProfileContentProps>) {
   const targetUserId = userId ?? userDetails?.id;
   const isOwnProfileTarget = !userId || userId === userDetails?.id;
   const badges = useProfileBadges();
-  const {
-    externalProfile,
-    isLoading: isLoadingExternalProfile,
-    reload: reloadExternalProfile,
-  } = useExternalProfile(targetUserId);
+  const { externalProfile, isLoading: isLoadingExternalProfile } =
+    useExternalProfile(targetUserId);
   const targetHasActiveSubscription = isOwnProfileTarget
     ? hasActiveSubscription
     : Boolean(externalProfile?.hasActiveSubscription);
@@ -2708,11 +2415,7 @@ function ProfileContent({ userId }: Readonly<ProfileContentProps>) {
     remoteFavoriteGame,
     remoteRecentActivityGames,
   } = useProfileLibraryData(targetUserId, isOwnProfileTarget);
-  const {
-    friends,
-    totalFriends,
-    showAll: showAllFriends,
-  } = useProfileFriends(targetUserId, isOwnProfileTarget);
+  const friends: UserFriend[] = [];
   const recentAchievementGroups = useRecentAchievements(
     targetUserId,
     isOwnProfileTarget,
@@ -2741,40 +2444,21 @@ function ProfileContent({ userId }: Readonly<ProfileContentProps>) {
   }, [navigate, signOut]);
 
   const handleFriendAction = useCallback(
-    async (actionUserId: string, action: ProfileFriendAction) => {
+    async (actionUserId: string, _action: ProfileFriendAction) => {
       if (!profileUser || profileUser.isOwnProfile) return;
 
       setIsPerformingProfileAction(true);
 
       try {
-        if (action === "SEND") {
-          await sendFriendRequest(profileUser.id);
-        } else if (action === "UNDO_FRIENDSHIP") {
-          await undoFriendship(actionUserId);
-        } else if (action === "BLOCK") {
-          await blockUser(actionUserId);
-          navigate(-1);
-          return;
-        } else {
-          await updateFriendRequestState(actionUserId, action);
-        }
-
-        await reloadExternalProfile(profileUser.id);
+        await blockUser(actionUserId);
+        navigate(-1);
       } catch {
-        // Keep the current profile visible if the relationship action fails.
+        // Keep the current profile visible if blocking fails.
       } finally {
         setIsPerformingProfileAction(false);
       }
     },
-    [
-      blockUser,
-      navigate,
-      profileUser,
-      reloadExternalProfile,
-      sendFriendRequest,
-      undoFriendship,
-      updateFriendRequestState,
-    ]
+    [blockUser, navigate, profileUser]
   );
 
   const {
@@ -3256,7 +2940,6 @@ function ProfileContent({ userId }: Readonly<ProfileContentProps>) {
     firstAchievementFocusId,
     lastAchievementFocusId,
     firstFriendFocusId,
-    lastFriendFocusId,
     firstContentFocusId,
     activityDownFocusId,
     libraryDownFocusId,
@@ -3279,7 +2962,6 @@ function ProfileContent({ userId }: Readonly<ProfileContentProps>) {
     hasActiveSubscription: targetHasActiveSubscription,
     screenshotFocusIds: getProfileScreenshotsFocusIds(profileScreenshots),
   });
-  const showFriendsViewAll = totalFriends > friends.length;
   const externalProfileActions = useMemo<ProfileHeroAction[]>(() => {
     if (!profileUser || profileUser.isOwnProfile || !externalProfile) return [];
     return getExternalProfileActions(
@@ -3388,20 +3070,6 @@ function ProfileContent({ userId }: Readonly<ProfileContentProps>) {
                   onActivate={(game) =>
                     navigate(getBigPictureGameAchievementsPath(game))
                   }
-                />
-
-                <ProfileFriends
-                  friends={friends}
-                  totalFriends={totalFriends}
-                  firstFocusId={firstFriendFocusId}
-                  lastFocusId={lastFriendFocusId}
-                  socialUpFocusId={socialUpFocusId}
-                  firstAchievementFocusId={firstAchievementFocusId}
-                  showViewAll={showFriendsViewAll}
-                  onOpenFriend={(friendId) =>
-                    navigate(`${getBasePath()}/profile/${friendId}`)
-                  }
-                  onViewAll={showAllFriends}
                 />
               </section>
             </HorizontalFocusGroup>

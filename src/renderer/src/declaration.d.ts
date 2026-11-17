@@ -29,11 +29,8 @@ import type {
   OpenCheckoutOptions,
   GameStats,
   UserDetails,
-  FriendRequestSync,
-  FriendPresenceSync,
   Notification,
   NotificationSync,
-  UserFriend,
   GameArtifact,
   LudusaviBackup,
   UserAchievement,
@@ -135,17 +132,6 @@ import type {
   SteamSyncRunStatus,
   SteamConnectErrorCode,
   ExtractionFailure,
-  FriendsSnapshot,
-  ChatAttachmentUploadProgress,
-  ChatAttachmentUploadRequest,
-  ChatMessageRejectedSync,
-  ChatMessageSync,
-  ChatMessageVisibilitySync,
-  ChatReactionSync,
-  ChatTypingSync,
-  ChatUnreadState,
-  ChatWindowState,
-  PendingChatFriend,
   PersonalCloudDeviceCode,
   PersonalCloudGameState,
   PersonalCloudStatus,
@@ -1582,9 +1568,6 @@ declare global {
         rotation?: number;
       }
     ) => Promise<{ imagePath: string }>;
-    onSyncFriendRequests: (
-      cb: (friendRequests: FriendRequestSync) => void
-    ) => () => Electron.IpcRenderer;
     onSyncNotificationCount: (
       cb: (notification: NotificationSync) => void
     ) => () => Electron.IpcRenderer;
@@ -1595,7 +1578,6 @@ declare global {
       cb: (giftId: string) => void
     ) => () => Electron.IpcRenderer;
     notifyCloudGiftResolved: (giftId: string) => Promise<void>;
-    syncFriendRequests: (friendRequestCount: number) => Promise<void>;
 
     /* Notifications */
     publishNewRepacksNotification: (newRepacksCount: number) => Promise<void>;
@@ -1683,66 +1665,6 @@ declare global {
     openBigPictureWindow: () => Promise<void>;
     executeSystemPowerAction: (action: SystemPowerAction) => Promise<void>;
 
-    /* Friends Window */
-    openFriendsWindow: () => Promise<void>;
-    minimizeFriendsWindow: () => Promise<void>;
-    closeFriendsWindow: () => Promise<void>;
-    friendsWindowReady: () => Promise<void>;
-    prefetchFriends: () => Promise<void>;
-    getFriendsSnapshot: () => Promise<FriendsSnapshot | null>;
-    openFriendProfileInMainWindow: (userId: string) => Promise<void>;
-    openAddFriendModalInMainWindow: () => Promise<void>;
-    showToastInMainWindow: (toast: MainWindowToast) => Promise<boolean>;
-    onShowToast: (
-      cb: (toast: MainWindowToast) => void
-    ) => () => Electron.IpcRenderer;
-
-    /* Chat Window */
-    openChatWindow: (friend: UserFriend) => Promise<void>;
-    minimizeChatWindow: () => Promise<void>;
-    closeChatWindow: () => Promise<void>;
-    openGameInMainWindow: (gamePath: string) => Promise<void>;
-    openChatNotificationSettings: () => Promise<void>;
-    consumePendingChatFriends: () => Promise<PendingChatFriend[]>;
-    onChatFriendsPending: (cb: () => void) => () => Electron.IpcRenderer;
-    setChatWindowState: (state: ChatWindowState) => Promise<void>;
-    getChatUnreadState: () => Promise<ChatUnreadState>;
-    /** Resolves to false when the read could not be saved. */
-    markChatRead: (friendId: string, seq: number) => Promise<boolean>;
-    refreshOfficialChat: () => Promise<void>;
-    onChatMessage: (
-      cb: (sync: ChatMessageSync) => void
-    ) => () => Electron.IpcRenderer;
-    onChatTyping: (
-      cb: (sync: ChatTypingSync) => void
-    ) => () => Electron.IpcRenderer;
-    onChatReaction: (
-      cb: (sync: ChatReactionSync) => void
-    ) => () => Electron.IpcRenderer;
-    onChatMessageVisibility: (
-      cb: (sync: ChatMessageVisibilitySync) => void
-    ) => () => Electron.IpcRenderer;
-    onChatMessageRejected: (
-      cb: (sync: ChatMessageRejectedSync) => void
-    ) => () => Electron.IpcRenderer;
-    /** Reserves an upload and sends the bytes; resolves to the attachment id. */
-    uploadChatAttachment: (
-      request: ChatAttachmentUploadRequest
-    ) => Promise<{ id: string }>;
-    onChatAttachmentUploadProgress: (
-      cb: (progress: ChatAttachmentUploadProgress) => void
-    ) => () => Electron.IpcRenderer;
-    onChatMessageSound: (cb: () => void) => () => Electron.IpcRenderer;
-    onChatUnreadUpdated: (
-      cb: (state: ChatUnreadState) => void
-    ) => () => Electron.IpcRenderer;
-    onChatResync: (cb: () => void) => () => Electron.IpcRenderer;
-
-    onOpenAddFriendModal: (cb: () => void) => () => Electron.IpcRenderer;
-    onFriendsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    onFriendPresence: (
-      cb: (presence: FriendPresenceSync) => void
-    ) => () => Electron.IpcRenderer;
     onProfileUpdated: (cb: () => void) => () => Electron.IpcRenderer;
     onNavigate: (cb: (path: string) => void) => () => Electron.IpcRenderer;
 
