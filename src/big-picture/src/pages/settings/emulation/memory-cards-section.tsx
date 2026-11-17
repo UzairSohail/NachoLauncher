@@ -33,7 +33,7 @@ import { ConfirmationModal } from "../../../components/modals";
 import {
   useBigPictureToast,
   useNavigation,
-  useUserDetails,
+  useGoogleDriveSignedIn,
 } from "../../../hooks";
 import { getSkuRegion, getSkuRegionFlag } from "@renderer/helpers";
 import {
@@ -365,7 +365,7 @@ export function MemoryCardsSection({
   onUploaded,
 }: Readonly<MemoryCardsSectionProps>) {
   const { t } = useTranslation("settings");
-  const { hasActiveSubscription } = useUserDetails();
+  const driveSignedIn = useGoogleDriveSignedIn();
   const { showSuccessToast, showErrorToast } = useBigPictureToast();
   const isPs1 = config.system === "ps1";
   const api = isPs1 ? ps1Api : ps2Api;
@@ -610,7 +610,7 @@ export function MemoryCardsSection({
                       id={collapseId}
                       navigationOverrides={{
                         left: { type: "block" },
-                        right: hasActiveSubscription
+                        right: driveSignedIn
                           ? {
                               type: "item",
                               itemId: backupAllId,
@@ -685,7 +685,7 @@ export function MemoryCardsSection({
                       </button>
                     </FocusItem>
 
-                    {hasActiveSubscription ? (
+                    {driveSignedIn ? (
                       <FocusItem
                         id={backupAllId}
                         navigationOverrides={{
@@ -760,9 +760,7 @@ export function MemoryCardsSection({
                       focusNavigationOverrides={{
                         left: {
                           type: "item",
-                          itemId: hasActiveSubscription
-                            ? backupAllId
-                            : collapseId,
+                          itemId: driveSignedIn ? backupAllId : collapseId,
                         },
                         right: { type: "block" },
                         up: previousGroup
@@ -963,7 +961,7 @@ export function MemoryCardsSection({
                                       ? t("cloud_backing_up")
                                       : t("cloud_backup"),
                                   disabled:
-                                    !hasActiveSubscription ||
+                                    !driveSignedIn ||
                                     backingUpKey === currentKey,
                                   onSelect: () => handleBackup(save),
                                 },

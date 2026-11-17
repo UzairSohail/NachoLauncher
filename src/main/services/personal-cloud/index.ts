@@ -376,6 +376,11 @@ export class PersonalCloud {
     return native().personalCloudWriteFile(key, data);
   }
 
+  /** Moves one of Hydra's own files under `hydra/` to the Drive bin. */
+  public static deleteFile(key: string) {
+    return native().personalCloudDeleteFile(key);
+  }
+
   /**
    * Whether anything in the Drive folder changed since `token`, plus the token
    * for next time. Null when there's no change feed to ask.

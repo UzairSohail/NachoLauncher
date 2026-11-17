@@ -168,14 +168,26 @@ export type MemcardScanInput = Ps2MemcardScanInput;
 export type MemcardScanProgress = Ps2MemcardScanProgress;
 export type MemcardExportResult = Ps2ExportResult;
 
-/* ── Cloud emulation saves (`/profile/emulation-saves`) ───────────────────── */
+/* ── Emulator save backups (kept in the user's Google Drive) ──────────────── */
 
-export type EmulationSavePlatform = "ps1" | "ps2" | "psp" | "gamecube" | "wii";
+export type EmulationSavePlatform =
+  | "ps1"
+  | "ps2"
+  | "psp"
+  | "gamecube"
+  | "wii"
+  | "xbox360";
+/** Platforms whose saves are files or folders rather than memory card slots. */
+export type EmulationFileSavePlatform = Extract<
+  EmulationSavePlatform,
+  "psp" | "gamecube" | "wii" | "xbox360"
+>;
 export type EmulationSaveEmulator =
   | "duckstation"
   | "pcsx2"
   | "ppsspp"
-  | "dolphin";
+  | "dolphin"
+  | "xenia";
 
 export type EmulationSaveMetadata =
   | {
@@ -197,6 +209,14 @@ export type EmulationSaveMetadata =
       artifactFormat: "dolphin-wii-data-bin";
       titleId: string;
       gameId?: string;
+    }
+  | {
+      schemaVersion: 1;
+      artifactFormat: "xenia-content-zip";
+      /** Xbox 360 title ID, 8 hex digits. */
+      titleId: string;
+      /** The Xenia profile the save came from; null for the older layout. */
+      profileId: string | null;
     };
 
 export interface EmulationBackupProgress {
@@ -209,7 +229,7 @@ export interface EmulationBackupProgress {
   currentLabel: string | null;
 }
 
-/** A committed cloud save as returned by the emulation-saves API. */
+/** One backed-up emulator save, as recorded in the Drive index. */
 export interface EmulationCloudSave {
   id: string;
   platform: EmulationSavePlatform;

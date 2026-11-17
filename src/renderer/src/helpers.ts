@@ -80,6 +80,7 @@ export const platformToEmulationSavePlatform = (
   }
   if (/game\s*cube/.test(normalized)) return "gamecube";
   if (/^(nintendo\s+)?wii$/.test(normalized)) return "wii";
+  if (/xbox\s*360/.test(normalized)) return "xbox360";
   return null;
 };
 

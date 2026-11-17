@@ -21,7 +21,7 @@ import {
   getSkuRegionFlag,
   getSkuRegionFromSaveIdentity,
 } from "@renderer/helpers";
-import { useToast, useUserDetails } from "@renderer/hooks";
+import { useToast, useGoogleDriveSignedIn } from "@renderer/hooks";
 import type {
   EmulationCloudSave,
   EmulationSavePlatform,
@@ -61,9 +61,8 @@ export function GameEmulationSaves({
   objectId,
 }: Readonly<GameEmulationSavesProps>) {
   const { t } = useTranslation("settings");
-  const { t: tHydraCloud } = useTranslation("hydra_cloud");
   const { showSuccessToast, showErrorToast } = useToast();
-  const { hasActiveSubscription } = useUserDetails();
+  const driveSignedIn = useGoogleDriveSignedIn();
   const navigate = useNavigate();
 
   const [cloudSaves, setCloudSaves] = useState<EmulationCloudSave[]>([]);
@@ -76,7 +75,7 @@ export function GameEmulationSaves({
   const isMemoryCardPlatform = platform === "ps1" || platform === "ps2";
 
   const load = useCallback(async () => {
-    if (!hasActiveSubscription) {
+    if (!driveSignedIn) {
       setCloudSaves([]);
       setRecords([]);
       return;
@@ -92,7 +91,7 @@ export function GameEmulationSaves({
     } finally {
       setLoading(false);
     }
-  }, [hasActiveSubscription, platform, objectId]);
+  }, [driveSignedIn, platform, objectId]);
 
   useEffect(() => {
     load();
@@ -160,12 +159,16 @@ export function GameEmulationSaves({
     load();
   }, [deleteFor, showSuccessToast, t, load]);
 
-  if (!hasActiveSubscription) {
+  if (!driveSignedIn) {
     return (
       <div className="game-emulation-saves__upgrade">
-        <p>{tHydraCloud("hydra_cloud_feature_found")}</p>
-        <Button onClick={() => window.electron.openCheckout()}>
-          {tHydraCloud("learn_more")}
+        <p>{t("emulator_saves_sign_in_description")}</p>
+        <Button
+          onClick={() => {
+            window.electron.signInPersonalCloud();
+          }}
+        >
+          {t("emulator_saves_sign_in")}
         </Button>
       </div>
     );

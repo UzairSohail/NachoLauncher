@@ -10,10 +10,10 @@ import {
 import { Button, GuideLink } from "@renderer/components";
 import { DropdownMenu } from "@renderer/components/dropdown-menu/dropdown-menu";
 import { getSkuRegion, getSkuRegionFlag } from "@renderer/helpers";
-import { useToast, useUserDetails } from "@renderer/hooks";
+import { useToast, useGoogleDriveSignedIn } from "@renderer/hooks";
 import { formatBytes } from "@shared";
 import type {
-  EmulationSavePlatform,
+  EmulationFileSavePlatform,
   EmulatorConfig,
   MemoryCardSaveRecord,
 } from "@types";
@@ -28,11 +28,14 @@ const saveKey = (save: MemoryCardSaveRecord): string =>
 
 const localSavePlatforms = (
   system: EmulatorConfig["system"]
-): Array<Extract<EmulationSavePlatform, "psp" | "gamecube" | "wii">> =>
-  system === "psp" ? ["psp"] : ["gamecube", "wii"];
+): Array<EmulationFileSavePlatform> => {
+  if (system === "psp") return ["psp"];
+  if (system === "xbox360") return ["xbox360"];
+  return ["gamecube", "wii"];
+};
 
 interface LocalSaveItem {
-  platform: Extract<EmulationSavePlatform, "psp" | "gamecube" | "wii">;
+  platform: EmulationFileSavePlatform;
   save: MemoryCardSaveRecord;
 }
 
@@ -45,7 +48,7 @@ export function LocalEmulatorSavesSection({
 }: Readonly<Props>) {
   const { t } = useTranslation("settings");
   const { showSuccessToast, showErrorToast } = useToast();
-  const { hasActiveSubscription } = useUserDetails();
+  const driveSignedIn = useGoogleDriveSignedIn();
   const platforms = useMemo(
     () => localSavePlatforms(config.system),
     [config.system]
@@ -194,7 +197,7 @@ export function LocalEmulatorSavesSection({
                   </span>
                 </div>
 
-                {hasActiveSubscription && (
+                {driveSignedIn && (
                   <DropdownMenu
                     align="end"
                     items={[

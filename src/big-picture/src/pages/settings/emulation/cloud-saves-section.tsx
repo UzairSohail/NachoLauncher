@@ -29,7 +29,7 @@ import { ConfirmationModal } from "../../../components/modals";
 import {
   useBigPictureToast,
   useNavigation,
-  useUserDetails,
+  useGoogleDriveSignedIn,
 } from "../../../hooks";
 import {
   EMULATION_DETAIL_CLOUD_REFRESH_BUTTON_ID,
@@ -221,7 +221,7 @@ export function CloudSavesSection({
   upTargetId,
 }: Readonly<CloudSavesSectionProps>) {
   const { t } = useTranslation("settings");
-  const { hasActiveSubscription } = useUserDetails();
+  const driveSignedIn = useGoogleDriveSignedIn();
   const { showSuccessToast } = useBigPictureToast();
   const platforms = useMemo<EmulationSavePlatform[]>(
     () =>
@@ -249,7 +249,7 @@ export function CloudSavesSection({
   const { stageRef, consoleRef, gridRef, connector } = useCloudConnector(saves);
 
   const loadSaves = useCallback(async () => {
-    if (!hasActiveSubscription) {
+    if (!driveSignedIn) {
       setSaves([]);
       return;
     }
@@ -266,7 +266,7 @@ export function CloudSavesSection({
     } finally {
       setIsRefreshing(false);
     }
-  }, [hasActiveSubscription, platforms]);
+  }, [driveSignedIn, platforms]);
 
   useEffect(() => {
     void loadSaves();
@@ -281,7 +281,7 @@ export function CloudSavesSection({
     await loadSaves();
   }, [deleteTarget, loadSaves, showSuccessToast]);
 
-  if (!hasActiveSubscription || saves.length === 0) {
+  if (!driveSignedIn || saves.length === 0) {
     return null;
   }
 

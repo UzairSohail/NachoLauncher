@@ -1,6 +1,10 @@
 import { normalizeSku } from "@main/services/emulators";
 import type { LaunchboxShopDetailsAssetsResponse } from "@main/services/emulators";
-import { gamesShopAssetsSublevel, gamesShopCacheSublevel } from "@main/level";
+import {
+  gamesShopAssetsSublevel,
+  gamesShopCacheSublevel,
+  gamesSublevel,
+} from "@main/level";
 
 /**
  * Build a sku → assets index from games already in the local Hydra library.
@@ -27,7 +31,7 @@ export const buildLocalLaunchboxAssetIndex = async (): Promise<
       skuToObjectId.set(normalizeSku(sku), details.objectId);
     }
   }
-  if (skuToObjectId.size === 0) return index;
+  if (skuToObjectId.size === 0) return addLibraryDiscSkus(index);
 
   // objectId → cached assets.
   const assetsByObjectId = new Map(
@@ -50,6 +54,33 @@ export const buildLocalLaunchboxAssetIndex = async (): Promise<
       libraryHeroImageUrl: assets.libraryHeroImageUrl,
       logoImageUrl: assets.logoImageUrl,
     });
+  }
+  return addLibraryDiscSkus(index);
+};
+
+/**
+ * Adds the serials read from the ROMs in the library. Games matched by name
+ * (common for Xbox 360) have no serial in the shop cache, but their discs do.
+ */
+const addLibraryDiscSkus = async (
+  index: Map<string, LaunchboxShopDetailsAssetsResponse>
+) => {
+  for (const game of await gamesSublevel.values().all()) {
+    if (game.shop !== "launchbox" || game.isDeleted || !game.discs) continue;
+    for (const disc of game.discs) {
+      if (!disc.sku) continue;
+      const sku = normalizeSku(disc.sku);
+      if (!sku || index.has(sku)) continue;
+      index.set(sku, {
+        objectId: game.objectId,
+        shop: "launchbox",
+        title: game.title,
+        iconUrl: game.iconUrl,
+        libraryImageUrl: game.customCoverImageUrl ?? null,
+        libraryHeroImageUrl: game.libraryHeroImageUrl,
+        logoImageUrl: game.logoImageUrl,
+      });
+    }
   }
   return index;
 };
