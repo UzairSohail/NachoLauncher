@@ -11,7 +11,6 @@ import {
 } from "@main/level";
 import {
   DownloadError,
-  Downloader,
   findGameUpdate,
   findRepackByUri,
   toInstalledRepackInfo,
@@ -129,7 +128,6 @@ export class GameUpdates {
 
   private static isInstalled(game: Game, download: Download | undefined) {
     if (game.isDeleted || game.shop === "custom") return false;
-    if (download?.downloader === Downloader.Epic) return false;
     if (download) {
       return download.status === "complete" || download.status === "seeding";
     }

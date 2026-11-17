@@ -15,7 +15,6 @@ export type GameOptionsCategoryId =
   | "assets"
   | "personal_cloud"
   | "hydra_cloud"
-  | "epic_cloud"
   | "hydra_cloud_legacy"
   | "compatibility"
   | "downloads"

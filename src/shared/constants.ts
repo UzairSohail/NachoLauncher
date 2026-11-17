@@ -13,7 +13,7 @@ export enum Downloader {
   Premiumize = 12,
   AllDebrid = 13,
   ArchiveOrg = 14,
-  Epic = 15,
+  // 15 was the Epic Games downloader, removed with Epic support.
   FileKeeper = 16,
   Buzzheavier = 17,
   // 18 was a FileDitch downloader that never shipped: its links are behind

@@ -4,8 +4,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { GameShop, type Game, type UserPreferences } from "@types";
-import { db, downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
-import { isEpicUpdateInterrupted } from "@shared";
+import { db, gamesSublevel, levelKeys } from "@main/level";
 import { updateGameExecutablePath } from "./update-executable-path";
 import {
   clearCloudSaveLaunchGuard,
@@ -52,25 +51,12 @@ import {
   buildWindowsBatchCommand,
   isWindowsBatchFile,
 } from "./windows-batch-command";
-import {
-  markManagedEpicLaunched,
-  prepareManagedEpicLaunch,
-  cancelManagedEpicLaunch,
-  recordManagedEpicProcess,
-  launchPreparedEpicLinuxGame,
-} from "@main/services/epic/launch";
-import type { EpicLaunchParameters } from "@main/services/epic/launch-protocol";
-import { EpicSaveFailure } from "@main/services/epic/cloud-save-protocol";
-import { getEpicCloudSaveService } from "@main/services/epic/cloud-saves";
 
 export interface LaunchGameOptions {
   shop: GameShop;
   objectId: string;
   executablePath: string;
   launchOptions?: string | null;
-  epicSavePolicy?: "local-once";
-  epicOffline?: boolean;
-  epicSkipUpdateCheck?: boolean;
 }
 
 const LAUNCH_DELAY_IN_MS = 2_000;
@@ -526,8 +512,6 @@ const prepareSteamCompatibilityForCloudSave = (
   };
 };
 
-class ManagedEpicLaunchBlockedError extends Error {}
-
 const prepareLinuxCompatibilityForLaunch = async (
   parsedPath: string,
   game: Game | undefined,
@@ -667,35 +651,6 @@ const launchResolvedGame = async (
   return pid;
 };
 
-const launchAuthenticatedEpicGame = (
-  parameters: EpicLaunchParameters,
-  launchOptions?: string | null
-): Promise<number> => {
-  const resolved = resolveLaunchCommand({
-    baseCommand: parameters.executable,
-    baseArgs: parameters.args,
-    launchOptions,
-  });
-  if (isWindowsBatchFile(resolved.command))
-    return Promise.reject(new EpicSaveFailure("invalid-path"));
-  return new Promise((resolve, reject) => {
-    const child = spawn(resolved.command, resolved.args, {
-      shell: false,
-      detached: true,
-      stdio: "ignore",
-      cwd: parameters.workingDirectory,
-      env: { ...process.env, ...parameters.environment, ...resolved.env },
-    });
-    child.once("spawn", () => {
-      child.unref();
-      if (child.pid) resolve(child.pid);
-      else reject(new EpicSaveFailure("process-failed"));
-    });
-    // Never serialize the spawn error: it includes authentication arguments.
-    child.once("error", () => reject(new EpicSaveFailure("process-failed")));
-  });
-};
-
 /**
  * Shows the launcher window and launches the game executable
  * Shared between deep link handler and openGame event
@@ -761,7 +716,6 @@ const launchGameWithCloudSaveChecks = async (
       }))
     : null;
   const launchGameRecord = updatedGame ?? game;
-  const managedEpic = shop === "epic" && !!launchGameRecord?.epicInstallation;
 
   clearGameLauncherStatuses(gameKey);
   await WindowManager.createGameLauncherWindow(shop, objectId);
@@ -771,14 +725,7 @@ const launchGameWithCloudSaveChecks = async (
     shop
   );
   let preparedCompatibility: PreparedLinuxCompatibility;
-  if (managedEpic) {
-    preparedCompatibility = {
-      context: null,
-      prefixReadyForRestore: true,
-      prefixSafeForUpload: true,
-      prefixGenerationOverride: undefined,
-    };
-  } else if (steamCompatibilityPrefixPath) {
+  if (steamCompatibilityPrefixPath) {
     preparedCompatibility = prepareSteamCompatibilityForCloudSave(
       steamCompatibilityPrefixPath
     );
@@ -789,7 +736,6 @@ const launchGameWithCloudSaveChecks = async (
       objectId,
       shop,
       shouldRunV2AutomaticSync ||
-        managedEpic ||
         // Cloud Save Manager needs the prefix's drive_c to put a cloud save
         // in place, so a game's first launch creates the prefix up front.
         (await PersonalCloud.isSyncing())
@@ -912,70 +858,6 @@ const launchGameWithCloudSaveChecks = async (
     }
     return true;
   };
-
-  if (managedEpic && launchGameRecord) {
-    return getEpicCloudSaveService().runLaunchGate(objectId, async () => {
-      try {
-        const prepared = await prepareManagedEpicLaunch(
-          launchGameRecord,
-          parsedPath,
-          {
-            winePrefixPath: compatibilityContext?.winePrefixPath,
-            epicSavePolicy: options.epicSavePolicy,
-            epicOffline: options.epicOffline,
-            epicSkipUpdateCheck:
-              options.epicSkipUpdateCheck &&
-              !isEpicUpdateInterrupted(
-                (await downloadsSublevel.get(gameKey)) ?? null
-              ),
-            onStatus: createUmuStatusReporter(gameKey),
-            // Runs once the Linux prefix exists, so Hydra restores into it and
-            // records its upload guard against the prepared environment.
-            beforeSaveSync: async (winePrefixPath) => {
-              if (!(await runHydraPreLaunchSync(winePrefixPath)))
-                throw new ManagedEpicLaunchBlockedError();
-            },
-          }
-        );
-        await runCommonRedistPreflight(shop, objectId);
-        let pid: number;
-        try {
-          await markManagedEpicLaunched(prepared.session);
-          getEpicCloudSaveService().assertSessionCurrent(prepared.session);
-          if (prepared.linuxContext) {
-            const handle = await launchPreparedEpicLinuxGame(
-              prepared.session,
-              prepared.parameters,
-              {
-                launchOptions,
-                useGamemode,
-                useMangohud,
-                onStatus: createUmuStatusReporter(gameKey),
-              }
-            );
-            pid = handle.pid;
-            PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
-          } else {
-            pid = await launchAuthenticatedEpicGame(
-              prepared.parameters,
-              launchOptions
-            );
-            recordManagedEpicProcess(prepared.session, pid);
-          }
-        } catch (error) {
-          await cancelManagedEpicLaunch(prepared.session);
-          throw error;
-        }
-        launchedGamePids.set(gameKey, pid);
-        return pid;
-      } catch (error) {
-        if (error instanceof ManagedEpicLaunchBlockedError) return null;
-        WindowManager.closeGameLauncherWindow();
-        // Auth or save preparation failures must never fall through to a raw launch.
-        throw error;
-      }
-    });
-  }
 
   // Pulls a newer save from the user's own cloud. It never blocks the launch.
   if (launchGameRecord) {

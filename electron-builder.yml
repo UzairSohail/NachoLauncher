@@ -1,8 +1,5 @@
 appId: io.github.uzairsohail.nacholauncher
 productName: Nacho Launcher
-beforePack: scripts/legendary-before-pack.cjs
-afterPack: scripts/legendary-after-pack.cjs
-afterSign: scripts/legendary-after-pack.cjs
 electronFuses:
   runAsNode: false
   enableNodeOptionsEnvironmentVariable: false
@@ -23,16 +20,12 @@ extraResources:
     to: chat-message.wav
 files:
   - "!.cache/**"
-  - "!legendary/**"
-  - "!resources/legendary/**"
   - "!native/torrent-bridge/**"
   - "!companion/**"
   - "!**/.vscode/*"
   - "!src/*"
   - "!native/hydra-native/target"
   - "!native/hydra-native/target/**"
-  - "!native/epic-prerequisite-runner/**"
-  - "!binaries/epic-prerequisite-runner/**"
   - "!electron.vite.config.{js,ts,mjs,cjs}"
   - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
   - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
@@ -45,22 +38,6 @@ asarUnpack:
 win:
   executableName: NachoLauncher
   extraResources:
-    - from: legendary/win32/${arch}
-      to: legendary
-      filter:
-        - legendary.exe
-        - managed.py
-        - managed-legendary.pyz
-        - managed-native/**
-        - managed-runtime.json
-        - python/**
-        - hydra-epic-process.exe
-        - hydra-epic-process.json
-    - from: resources/legendary
-      to: legendary
-      filter:
-        - LICENSE
-        - NOTICE.md
     - from: binaries/7z.exe
     - from: binaries/7z.dll
   target:
@@ -78,18 +55,8 @@ portable:
   artifactName: nacho-launcher-${version}-portable.${ext}
   unpackDirName: false
 mac:
-  sign: scripts/legendary-mac-sign.cjs
   entitlementsInherit: build/entitlements.mac.plist
   extraResources:
-    - from: legendary/darwin/${arch}
-      to: legendary
-      filter:
-        - legendary
-    - from: resources/legendary
-      to: legendary
-      filter:
-        - LICENSE
-        - NOTICE.md
     - from: binaries/7zz
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
@@ -101,30 +68,6 @@ dmg:
   artifactName: nacho-launcher-${version}.${ext}
 linux:
   extraResources:
-    - from: binaries/epic-prerequisite-runner/x64
-      to: epic
-      filter:
-        - epic-prerequisite-runner.exe
-        - .build.json
-    - from: legendary/linux/${arch}
-      to: legendary
-      filter:
-        - legendary
-        - legendary.pyz
-        - managed.py
-        - managed-legendary.pyz
-        - managed-native/**
-        - managed-runtime.json
-        - python-runner
-        - python/**
-        - glibc/**
-        - licenses/**
-        - .runtime-files.json
-    - from: resources/legendary
-      to: legendary
-      filter:
-        - LICENSE
-        - NOTICE.md
     - from: binaries/7zzs
     - from: binaries/umu/umu-run
   target:

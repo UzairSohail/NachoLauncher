@@ -64,12 +64,10 @@ import {
   UnlinkIcon,
   XCircleIcon,
   GraphIcon,
-  GearIcon,
   ZapIcon,
 } from "@primer/octicons-react";
 import { MoreVertical, FileArchive, FolderOpen } from "lucide-react";
 import { average } from "color.js";
-import { getEpicManagedError } from "@renderer/helpers/epic-managed-error";
 
 function hexToRgb(hex: string): [number, number, number] {
   let h = hex.replace("#", "");
@@ -329,17 +327,7 @@ function HeroDownloadTime({
     game.download?.downloader === Downloader.Torrent;
 
   let label: ReactNode = tGameDetails("calculating_eta");
-  const epicPhase =
-    lastPacket?.gameId === game.id
-      ? (lastPacket.download.epic?.phase ?? game.download?.epic?.phase)
-      : game.download?.epic?.phase;
-
-  if (
-    game.download?.downloader === Downloader.Epic &&
-    (epicPhase === "finalizing" || epicPhase === "prerequisites")
-  ) {
-    label = tGameDetails("epic_finalizing_install");
-  } else if (isDownloadingMetadata) {
+  if (isDownloadingMetadata) {
     label = (
       <GuideLink article="downloading-metadata">
         {t("downloading_metadata")}
@@ -626,9 +614,7 @@ type CompletedDownloadStep = FinishedDownloadStep | "checking" | "open-folder";
 const isDownloadFinished = (
   game: LibraryGame
 ): game is LibraryGame & { download: Download } =>
-  game.download?.progress === 1 &&
-  (game.download.downloader !== Downloader.Epic ||
-    game.download.status === "complete");
+  game.download?.progress === 1;
 
 export interface DownloadGroupProps {
   library: LibraryGame[];
@@ -932,7 +918,6 @@ export function DownloadGroup({
     const deleting = isGameDeleting(game.id);
 
     if (isDownloadFinished(game)) {
-      const isEpic = game.download?.downloader === Downloader.Epic;
       const step = getCompletedDownloadStep(game);
       const hasInstaller = installerAvailability[game.id] === true;
 
@@ -961,7 +946,7 @@ export function DownloadGroup({
         },
         {
           label: tGameDetails("open_folder"),
-          show: !isEpic,
+          show: true,
           disabled: deleting,
           icon: <FolderOpen size={16} />,
           onClick: () => {
@@ -973,7 +958,7 @@ export function DownloadGroup({
         },
         {
           label: t("extract"),
-          show: game.download.downloader !== Downloader.Epic,
+          show: true,
           disabled: game.download.extracting,
           icon: <FileArchive size={16} />,
           onClick: () => {
@@ -1058,14 +1043,6 @@ export function DownloadGroup({
         icon: <ColumnsIcon />,
       },
       {
-        label: t("integrations", { ns: "settings" }),
-        show:
-          game.download?.downloader === Downloader.Epic &&
-          game.download.status === "error",
-        onClick: () => navigate("/settings?tab=integrations"),
-        icon: <GearIcon />,
-      },
-      {
         label: t("resume"),
         disabled: isResumeDisabled,
         onClick: () => {
@@ -1121,8 +1098,6 @@ export function DownloadGroup({
   const getCompletedDownloadStep = (
     game: LibraryGame
   ): CompletedDownloadStep => {
-    if (game.download?.downloader === Downloader.Epic) return "open-folder";
-
     const step = getFinishedDownloadStep(
       game,
       installerAvailability[game.id] === true
@@ -1457,18 +1432,6 @@ export function DownloadGroup({
                     </h3>
                   </button>
                   <div className="download-group__simple-meta">
-                    {game.download?.downloader === Downloader.Epic &&
-                      game.download.status === "error" && (
-                        <p role="alert">
-                          {t(
-                            getEpicManagedError(game.download.epic?.error).key,
-                            {
-                              ns: getEpicManagedError(game.download.epic?.error)
-                                .ns,
-                            }
-                          )}
-                        </p>
-                      )}
                     <div className="download-group__simple-meta-row">
                       <Badge>
                         {DOWNLOADER_NAME[Number(game.download!.downloader)]}
@@ -1523,19 +1486,16 @@ export function DownloadGroup({
 
                 <div className="download-group__simple-actions">
                   {isDownloadFinished(game) && renderCompletedAction(game)}
-                  {isQueuedGroup &&
-                    (game.download?.progress !== 1 ||
-                      (game.download.downloader === Downloader.Epic &&
-                        game.download.status !== "complete")) && (
-                      <Button
-                        theme="primary"
-                        onClick={() => resumeDownload(game.shop, game.objectId)}
-                        className="download-group__simple-menu-btn"
-                        tooltip={t("resume")}
-                      >
-                        <DownloadIcon size={16} />
-                      </Button>
-                    )}
+                  {isQueuedGroup && game.download?.progress !== 1 && (
+                    <Button
+                      theme="primary"
+                      onClick={() => resumeDownload(game.shop, game.objectId)}
+                      className="download-group__simple-menu-btn"
+                      tooltip={t("resume")}
+                    >
+                      <DownloadIcon size={16} />
+                    </Button>
+                  )}
                   <DropdownMenu align="end" items={getGameActions(game)}>
                     <Button
                       theme="outline"

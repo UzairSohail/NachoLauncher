@@ -15,7 +15,6 @@ export const DOWNLOADER_NAME = {
   [Downloader.Premiumize]: "Premiumize",
   [Downloader.AllDebrid]: "AllDebrid",
   [Downloader.ArchiveOrg]: "Archive.org",
-  [Downloader.Epic]: "Epic Games",
   [Downloader.FileKeeper]: "FileKeeper",
   [Downloader.Buzzheavier]: "Buzzheavier",
   [Downloader.MegaDB]: "MegaDB",

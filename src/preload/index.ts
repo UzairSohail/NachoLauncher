@@ -100,20 +100,6 @@ import type {
   ChatUnreadState,
   ChatWindowState,
   PendingChatFriend,
-  EpicConnectionState,
-  EpicSyncState,
-  EpicSyncFinished,
-  EpicOperationResult,
-  EpicStartAuthResult,
-  EpicGameInstallOptions,
-  StartEpicGameDownloadPayload,
-  StartEpicGameUpdatePayload,
-  EpicManagedOperationResult,
-  EpicCloudSaveState,
-  EpicCloudSaveSettings,
-  ResolveEpicCloudSaveConflictPayload,
-  EpicLaunchOptions,
-  EpicLinuxCompatibility,
   LocalScreenshot,
   LocalScreenshotDraft,
   LocalScreenshotUploadOptions,
@@ -1424,16 +1410,14 @@ contextBridge.exposeInMainWorld("electron", {
     shop: GameShop,
     objectId: string,
     executablePath: string,
-    launchOptions?: string | null,
-    epicLaunchOptions?: EpicLaunchOptions
+    launchOptions?: string | null
   ) =>
     ipcRenderer.invoke(
       "openGame",
       shop,
       objectId,
       executablePath,
-      launchOptions,
-      epicLaunchOptions
+      launchOptions
     ),
   openClassicsGame: (
     shop: GameShop,
@@ -1468,7 +1452,7 @@ contextBridge.exposeInMainWorld("electron", {
   deleteGameFolder: (
     shop: GameShop,
     objectId: string,
-    options?: { deleteSourceArchive?: boolean; keepEpicUpdateFiles?: boolean }
+    options?: { deleteSourceArchive?: boolean }
   ) => ipcRenderer.invoke("deleteGameFolder", shop, objectId, options),
   recheckInstalledExecutable: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("recheckInstalledExecutable", shop, objectId),
@@ -2152,124 +2136,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.on("on-retroachievements-connected", listener);
     return () =>
       ipcRenderer.removeListener("on-retroachievements-connected", listener);
-  },
-  getEpicConnection: () =>
-    ipcRenderer.invoke("getEpicConnection") as Promise<EpicConnectionState>,
-  getGameLinuxCompatibility: (shop: GameShop, objectId: string) =>
-    ipcRenderer.invoke(
-      "getGameLinuxCompatibility",
-      shop,
-      objectId
-    ) as Promise<EpicLinuxCompatibility | null>,
-  getEpicGameInstallOptions: (epicObjectId: string, requestId?: string) =>
-    ipcRenderer.invoke(
-      "getEpicGameInstallOptions",
-      epicObjectId,
-      requestId
-    ) as Promise<EpicGameInstallOptions>,
-  cancelEpicGameInstallOptions: (requestId: string) =>
-    ipcRenderer.invoke(
-      "cancelEpicGameInstallOptions",
-      requestId
-    ) as Promise<void>,
-  invalidateEpicGameInstallOptions: (epicObjectId: string) =>
-    ipcRenderer.invoke(
-      "invalidateEpicGameInstallOptions",
-      epicObjectId
-    ) as Promise<void>,
-  startEpicGameDownload: (payload: StartEpicGameDownloadPayload) =>
-    ipcRenderer.invoke(
-      "startEpicGameDownload",
-      payload
-    ) as Promise<EpicManagedOperationResult>,
-  startEpicGameUpdate: (payload: StartEpicGameUpdatePayload) =>
-    ipcRenderer.invoke(
-      "startEpicGameUpdate",
-      payload
-    ) as Promise<EpicManagedOperationResult>,
-  getEpicCloudSaveState: (epicObjectId: string) =>
-    ipcRenderer.invoke(
-      "getEpicCloudSaveState",
-      epicObjectId
-    ) as Promise<EpicCloudSaveState>,
-  setEpicCloudSaveSettings: (
-    epicObjectId: string,
-    settings: EpicCloudSaveSettings
-  ) =>
-    ipcRenderer.invoke(
-      "setEpicCloudSaveSettings",
-      epicObjectId,
-      settings
-    ) as Promise<EpicManagedOperationResult>,
-  syncEpicCloudSaves: (epicObjectId: string) =>
-    ipcRenderer.invoke(
-      "syncEpicCloudSaves",
-      epicObjectId
-    ) as Promise<EpicCloudSaveState>,
-  resolveEpicCloudSaveConflict: (
-    payload: ResolveEpicCloudSaveConflictPayload
-  ) =>
-    ipcRenderer.invoke(
-      "resolveEpicCloudSaveConflict",
-      payload
-    ) as Promise<EpicCloudSaveState>,
-  onEpicCloudSaveStateChanged: (cb: (state: EpicCloudSaveState) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      state: EpicCloudSaveState
-    ) => cb(state);
-    ipcRenderer.on("on-epic-cloud-save-state-changed", listener);
-    return () => {
-      ipcRenderer.removeListener("on-epic-cloud-save-state-changed", listener);
-    };
-  },
-  startEpicAuth: () =>
-    ipcRenderer.invoke("startEpicAuth") as Promise<EpicStartAuthResult>,
-  cancelEpicAuth: (operationId: string) =>
-    ipcRenderer.invoke(
-      "cancelEpicAuth",
-      operationId
-    ) as Promise<EpicOperationResult>,
-  disconnectEpic: (connectionId: string) =>
-    ipcRenderer.invoke(
-      "disconnectEpic",
-      connectionId
-    ) as Promise<EpicOperationResult>,
-  onEpicConnectionChanged: (cb: (state: EpicConnectionState) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      state: EpicConnectionState
-    ) => cb(state);
-    ipcRenderer.on("on-epic-connection-changed", listener);
-    return () =>
-      ipcRenderer.removeListener("on-epic-connection-changed", listener);
-  },
-  startEpicSync: (connectionId: string) =>
-    ipcRenderer.invoke("startEpicSync", connectionId) as Promise<EpicSyncState>,
-  getEpicSyncState: () =>
-    ipcRenderer.invoke("getEpicSyncState") as Promise<EpicSyncState>,
-  cancelEpicSync: (connectionId: string) =>
-    ipcRenderer.invoke(
-      "cancelEpicSync",
-      connectionId
-    ) as Promise<EpicOperationResult>,
-  syncEpicGameOnGamePage: (objectId: string) =>
-    ipcRenderer.invoke("syncEpicGameOnGamePage", objectId) as Promise<boolean>,
-  onEpicSyncProgress: (cb: (state: EpicSyncState) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      state: EpicSyncState
-    ) => cb(state);
-    ipcRenderer.on("on-epic-sync-progress", listener);
-    return () => ipcRenderer.removeListener("on-epic-sync-progress", listener);
-  },
-  onEpicSyncFinished: (cb: (result: EpicSyncFinished) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      result: EpicSyncFinished
-    ) => cb(result);
-    ipcRenderer.on("on-epic-sync-finished", listener);
-    return () => ipcRenderer.removeListener("on-epic-sync-finished", listener);
   },
   startSteamOAuth: (lng: string) => ipcRenderer.invoke("startSteamOAuth", lng),
   disconnectSteam: (deleteImportedData: boolean) =>

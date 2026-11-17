@@ -1,5 +1,3 @@
-import { getContextualEpicGame } from "@main/services/epic/import-visibility";
-import { HydraApi } from "@main/services/hydra-api";
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { registerEvent } from "../register-event";
 import { gamesSublevel, downloadsSublevel, levelKeys } from "@main/level";
@@ -22,7 +20,7 @@ const getGameByObjectId = async (
   ]);
 
   if (!storedGame) return null;
-  const game = getContextualEpicGame(storedGame, HydraApi.getAuthContext());
+  const game = storedGame;
   if (game.isDeleted) return null;
 
   if (game.shop === "launchbox" && !game.platform) {

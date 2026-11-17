@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { SettingsDebrid } from "./settings-debrid";
 import { SettingsRetroAchievements } from "./settings-retroachievements";
 import { SettingsSteam } from "./settings-steam";
-import { SettingsEpic } from "./settings-epic";
 import { SettingsPersonalCloud } from "./settings-personal-cloud";
 import { SettingsSync } from "./settings-sync";
 import { SettingsCompanion } from "./settings-companion";
@@ -17,7 +16,6 @@ export function SettingsContextIntegrations() {
         <SettingsSync />
         <SettingsCompanion />
         <SettingsSteam />
-        <SettingsEpic />
         <SettingsRetroAchievements />
       </div>
 

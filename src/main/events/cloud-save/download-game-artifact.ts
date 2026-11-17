@@ -13,7 +13,7 @@ import { SystemPath } from "@main/services/system-path";
 import { gamesSublevel, levelKeys } from "@main/level";
 import { requestGameArtifactDownload } from "./game-artifact-download";
 import { pipeline } from "node:stream/promises";
-import { runWithHydraSaveGuard } from "@main/services/epic/cloud-saves";
+import { runWithHydraSaveGuard } from "@main/services/cloud-save/save-file-gate";
 
 export const transformLudusaviBackupPathIntoWindowsPath = (
   backupPath: string,

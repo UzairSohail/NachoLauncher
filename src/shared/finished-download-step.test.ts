@@ -33,14 +33,10 @@ const makeGame = (
   }) as LibraryGame;
 
 describe("getFinishedDownload", () => {
-  it("ignores missing, unfinished and Epic downloads", () => {
+  it("ignores missing and unfinished downloads", () => {
     assert.equal(getFinishedDownload(null), null);
     assert.equal(getFinishedDownload(makeGame(null)), null);
     assert.equal(getFinishedDownload(makeGame({ progress: 0.5 })), null);
-    assert.equal(
-      getFinishedDownload(makeGame({ downloader: Downloader.Epic })),
-      null
-    );
   });
 
   it("returns a finished download", () => {

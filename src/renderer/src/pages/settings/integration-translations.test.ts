@@ -15,13 +15,6 @@ const INTEGRATION_DISPLAY_KEYS = [
   "retroachievements_status_invalid_credentials",
   "retroachievements_invalid_credentials_description",
   "steam_status_reconnect_required",
-  "epic_status_connected",
-  "epic_status_reconnect_required",
-  "epic_status_unconfirmed",
-  "epic_status_unknown",
-  "epic_description",
-  "epic_login_in_window",
-  "epic_disconnect_description",
 ] as const;
 
 const INTEGRATION_SOURCE_FILES = [
@@ -29,8 +22,6 @@ const INTEGRATION_SOURCE_FILES = [
   "src/renderer/src/pages/settings/settings-steam.tsx",
   "src/renderer/src/pages/settings/settings-steam-state.ts",
   "src/renderer/src/pages/settings/settings-retroachievements.tsx",
-  "src/renderer/src/pages/settings/settings-epic.tsx",
-  "src/renderer/src/pages/settings/settings-epic-state.ts",
   "src/renderer/src/pages/retroachievements-connection-window/retroachievements-connection-window.tsx",
 ] as const;
 

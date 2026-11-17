@@ -1,8 +1,4 @@
 import { GameUpdates } from "@main/services/game-updates";
-import {
-  initializeEpicIntegration,
-  startEpicSyncOnStartup,
-} from "./services/epic";
 import { downloadsSublevel } from "./level/sublevels/downloads";
 import { recoverInterruptedInstallers } from "./helpers/recover-interrupted-installers";
 import { orderBy } from "lodash-es";
@@ -81,11 +77,6 @@ const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
   return currentSize < expectedSize;
 };
 
-let apiStartup: Promise<void> = Promise.resolve();
-
-/** Settles once the background Hydra account and Epic set-up has finished. */
-export const whenApiStartupSettled = () => apiStartup.catch(() => undefined);
-
 export const loadState = async () => {
   await Lock.acquireLock();
   await clearLegacyAchievementPersistence();
@@ -147,17 +138,12 @@ export const loadState = async () => {
   void AchievementSync.start();
   CompanionLink.start();
 
-  // Hydra account and Epic set-up can wait on the network, so they run in the
+  // Hydra account set-up can wait on the network, so they run in the
   // background instead of holding up download resume and the main window.
   // setupApi creates its HTTP client before its first await, so anything
   // that calls HydraApi from here on still finds it.
-  apiStartup = HydraApi.setupApi().then(async () => {
+  const apiStartup = HydraApi.setupApi().then(async () => {
     void ScreenshotInputService.refreshFeatureFlag();
-    try {
-      await initializeEpicIntegration();
-    } catch (err) {
-      logger.warn("Epic integration initialization failed on startup", err);
-    }
     uploadGamesBatch();
 
     const { syncDownloadSourcesFromApi } = await import("./services/user");
@@ -181,7 +167,6 @@ export const loadState = async () => {
       SSEClient.connect();
       void groupedSouvenirWorker.trigger();
       void startSteamSyncOnStartup();
-      void startEpicSyncOnStartup();
     }
   });
   apiStartup.catch((error) => {

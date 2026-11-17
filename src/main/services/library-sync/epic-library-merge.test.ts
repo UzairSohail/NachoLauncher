@@ -15,7 +15,7 @@ import {
   mergeImportedProfileGame,
 } from "./merge-imported-profile-game.js";
 import type { Game, ShopAssets } from "@types";
-import { EPIC_HYDRA_TIMEOUT_MS } from "../epic/constants.js";
+const EPIC_HYDRA_TIMEOUT_MS = 20_000;
 
 const context = {
   environment: "https://api.test",

@@ -370,12 +370,6 @@ describe("Big Picture catalogue page", () => {
       assert.ok(
         state.calls.some(
           ([action, shop, id]) =>
-            action === "sync" && shop === "epic" && id === epic.objectId
-        )
-      );
-      assert.ok(
-        state.calls.some(
-          ([action, shop, id]) =>
             action === "achievements" && shop === "epic" && id === epic.objectId
         )
       );

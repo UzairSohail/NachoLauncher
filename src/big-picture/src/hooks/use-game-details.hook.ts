@@ -371,9 +371,7 @@ export function useGameDetails(
 
   const syncTargets = JSON.stringify(
     (presentationGame?.members ?? (game ? [game] : []))
-      .filter(
-        (member) => member.hasActiveSteamImport || member.hasActiveEpicImport
-      )
+      .filter((member) => member.hasActiveSteamImport)
       .map((member) => ({ shop: member.shop, objectId: member.objectId }))
   );
   useEffect(() => {
@@ -386,13 +384,6 @@ export function useGameDetails(
     void Promise.all(
       targets.map(async (target) => {
         const bridge = globalThis.window.electron;
-        if (
-          target.shop === "epic" &&
-          typeof bridge.syncEpicGameOnGamePage === "function"
-        )
-          return bridge
-            .syncEpicGameOnGamePage(target.objectId)
-            .catch(() => false);
         if (
           target.shop === "steam" &&
           typeof bridge.syncSteamGameOnGamePage === "function"

@@ -18,15 +18,6 @@ const openGameWinetricks = async (
 
   if (!game) return false;
 
-  if (shop === "epic" && game.epicInstallation) {
-    try {
-      return await (
-        await import("@main/services/epic")
-      ).openManagedEpicWinetricks(objectId);
-    } catch {
-      return false;
-    }
-  }
   const effectivePrefix = Wine.getEffectivePrefixPath(
     game.winePrefixPath,
     objectId

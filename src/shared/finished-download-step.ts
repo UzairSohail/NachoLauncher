@@ -1,5 +1,5 @@
 import type { Download, LibraryGame } from "@types";
-import { Downloader, FILE_EXTENSIONS_TO_EXTRACT } from "./constants.js";
+import { FILE_EXTENSIONS_TO_EXTRACT } from "./constants.js";
 import { platformToSystem } from "./platform-to-system.js";
 
 export type FinishedDownloadStep =
@@ -16,7 +16,6 @@ export const getFinishedDownload = (
   const download = game?.download;
 
   if (download?.progress !== 1) return null;
-  if (download.downloader === Downloader.Epic) return null;
 
   return download;
 };

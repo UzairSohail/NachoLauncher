@@ -5,7 +5,7 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { LibraryGame } from "@types";
-import { Downloader, getFinishedDownloadStep } from "@shared";
+import { getFinishedDownloadStep } from "@shared";
 import { useInstallerAvailability } from "@renderer/hooks/use-installer-availability";
 import {
   ArchiveIcon,
@@ -2325,17 +2325,6 @@ export default function Downloads() {
 
     if (menuState.section === "paused") {
       return [
-        ...(item.game.download?.downloader === Downloader.Epic &&
-        item.game.download.status === "error"
-          ? [
-              {
-                id: "epic-integrations",
-                label: t("integrations", { ns: "settings" }),
-                disabled: interactionsLocked,
-                onSelect: () => navigate("/settings?tab=integrations"),
-              },
-            ]
-          : []),
         {
           id: "cancel",
           label: "Cancel",
@@ -2352,7 +2341,6 @@ export default function Downloads() {
       installerAvailability[item.game.id] === true
     );
     const hasInstaller = installerAvailability[item.game.id] === true;
-    const isEpic = item.game.download?.downloader === Downloader.Epic;
 
     return [
       ...(hasInstaller &&
@@ -2382,20 +2370,16 @@ export default function Downloads() {
             } satisfies ContextMenuItem,
           ]
         : []),
-      ...(isEpic
-        ? []
-        : [
-            {
-              id: "open-folder",
-              label: t("open_folder", { ns: "game_details" }),
-              disabled: interactionsLocked,
-              onSelect: () =>
-                globalThis.window.electron.openGameInstallerPath(
-                  item.game.shop,
-                  item.game.objectId
-                ),
-            } satisfies ContextMenuItem,
-          ]),
+      {
+        id: "open-folder",
+        label: t("open_folder", { ns: "game_details" }),
+        disabled: interactionsLocked,
+        onSelect: () =>
+          globalThis.window.electron.openGameInstallerPath(
+            item.game.shop,
+            item.game.objectId
+          ),
+      } satisfies ContextMenuItem,
       ...(item.seedAction
         ? [
             {

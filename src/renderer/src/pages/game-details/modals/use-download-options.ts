@@ -65,7 +65,7 @@ export const getDownloadOptions = (
   }
 
   const allDownloaders = Object.values(Downloader).filter(
-    (value) => typeof value === "number" && value !== Downloader.Epic
+    (value) => typeof value === "number"
   ) as Downloader[];
 
   const getDownloaderPriority = (option: {
