@@ -75,7 +75,7 @@ export const getCloudSaveV2FileDetails = async (
   objectId: string,
   shop: GameShop
 ): Promise<CloudSaveV2FileDetails> => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
 
   const analysis = await analyzeCloudSaveState(objectId, shop);
   const customPathContext = cloudSaveCustomPathContextFromPathContext(

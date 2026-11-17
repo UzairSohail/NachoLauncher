@@ -194,7 +194,7 @@ export const restoreRemoteSnapshot = async (
   versionChangeAttempt = 0,
   assertEnvironmentCurrent?: () => Promise<void>
 ): Promise<RestoreRemoteSnapshotResult> => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
 
   const emitProgress = (
     stage: RestoreProgressPayload["stage"],

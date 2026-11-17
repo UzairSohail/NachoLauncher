@@ -1,4 +1,3 @@
-import { HydraApi } from "@main/services/hydra-api";
 import { SystemPath } from "@main/services/system-path";
 import type {
   DownloadedRestoreFile,
@@ -6,11 +5,11 @@ import type {
   RestoreManifestFile,
 } from "@types";
 
-import { NativeAddon } from "../native-addon";
 import {
-  cloudSaveFileKey,
-  validateRestoreDownloadUrls,
-} from "./cloud-save-contract";
+  downloadDriveBlobToTemp,
+  getDriveRestoreManifest,
+} from "./drive-snapshot-store";
+import { cloudSaveFileKey } from "./cloud-save-contract";
 import {
   mapWithConcurrency,
   MAX_CONCURRENT_RESTORE_OPERATIONS,
@@ -23,13 +22,9 @@ export const downloadRemoteSnapshotToTemp = async (
   onProgress?: (processedFiles: number, totalFiles: number) => void
 ): Promise<DownloadedRestoreFile[]> => {
   if (requestedFiles?.length === 0) return [];
-  const files = validateRestoreDownloadUrls(
-    await HydraApi.get<unknown>(
-      "/profile/cloud-saves/snapshot-download-urls",
-      { snapshotId },
-      { needsAuth: true, needsSubscription: true }
-    )
-  );
+  const files: RestoreDownloadUrlFile[] = (
+    await getDriveRestoreManifest(snapshotId)
+  ).files.map((file) => ({ ...file, downloadUrl: "drive:" }));
   const requestedById = requestedFiles
     ? new Map(
         requestedFiles.map((file) => [cloudSaveFileKey(file), file] as const)
@@ -69,11 +64,10 @@ export const downloadRemoteSnapshotToTemp = async (
     MAX_CONCURRENT_RESTORE_OPERATIONS,
     async (group) => {
       const [file] = group;
-      const tempPath = await NativeAddon.downloadRestoreBlobToTemp(
+      const tempPath = await downloadDriveBlobToTemp(
+        snapshotId,
         tempSnapshotId,
-        file.hash,
-        file.sizeBytes,
-        file.downloadUrl,
+        file,
         tempRoot
       );
       return { key: JSON.stringify([file.hash, file.sizeBytes]), tempPath };

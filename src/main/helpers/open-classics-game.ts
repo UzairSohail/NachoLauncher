@@ -4,7 +4,6 @@ import path from "node:path";
 import { gamesSublevel, levelKeys } from "@main/level";
 import { logger, NativeAddon } from "@main/services";
 import { WindowManager } from "@main/services/window-manager";
-import { HydraApi } from "@main/services/hydra-api";
 import {
   canCreateCloudSaveUploadGuard,
   canRunAutomaticCloudSaveSync,
@@ -303,7 +302,10 @@ export const openClassicsGame = async (
       );
     }
 
-    if (HydraApi.isLoggedIn() && HydraApi.hasActiveSubscription()) {
+    const { canAccessCloudSaves } = await import(
+      "@main/services/cloud-save/cloud-save-access"
+    );
+    if (await canAccessCloudSaves(objectId, shop)) {
       const { materializeRetroArchLocalSaves } = await import(
         "@main/services/cloud-save/retroarch-save-provider"
       );

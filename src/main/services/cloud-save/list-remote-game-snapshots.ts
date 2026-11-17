@@ -1,28 +1,9 @@
-import { HydraApi } from "@main/services/hydra-api";
 import type { GameShop, RemoteSnapshotSummary } from "@types";
-import { toCloudSaveApiGame } from "@shared";
 
-import { validateRemoteSnapshotSummary } from "./cloud-save-contract";
+import { listDriveSnapshots } from "./drive-snapshot-store";
 
-const validateRemoteSnapshots = (value: unknown): RemoteSnapshotSummary[] => {
-  if (!Array.isArray(value)) throw new Error("Invalid snapshots response");
-  if (value.length > 1) {
-    throw new Error("Cloud Save API returned more than one active snapshot");
-  }
-  return value.map(validateRemoteSnapshotSummary);
-};
-
+/** The game's active cloud save snapshot in Google Drive, if any. */
 export const listRemoteGameSnapshots = async (
   objectId: string,
   shop: GameShop
-) =>
-  validateRemoteSnapshots(
-    await HydraApi.get<unknown>(
-      "/profile/cloud-saves/snapshots",
-      toCloudSaveApiGame(shop, objectId),
-      {
-        needsAuth: true,
-        needsSubscription: true,
-      }
-    )
-  );
+): Promise<RemoteSnapshotSummary[]> => listDriveSnapshots(shop, objectId);

@@ -128,7 +128,7 @@ export const setCloudSaveAutomaticSyncEnabled = async (
 ) => {
   if (enabled) {
     await assertCloudSaveV2Eligible(objectId, shop);
-    assertCloudSaveSubscription();
+    await assertCloudSaveSubscription();
   }
 
   const { mode: currentMode } = await readCloudSaveAutomaticSyncMode(

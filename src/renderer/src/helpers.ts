@@ -2,7 +2,6 @@ import type {
   EmulationCloudSave,
   EmulatorBinary,
   EmulatorSystem,
-  EmulationSavePlatform,
   GameShop,
   LibraryGame,
   SouvenirSort,
@@ -67,22 +66,7 @@ export const ensureArray = <T>(value: unknown, source: string): T[] => {
   return [];
 };
 
-export const platformToEmulationSavePlatform = (
-  platform?: string | null
-): EmulationSavePlatform | null => {
-  if (!platform) return null;
-  const normalized = platform.toLowerCase().trim();
-  if (/playstation\s*portable|\bpsp\b/.test(normalized)) return "psp";
-  if (/playstation\s*[34]|\bps[34]\b/.test(normalized)) return null;
-  if (/playstation\s*2|\bps2\b/.test(normalized)) return "ps2";
-  if (/playstation(?!\s*(?:[5-9]|vita))|\bps1\b|\bpsx\b/.test(normalized)) {
-    return "ps1";
-  }
-  if (/game\s*cube/.test(normalized)) return "gamecube";
-  if (/^(nintendo\s+)?wii$/.test(normalized)) return "wii";
-  if (/xbox\s*360/.test(normalized)) return "xbox360";
-  return null;
-};
+export { platformToEmulationSavePlatform } from "@shared";
 
 export const getEmulationSaveMetadataSku = (
   save: Pick<EmulationCloudSave, "metadata">

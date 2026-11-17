@@ -2,12 +2,8 @@ import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  cloudSaveEmulatorDestinationsSublevel,
-  db,
-  levelKeys,
-} from "@main/level";
-import type { Game, RestoreManifestFile, User } from "@types";
+import { cloudSaveEmulatorDestinationsSublevel } from "@main/level";
+import type { Game, RestoreManifestFile } from "@types";
 
 import {
   getEmulatorRestoreRules,
@@ -35,6 +31,7 @@ export {
   isSameExistingEmulatorDestination,
   type EmulatorDestinationKind,
 } from "./emulator-destination-policy.js";
+import { getCloudSaveUserId } from "./cloud-save-user";
 
 export const getExpectedEmulatorDestination = async (
   game: Game,
@@ -97,12 +94,9 @@ const bindingKey = async (
   rawPath: string,
   kind: EmulatorDestinationKind
 ) => {
-  const user = await db.get<string, User>(levelKeys.user, {
-    valueEncoding: "json",
-  });
-  if (!user?.id) throw new Error("cloud_save_user_required");
+  const userId = await getCloudSaveUserId();
   return JSON.stringify([
-    user.id,
+    userId,
     game.shop,
     game.objectId,
     os.hostname(),
