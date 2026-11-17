@@ -1,5 +1,3 @@
-import { useTranslation } from "react-i18next";
-
 import { ScreenshotReviewActionButtons } from "@renderer/components/screenshot-upload-form/screenshot-review-action-buttons";
 import { ScreenshotReviewFields } from "@renderer/components/screenshot-upload-form/screenshot-review-fields";
 import type { ScreenshotReviewDraft } from "@renderer/components/screenshot-upload-form/screenshot-review-state";
@@ -21,21 +19,11 @@ export function LocalScreenshotLightboxPanel({
   onDraftChange,
   onDraftCommit,
 }: Readonly<LocalScreenshotLightboxPanelProps>) {
-  const { t } = useTranslation("screenshots_capture");
   const { formatDateTime } = useDate();
-  const { isBusy, isUploadPending, upload, requestDelete, elements } =
-    useScreenshotReviewActions(screenshot, draft);
-  const isUploading =
-    isUploadPending ||
-    screenshot.state === "queued" ||
-    screenshot.state === "uploading" ||
-    (screenshot.state === "uploaded" &&
-      screenshot.moderationStatus !== "BLOCKED");
-
-  const handleUpload = () => {
-    onDraftCommit();
-    void upload();
-  };
+  const { isBusy, requestDelete, elements } = useScreenshotReviewActions(
+    screenshot,
+    draft
+  );
 
   return (
     <aside className="screenshot-lightbox__panel local-screenshot-panel">
@@ -54,11 +42,6 @@ export function LocalScreenshotLightboxPanel({
             {formatDateTime(screenshot.capturedAt)}
           </time>
         </p>
-        {screenshot.state === "uploaded" ? null : (
-          <span className="local-screenshot-panel__badge">
-            {t("not_uploaded")}
-          </span>
-        )}
       </header>
 
       <div className="local-screenshot-panel__fields">
@@ -74,10 +57,7 @@ export function LocalScreenshotLightboxPanel({
       <div className="local-screenshot-panel__footer">
         <div className="local-screenshot-panel__actions">
           <ScreenshotReviewActionButtons
-            screenshot={screenshot}
             isBusy={isBusy}
-            isUploading={isUploading}
-            onUpload={handleUpload}
             onRequestDelete={requestDelete}
           />
         </div>

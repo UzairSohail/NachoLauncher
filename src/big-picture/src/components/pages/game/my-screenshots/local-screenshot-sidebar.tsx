@@ -1,12 +1,8 @@
-import {
-  ArrowClockwiseIcon,
-  CloudArrowUpIcon,
-  TrashIcon,
-} from "@phosphor-icons/react";
+import { TrashIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { LocalScreenshot } from "@types";
-import { getLocalScreenshotTitle, isScreenshotUploadRetryable } from "@shared";
+import { getLocalScreenshotTitle } from "@shared";
 import { logger } from "@renderer/logger";
 
 import {
@@ -18,7 +14,6 @@ import { ConfirmationModal } from "../../../modals";
 import {
   ReviewFields,
   getLastReviewFieldFocusId,
-  toUploadOptions,
   type ReviewDraft,
   type ReviewFieldFocusIds,
 } from "../../../screenshot-upload-form/review-fields";
@@ -26,12 +21,7 @@ import {
   NavigationService,
   type FocusOverrideTarget,
 } from "../../../../services";
-import {
-  Feature,
-  useBigPictureToast,
-  useFeature,
-  useUserDetails,
-} from "../../../../hooks";
+import { useBigPictureToast, useUserDetails } from "../../../../hooks";
 import { formatScreenshotDate } from "../../screenshots";
 import { isLocalScreenshotUploadInFlight } from "./local-screenshot-tile";
 
@@ -47,15 +37,8 @@ const getFieldFocusIds = (clientId: string): ReviewFieldFocusIds => ({
   quality: `local-screenshot-sidebar-quality:${clientId}`,
 });
 
-const getUploadFocusId = (clientId: string) =>
-  `local-screenshot-sidebar-upload:${clientId}`;
 const getDeleteFocusId = (clientId: string) =>
   `local-screenshot-sidebar-delete:${clientId}`;
-
-const getUploadLabelKey = (isUploading: boolean, canRetry: boolean) => {
-  if (isUploading) return "screenshots_uploading";
-  return canRetry ? "screenshots_review_retry" : "screenshots_review_upload";
-};
 
 export const getLocalScreenshotSidebarEntryFocusId = (
   screenshot: LocalScreenshot
@@ -80,26 +63,16 @@ export function LocalScreenshotSidebar({
   stageTarget,
   focusAfterDeleteId,
   onDraftChange,
-  onBeforeUpload,
 }: Readonly<LocalScreenshotSidebarProps>) {
   const { t, i18n } = useTranslation("big_picture");
   const language = i18n.resolvedLanguage ?? i18n.language ?? "en";
   const { showErrorToast } = useBigPictureToast();
-  const { userDetails, hasActiveSubscription } = useUserDetails();
-  const { isFeatureEnabled } = useFeature();
-  const [pendingAction, setPendingAction] = useState<
-    "upload" | "delete" | null
-  >(null);
+  const { hasActiveSubscription } = useUserDetails();
+  const [pendingAction, setPendingAction] = useState<"delete" | null>(null);
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const { clientId } = screenshot;
   const isCustomGame = screenshot.shop === "custom";
-  const isUndecided = screenshot.state === "local";
-  const canRetry =
-    screenshot.state === "failed" &&
-    isScreenshotUploadRetryable(screenshot.lastError);
-  const canUpload = isUndecided || canRetry;
   const isBusy = pendingAction !== null;
-  const uploadFocusId = getUploadFocusId(clientId);
   const deleteFocusId = getDeleteFocusId(clientId);
   const fieldFocusIds = getFieldFocusIds(clientId);
   const lastFieldFocusId = getLastReviewFieldFocusId(
@@ -107,16 +80,11 @@ export function LocalScreenshotSidebar({
     hasActiveSubscription
   );
   const isEditable = EDITABLE_STATES.has(screenshot.state);
-  const isUploading =
-    pendingAction === "upload" || isLocalScreenshotUploadInFlight(screenshot);
+  const isUploading = isLocalScreenshotUploadInFlight(screenshot);
   const hasForm = isEditable || isUploading;
-  const showsUpload = canUpload || isUploading;
   const isLocked = isBusy || isUploading;
 
-  const runAction = async (
-    action: "upload" | "delete",
-    task: () => Promise<unknown>
-  ) => {
+  const runAction = async (action: "delete", task: () => Promise<unknown>) => {
     setPendingAction(action);
     try {
       return await task();
@@ -129,25 +97,6 @@ export function LocalScreenshotSidebar({
     } finally {
       setPendingAction(null);
     }
-  };
-
-  const upload = async () => {
-    if (!userDetails) {
-      showErrorToast(t("screenshots_sign_in_to_upload"), {
-        fallbackVisual: "settings",
-      });
-      return;
-    }
-
-    onBeforeUpload();
-    await runAction("upload", () =>
-      globalThis.window.electron.uploadLocalScreenshot(clientId, {
-        ...toUploadOptions(draft, isCustomGame),
-        commentsEnabled:
-          draft.commentsEnabled ||
-          !isFeatureEnabled(Feature.ScreenshotComments),
-      })
-    );
   };
 
   const remove = async () => {
@@ -181,11 +130,6 @@ export function LocalScreenshotSidebar({
             <span className="screenshot-lightbox__date">
               {formatScreenshotDate(screenshot.capturedAt, language)}
             </span>
-            {screenshot.state === "uploaded" ? null : (
-              <span className="local-screenshot-sidebar__badge">
-                {t("screenshots_not_uploaded")}
-              </span>
-            )}
           </div>
 
           {hasForm ? (
@@ -197,10 +141,7 @@ export function LocalScreenshotSidebar({
                 disabled={isLocked}
                 focusIds={fieldFocusIds}
                 leftTarget={stageTarget}
-                downTarget={{
-                  type: "item",
-                  itemId: canUpload ? uploadFocusId : deleteFocusId,
-                }}
+                downTarget={{ type: "item", itemId: deleteFocusId }}
                 onChange={onDraftChange}
               />
             </div>
@@ -213,36 +154,12 @@ export function LocalScreenshotSidebar({
                 asChild
               >
                 <div className="local-screenshot-sidebar__actions">
-                  {showsUpload ? (
-                    <Button
-                      focusId={uploadFocusId}
-                      focusNavigationOverrides={{
-                        left: stageTarget,
-                        up: { type: "item", itemId: lastFieldFocusId },
-                      }}
-                      disabled={isBusy}
-                      loading={isUploading}
-                      icon={
-                        canRetry ? (
-                          <ArrowClockwiseIcon size={18} />
-                        ) : (
-                          <CloudArrowUpIcon size={18} />
-                        )
-                      }
-                      className="local-screenshot-sidebar__upload"
-                      onClick={() => void upload()}
-                    >
-                      {t(getUploadLabelKey(isUploading, canRetry))}
-                    </Button>
-                  ) : null}
                   <Button
                     variant="danger"
                     size="icon"
                     focusId={deleteFocusId}
                     focusNavigationOverrides={{
-                      left: showsUpload
-                        ? { type: "item", itemId: uploadFocusId }
-                        : stageTarget,
+                      left: stageTarget,
                       right: BLOCK_TARGET,
                       up: { type: "item", itemId: lastFieldFocusId },
                     }}
