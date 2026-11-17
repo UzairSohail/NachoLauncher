@@ -12,7 +12,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   AuthPage,
-  getCloudSaveAccessAction,
+  resolveCloudSaveAccessAction,
+  usesDriveCloudSaves,
   discCloudSaveWrongGameErrorCode,
   getCloudSaveEmulatorProvider,
   getDiscCloudSaveEmulatorProvider,
@@ -22,7 +23,11 @@ import {
 } from "@shared";
 import { Button, ConfirmationModal, Modal } from "@renderer/components";
 import { gameDetailsContext } from "@renderer/context";
-import { useToast, useUserDetails } from "@renderer/hooks";
+import {
+  useGoogleDriveSignedIn,
+  useToast,
+  useUserDetails,
+} from "@renderer/hooks";
 import { useSubscription } from "@renderer/hooks/use-subscription";
 import type {
   CloudSaveConflictResolution,
@@ -195,10 +200,25 @@ export function CloudSaveV2Provider({
     detailsContext;
   const game = gameOverride === undefined ? detailsContext.game : gameOverride;
   const isGameRunning = isGameRunningOverride ?? detailsContext.isGameRunning;
-  const cloudSaveAccessAction = getCloudSaveAccessAction(
-    Boolean(userDetails),
-    hasActiveSubscription
+  const driveSignedIn = useGoogleDriveSignedIn();
+  const cloudSaveAccessAction = resolveCloudSaveAccessAction(
+    shop,
+    game?.platform,
+    {
+      isAuthenticated: Boolean(userDetails),
+      hasActiveSubscription,
+      driveSignedIn,
+    }
   );
+  const usesDrive = usesDriveCloudSaves(shop, game?.platform);
+  // Emulator saves are kept in Google Drive, so "sign in" means Google.
+  const openSignIn = useCallback(() => {
+    if (usesDrive) {
+      void window.electron.signInPersonalCloud();
+    } else {
+      window.electron.openAuthWindow(AuthPage.SignIn);
+    }
+  }, [usesDrive]);
   const canUseCloudSaves = cloudSaveAccessAction === "open";
   const isV2Eligible = isCloudSaveV2Eligible(shop, game?.platform, objectId);
   const isRetroArchGame =
@@ -471,7 +491,7 @@ export function CloudSaveV2Provider({
     setSearchParams(nextSearchParams, { replace: true });
 
     if (cloudSaveAccessAction === "sign-in") {
-      window.electron.openAuthWindow(AuthPage.SignIn);
+      openSignIn();
       return;
     }
     if (cloudSaveAccessAction === "paywall") {
@@ -483,6 +503,7 @@ export function CloudSaveV2Provider({
     setWasOpenedFromLaunchConflict(true);
     setIsModalVisible(true);
   }, [
+    openSignIn,
     cloudSaveAccessAction,
     isV2Eligible,
     searchParams,
@@ -656,7 +677,7 @@ export function CloudSaveV2Provider({
 
   const openManager = useCallback(() => {
     if (cloudSaveAccessAction === "sign-in") {
-      window.electron.openAuthWindow(AuthPage.SignIn);
+      openSignIn();
       return;
     }
     if (cloudSaveAccessAction === "paywall") {
@@ -665,7 +686,7 @@ export function CloudSaveV2Provider({
     }
     setWasOpenedFromLaunchConflict(false);
     setIsModalVisible(true);
-  }, [cloudSaveAccessAction, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, openSignIn, showHydraCloudModal]);
 
   const handleSelectExecutable = () => {
     setIsModalVisible(false);
@@ -814,7 +835,7 @@ export function CloudSaveV2Provider({
       }
       if (cloudSaveAccessAction !== "open") {
         if (cloudSaveAccessAction === "sign-in") {
-          window.electron.openAuthWindow(AuthPage.SignIn);
+          openSignIn();
         } else {
           showHydraCloudModal("backup");
         }
@@ -836,6 +857,7 @@ export function CloudSaveV2Provider({
       }
     },
     [
+      openSignIn,
       cloudSaveAccessAction,
       isRetroArchGame,
       objectId,
@@ -1087,11 +1109,11 @@ export function CloudSaveV2Provider({
     if (cloudSaveAccessAction === "open") {
       setIsFileBrowserVisible(true);
     } else if (cloudSaveAccessAction === "sign-in") {
-      window.electron.openAuthWindow(AuthPage.SignIn);
+      openSignIn();
     } else {
       showHydraCloudModal("backup");
     }
-  }, [cloudSaveAccessAction, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, openSignIn, showHydraCloudModal]);
   const value = useMemo<CloudSaveV2ContextValue>(
     () => ({
       overview,

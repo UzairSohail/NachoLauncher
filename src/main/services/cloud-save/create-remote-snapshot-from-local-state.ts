@@ -1,4 +1,3 @@
-import { HydraApi } from "@main/services/hydra-api";
 import type {
   CloudSaveUploadProgress,
   CommitSnapshotRequest,
@@ -9,6 +8,7 @@ import type {
   SnapshotFile,
 } from "@types";
 
+import { commitDriveSnapshot } from "./drive-snapshot-store";
 import { buildCloudSaveAggregateHash } from "./snapshot-aggregate-hash";
 import { assertCloudSaveV2Eligible } from "./assert-cloud-save-executable";
 import { buildLocalGameSnapshotContext } from "./build-local-game-snapshot";
@@ -87,11 +87,7 @@ const commitPendingSnapshot = async (pendingSnapshotId: string) => {
   const request: CommitSnapshotRequest = { pendingSnapshotId };
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      response = await HydraApi.post<unknown>(
-        "/profile/cloud-saves/commit-snapshot",
-        request,
-        { needsAuth: true, needsSubscription: true }
-      );
+      response = await commitDriveSnapshot(request.pendingSnapshotId);
       break;
     } catch (error) {
       if (attempt === 0 && isCloudSaveCommitTransportFailure(error)) continue;

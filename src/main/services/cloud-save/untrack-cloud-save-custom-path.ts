@@ -1,6 +1,6 @@
 import type { CloudSaveCustomPathBindings, GameShop } from "@types";
 
-import { HydraApi } from "../hydra-api.js";
+import { deleteDriveSnapshots } from "./drive-snapshot-store.js";
 import { assertCloudSaveV2Eligible } from "./assert-cloud-save-executable.js";
 import { buildCloudSaveAggregateHash } from "./snapshot-aggregate-hash.js";
 import { buildLocalGameSnapshotContext } from "./build-local-game-snapshot.js";
@@ -15,7 +15,6 @@ import { withCloudSaveCustomPathStoreMutation } from "./custom-path-store.js";
 import { executeCloudSaveCustomPathUntracking } from "./custom-path-untracking-policy.js";
 import { getCloudSaveGameContext } from "./cloud-save-game-context.js";
 import { assertEmulatorDiscIdentity } from "./emulator-disc-identity.js";
-import { buildDeleteGameCloudSaveSnapshotsUrl } from "./delete-game-cloud-save-data-policy.js";
 import { listRemoteGameSnapshots } from "./list-remote-game-snapshots.js";
 import {
   cloudSaveOperationGate,
@@ -44,14 +43,7 @@ const publishCustomPathRemoval = async (
     );
     await executeCloudSaveCustomPathRemoteRemoval({
       proposal,
-      deleteSnapshot: () =>
-        HydraApi.delete<void>(
-          buildDeleteGameCloudSaveSnapshotsUrl(objectId, shop),
-          {
-            needsAuth: true,
-            needsSubscription: true,
-          }
-        ),
+      deleteSnapshot: () => deleteDriveSnapshots(shop, objectId),
       updateSnapshot: async () => {
         const aggregateHash = buildCloudSaveAggregateHash({
           variants: proposal.variants,

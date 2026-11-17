@@ -11,7 +11,7 @@ import { Modal, SteamUninstallModal } from "@renderer/components";
 import {
   formatBytes,
   GAMEMODE_SITE_URL,
-  getCloudSaveAccessAction,
+  resolveCloudSaveAccessAction,
   getGameExecutableFilters,
   getGameCatalogueIdentity,
   getRemoveFilesTarget,
@@ -43,6 +43,7 @@ import {
   useSteamUninstallAction,
   useToast,
   useUserDetails,
+  useGoogleDriveSignedIn,
 } from "@renderer/hooks";
 import { useSubscription } from "@renderer/hooks/use-subscription";
 import { RemoveGameFromLibraryModal } from "./remove-from-library-modal";
@@ -252,9 +253,15 @@ export function GameOptionsModal({
   const { userDetails, hasActiveSubscription } = useUserDetails();
   const { artifacts } = useContext(cloudSyncContext);
   const { showHydraCloudModal } = useSubscription();
-  const cloudSaveAccessAction = getCloudSaveAccessAction(
-    Boolean(userDetails),
-    hasActiveSubscription
+  const driveSignedIn = useGoogleDriveSignedIn();
+  const cloudSaveAccessAction = resolveCloudSaveAccessAction(
+    game.shop,
+    game.platform,
+    {
+      isAuthenticated: Boolean(userDetails),
+      hasActiveSubscription,
+      driveSignedIn,
+    }
   );
   const cloudSaveSettings = getCloudSaveVisibility(
     game.shop,

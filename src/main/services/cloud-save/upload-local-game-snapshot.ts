@@ -1,23 +1,20 @@
 import os from "node:os";
 
-import { HydraApi } from "@main/services/hydra-api";
 import type {
   CloudSaveUploadProgress,
   GameShop,
   LocalGameSnapshotContext,
+  PrepareSnapshotResponse,
   SnapshotFile,
   SnapshotVariant,
   UploadLocalGameSnapshotResult,
 } from "@types";
 
-import { NativeAddon } from "../native-addon";
+import { prepareDriveSnapshot, uploadDriveBlob } from "./drive-snapshot-store";
 import { buildLocalGameSnapshotContext } from "./build-local-game-snapshot";
 import { cloudSaveFileKey } from "./cloud-save-contract";
 import { buildPrepareSnapshotPayload } from "./prepare-snapshot-payload";
-import {
-  groupUploadsByHash,
-  validatePrepareResponse,
-} from "./upload-local-game-snapshot-helpers";
+import { groupUploadsByHash } from "./upload-local-game-snapshot-helpers";
 import { assertCloudSaveUploadWithinLimits } from "./upload-limits";
 
 type ProgressCallback = (progress: CloudSaveUploadProgress) => void;
@@ -61,24 +58,49 @@ export const uploadLocalGameSnapshot = async (
 
   assertCloudSaveUploadWithinLimits(proposalFiles);
 
-  const response = validatePrepareResponse(
-    await HydraApi.post<unknown>(
-      "/profile/cloud-saves/prepare-snapshot",
-      buildPrepareSnapshotPayload({
-        shop,
-        objectId,
-        platform: context.pathContext.platform,
-        hostname: os.hostname() || undefined,
-        snapshotHash: aggregateHash,
-        baseVersion: resolvedOptions.baseVersion,
-        retroArchFormatVersion: resolvedOptions.retroArchFormatVersion,
-        customPathRawPaths: proposalCustomPathRawPaths,
-        variants: proposalVariants,
-        files: proposalFiles,
-      }),
-      { needsAuth: true, needsSubscription: true }
-    )
+  const prepared = await prepareDriveSnapshot(
+    shop,
+    objectId,
+    buildPrepareSnapshotPayload({
+      shop,
+      objectId,
+      platform: context.pathContext.platform,
+      hostname: os.hostname() || undefined,
+      snapshotHash: aggregateHash,
+      baseVersion: resolvedOptions.baseVersion,
+      retroArchFormatVersion: resolvedOptions.retroArchFormatVersion,
+      customPathRawPaths: proposalCustomPathRawPaths,
+      variants: proposalVariants,
+      files: proposalFiles,
+    })
   );
+  const uploadHashes = new Set(prepared.uploadFiles.map((file) => file.hash));
+  // The same shape Hydra's prepare call answered with, so the checks below
+  // still apply. Uploads go straight to Google Drive, not to a URL.
+  const response: PrepareSnapshotResponse = {
+    pendingSnapshotId: prepared.pendingSnapshotId,
+    snapshotHash: aggregateHash,
+    files: proposalFiles.map((file) => {
+      const identity = {
+        variantId: file.variantId,
+        rawPath: file.rawPath,
+        relativePath: file.relativePath,
+      };
+      return uploadHashes.has(file.hash)
+        ? {
+            ...identity,
+            status: "upload" as const,
+            uploadUrl: "drive:",
+            requiredHeaders: {
+              "Content-Length": String(file.sizeBytes),
+              "x-amz-checksum-sha256": Buffer.from(file.hash, "hex").toString(
+                "base64"
+              ),
+            },
+          }
+        : { ...identity, status: "skip" as const };
+    }),
+  };
   if (response.snapshotHash !== aggregateHash) {
     throw new Error("Prepare snapshot hash does not match the proposal");
   }
@@ -161,16 +183,15 @@ export const uploadLocalGameSnapshot = async (
       if (uploadIndex >= uploadJobs.length) return;
       nextUploadIndex += 1;
       const uploads = uploadJobs[uploadIndex];
-      const [{ file, source }] = uploads;
+      const [{ source }] = uploads;
       activeFiles.set(uploadIndex, source.relativePath);
       emitCurrentProgress();
 
       try {
-        await NativeAddon.uploadLocalSaveBlob(
-          source.absolutePath,
-          file.uploadUrl,
-          file.requiredHeaders["Content-Length"],
-          file.requiredHeaders["x-amz-checksum-sha256"]
+        await uploadDriveBlob(
+          response.pendingSnapshotId,
+          { hash: source.hash, sizeBytes: source.sizeBytes },
+          source.absolutePath
         );
       } catch (error) {
         hasFailed = true;

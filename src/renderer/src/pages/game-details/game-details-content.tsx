@@ -24,12 +24,21 @@ import { PersonalCloudWidget } from "./personal-cloud";
 import { getCloudSaveVisibility } from "./cloud-save-visibility";
 import { SimilarGames } from "./similar-games/similar-games";
 
-import { AuthPage, getDisplayedPlayTimeInMilliseconds } from "@shared";
+import {
+  AuthPage,
+  getDisplayedPlayTimeInMilliseconds,
+  usesDriveCloudSaves,
+} from "@shared";
 import { cloudSyncContext, gameDetailsContext } from "@renderer/context";
 
 import cloudIconAnimated from "@renderer/assets/icons/cloud-animated.gif";
 import tvEffectVideo from "@renderer/assets/emulation/tv-effect.mp4";
-import { useUserDetails, useLibrary, useAppSelector } from "@renderer/hooks";
+import {
+  useUserDetails,
+  useLibrary,
+  useAppSelector,
+  useGoogleDriveSignedIn,
+} from "@renderer/hooks";
 import {
   CLASSICS_PS_PLATFORM_LABELS,
   resolveClassicsBadge,
@@ -93,12 +102,20 @@ export function GameDetailsContent() {
   } = useContext(gameDetailsContext);
 
   const { userDetails, hasActiveSubscription } = useUserDetails();
+  const driveSignedIn = useGoogleDriveSignedIn();
   const { library } = useLibrary();
 
   const { getGameArtifacts } = useContext(cloudSyncContext);
   const cloudSaveVisibility = game
     ? getCloudSaveVisibility(game.shop, game.platform)
     : null;
+  // Emulator saves live in the user's Google Drive, so these buttons only
+  // need Google sign-in. PC games use the Drive panel below instead.
+  const isDriveEmulatorGame = game
+    ? usesDriveCloudSaves(game.shop, game.platform)
+    : false;
+  const canOpenCloudSaves =
+    hasActiveSubscription || (isDriveEmulatorGame && driveSignedIn);
 
   const aboutTheGame = useMemo(() => {
     const aboutTheGame = shopDetails?.about_the_game;
@@ -470,7 +487,7 @@ export function GameDetailsContent() {
                 )}
 
                 {game &&
-                  hasActiveSubscription &&
+                  canOpenCloudSaves &&
                   cloudSaveVisibility?.hero === "legacy" && (
                     <button
                       type="button"
@@ -490,13 +507,13 @@ export function GameDetailsContent() {
 
                 {game &&
                   objectId &&
-                  hasActiveSubscription &&
+                  canOpenCloudSaves &&
                   cloudSaveVisibility?.hero === "v2" && <CloudSaveWidget />}
 
                 {/* Cloud saves through the user's own Google Drive. */}
                 {game &&
                   objectId &&
-                  !hasActiveSubscription &&
+                  !canOpenCloudSaves &&
                   cloudSaveVisibility?.hero && <PersonalCloudWidget />}
               </div>
             </div>

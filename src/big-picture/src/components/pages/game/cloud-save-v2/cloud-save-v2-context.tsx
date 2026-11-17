@@ -14,6 +14,7 @@ import {
   getCloudSaveEmulatorProvider,
   getDiscCloudSaveEmulatorProvider,
   isCloudSaveV2Eligible,
+  resolveCloudSaveAccessAction,
 } from "@shared";
 
 import {
@@ -41,7 +42,11 @@ import type {
   EmulatorDiscIdentityStatus,
 } from "@types";
 
-import { useBigPictureToast, useUserDetails } from "../../../../hooks";
+import {
+  useBigPictureToast,
+  useGoogleDriveSignedIn,
+  useUserDetails,
+} from "../../../../hooks";
 import { BigPictureCloudSaveConflictModal } from "./cloud-save-conflict-modal";
 import { BigPictureCloudSaveCustomPathModal } from "./cloud-save-custom-path-modal";
 import { BigPictureRetroArchBatteryModal } from "./cloud-save-retroarch-battery-modal";
@@ -175,7 +180,13 @@ export function BigPictureCloudSaveProvider({
   const { userDetails, hasActiveSubscription } = useUserDetails();
   const { showErrorToast, showSuccessToast, showWarningToast } =
     useBigPictureToast();
-  const canUseCloudSaves = Boolean(userDetails) && hasActiveSubscription;
+  const driveSignedIn = useGoogleDriveSignedIn();
+  const canUseCloudSaves =
+    resolveCloudSaveAccessAction(shop, platform, {
+      isAuthenticated: Boolean(userDetails),
+      hasActiveSubscription,
+      driveSignedIn,
+    }) === "open";
   const eligible = isCloudSaveV2Eligible(shop, platform);
   const canCheckEmulator = eligible && canUseCloudSaves;
   const canCheckCloudSaves = canCheckEmulator && hasExecutablePath;

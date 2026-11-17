@@ -2,11 +2,9 @@ import path from "node:path";
 
 import {
   cloudSaveRetroArchBindingsSublevel,
-  db,
-  levelKeys,
   type RetroArchBindingRecord,
 } from "@main/level";
-import type { Game, User } from "@types";
+import type { Game } from "@types";
 
 export {
   legacyRetroArchStateId,
@@ -15,13 +13,11 @@ export {
   retroArchStateCloudIdentity,
   type RetroArchObservedState,
 } from "./retroarch-state-binding-policy.js";
+import { getCloudSaveUserId } from "./cloud-save-user";
 
 const bindingKey = async (game: Game) => {
-  const user = await db.get<string, User>(levelKeys.user, {
-    valueEncoding: "json",
-  });
-  if (!user?.id) throw new Error("cloud_save_user_required");
-  return JSON.stringify([user.id, game.shop, game.objectId, "retroarch-v2"]);
+  const userId = await getCloudSaveUserId();
+  return JSON.stringify([userId, game.shop, game.objectId, "retroarch-v2"]);
 };
 
 export const loadRetroArchBindings = async (

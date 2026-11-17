@@ -1,19 +1,14 @@
-import { cloudSavePendingDeletionsSublevel, db, levelKeys } from "@main/level";
-import type { GameShop, User } from "@types";
+import { cloudSavePendingDeletionsSublevel } from "@main/level";
+import type { GameShop } from "@types";
 
 import {
   cloudSavePendingDeletionStorageKey,
   resolveCloudSavePendingDeletionPhase,
   type StoredCloudSavePendingDeletion,
 } from "./pending-deletion-state";
+import { getCloudSaveUserId } from "./cloud-save-user";
 
-const getCurrentUserId = async () => {
-  const user = await db.get<string, User>(levelKeys.user, {
-    valueEncoding: "json",
-  });
-  if (!user?.id) throw new Error("Cloud save deletion requires a user");
-  return user.id;
-};
+const getCurrentUserId = getCloudSaveUserId;
 
 const getStorageKey = async (objectId: string, shop: GameShop) =>
   cloudSavePendingDeletionStorageKey(await getCurrentUserId(), shop, objectId);

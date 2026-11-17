@@ -13,7 +13,6 @@ import {
 } from "@shared";
 import { getEmulatorDiscIdentityStatus } from "./emulator-disc-identity.js";
 
-import { HydraApi } from "../hydra-api";
 import { isGameRunning } from "../game-running-state";
 import { logger } from "../logger";
 import { WindowManager } from "../window-manager";
@@ -67,10 +66,7 @@ export const canRunAutomaticCloudSaveSync = async (
   shop: GameShop
 ) => {
   if (
-    !canAccessCloudSaves(
-      HydraApi.isLoggedIn(),
-      HydraApi.hasActiveSubscription()
-    ) ||
+    !(await canAccessCloudSaves(objectId, shop)) ||
     (await isPendingDeletionBlockingAutomaticSync(objectId, shop)) ||
     !(await getCloudSaveAutomaticSyncEnabled(objectId, shop))
   ) {
@@ -111,12 +107,7 @@ export const runAutomaticCloudSaveSyncDetailed = async (
   suppliedContext?: Awaited<ReturnType<typeof getCloudSaveGameContext>>,
   expectedRemoteHash?: string | null
 ): Promise<AutomaticCloudSaveSyncOutcome> => {
-  if (
-    !canAccessCloudSaves(
-      HydraApi.isLoggedIn(),
-      HydraApi.hasActiveSubscription()
-    )
-  ) {
+  if (!(await canAccessCloudSaves(objectId, shop))) {
     return { status: "skipped", result: null };
   }
 
@@ -359,12 +350,7 @@ export const runAutomaticCloudSavePostExit = async (
   shop: GameShop
 ): Promise<SyncGameCloudSaveResult | null> => {
   const guard = consumeCloudSaveLaunchGuard(objectId, shop);
-  if (
-    !canAccessCloudSaves(
-      HydraApi.isLoggedIn(),
-      HydraApi.hasActiveSubscription()
-    )
-  ) {
+  if (!(await canAccessCloudSaves(objectId, shop))) {
     return null;
   }
   if (!guard?.uploadAllowed) {

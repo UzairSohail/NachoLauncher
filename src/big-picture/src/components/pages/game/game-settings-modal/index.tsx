@@ -6,6 +6,7 @@ import { resolvePreferredGameAssets } from "../../../../helpers";
 import { useUserDetails } from "../../../../hooks/use-user-details.hook";
 import { useGoogleDriveSignedIn } from "../../../../hooks/use-google-drive-signed-in.hook";
 import { platformToEmulationSavePlatform } from "@renderer/helpers";
+import { usesDriveCloudSaves } from "@shared";
 
 import "./styles.scss";
 import {
@@ -144,18 +145,20 @@ export function GameSettingsModal({
   );
 
   const isSignedIn = userDetails !== null;
-  const shouldShowCloudV2Tab = shouldShowCloudSaveV2Tab(
-    game.shop,
-    isSignedIn,
-    hasActiveSubscription,
-    game.platform
-  );
-  // Emulator saves are backed up to the user's Google Drive, so their tab
-  // only needs Google sign-in, not a Hydra account.
+  // Emulator saves are backed up to the user's Google Drive, so their tabs
+  // only need Google sign-in, not a Hydra account.
   const driveSignedIn = useGoogleDriveSignedIn();
   const isEmulatorSaveGame =
     game.shop === "launchbox" &&
     platformToEmulationSavePlatform(game.platform) !== null;
+  const shouldShowCloudV2Tab = shouldShowCloudSaveV2Tab(
+    game.shop,
+    isSignedIn ||
+      (driveSignedIn && usesDriveCloudSaves(game.shop, game.platform)),
+    hasActiveSubscription ||
+      (driveSignedIn && usesDriveCloudSaves(game.shop, game.platform)),
+    game.platform
+  );
   const shouldShowLegacyCloudTab =
     (isEmulatorSaveGame && driveSignedIn) ||
     shouldShowLegacyCloudSaveTab(
