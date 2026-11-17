@@ -35,6 +35,8 @@ export const BIG_PICTURE_STARTUP_SECTION_REGION_ID =
   "big-picture-startup-section-region";
 export const BIG_PICTURE_AUDIO_SECTION_REGION_ID =
   "big-picture-audio-section-region";
+export const BIG_PICTURE_PERFORMANCE_SECTION_REGION_ID =
+  "big-picture-performance-section-region";
 export const BIG_PICTURE_DIAGNOSTICS_SECTION_REGION_ID =
   "big-picture-diagnostics-section-region";
 export const BIG_PICTURE_DIAGNOSTICS_POSITION_SELECT_ID =
@@ -172,6 +174,7 @@ export const BIG_PICTURE_ITEM_FOCUS_IDS = {
   launchInBigPicture: "big-picture-launch-in-big-picture",
   launchToLibraryPage: "big-picture-launch-to-library-page",
   enableSounds: "big-picture-enable-sounds",
+  reduceEffects: "big-picture-reduce-effects",
   enableVirtualKeyboard: "big-picture-enable-virtual-keyboard",
   enableDiagnostics: "big-picture-enable-diagnostics",
 } as const;

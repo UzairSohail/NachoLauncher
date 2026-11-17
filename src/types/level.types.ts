@@ -264,6 +264,8 @@ export interface UserPreferences {
   enableNewDownloadOptionsBadges?: boolean;
   createStartMenuShortcut?: boolean;
   bigPictureSoundsEnabled?: boolean;
+  /** Per device: turns off blur and motion effects in Big Picture. */
+  bigPictureReduceEffects?: boolean;
   bigPictureVirtualKeyboardEnabled?: boolean;
   bigPictureDiagnosticsEnabled?: boolean;
   bigPictureDiagnosticsPosition?: BigPictureDiagnosticsPosition;

@@ -90,6 +90,8 @@ export function VerticalGameCard({
             className="vertical-game-card__cover-image"
             src={coverImageUrl}
             alt={gameTitle}
+            loading="lazy"
+            decoding="async"
             draggable={false}
             onError={onCoverImageError}
           />
