@@ -6,6 +6,10 @@ import type { KnownBinary } from "./known-binaries";
 import { resolveSniffTarget, sniffDiscImage } from "./sniff-disc-platform";
 import { logger } from "../logger";
 import { readPs4PkgInfo } from "../ps4-pkg/ps4-pkg-info";
+import {
+  classifyXbox360Iso,
+  readXbox360DisplayName,
+} from "./xbox360-disc-reader";
 import type { EmulatorSystem } from "@types";
 
 const MAX_COLLECTED_FILES = 50_000;
@@ -194,6 +198,24 @@ const computeDirSize = async (
 
 type GameClassification = "ok" | "wrong-platform" | "skip";
 
+const classifyForXbox360 = async (
+  candidate: Candidate,
+  ext: string
+): Promise<GameClassification> => {
+  // An extracted game holds many .xex modules; only default.xex boots it.
+  if (ext === ".xex") {
+    return candidate.name.toLowerCase() === "default.xex" ? "ok" : "skip";
+  }
+  if (ext !== ".iso") return "ok";
+
+  const kind = await classifyXbox360Iso(candidate.fullPath);
+  if (kind === "xbox360") return "ok";
+  // Original Xbox games share the disc format, but Xenia cannot run them.
+  if (kind === "xbox") return "wrong-platform";
+  const detected = await sniffDiscImage(candidate.fullPath);
+  return detected === "unknown" ? "ok" : "wrong-platform";
+};
+
 const classifyForSystem = async (
   candidate: Candidate,
   system: EmulatorSystem
@@ -214,6 +236,8 @@ const classifyForSystem = async (
   }
 
   if (system === "psp") return "ok";
+
+  if (system === "xbox360") return classifyForXbox360(candidate, ext);
 
   if (system === "dolphin") {
     if (ext === ".wad" || ext === ".wbfs") return "ok";
@@ -338,6 +362,7 @@ const dedupGames = (binary: KnownBinary, files: Candidate[]): GameGroup[] => {
       case "ps4":
       case "psp":
       case "dolphin":
+      case "xbox360":
         games.push(...applySimpleRules(group));
         break;
     }
@@ -582,7 +607,10 @@ export const scanRomFolder = async (
       }
       scannedGames.push({
         primaryPath: game.primary.fullPath,
-        name: game.primary.name,
+        name:
+          binary.system === "xbox360"
+            ? await readXbox360DisplayName(game.primary.fullPath)
+            : game.primary.name,
         sizeBytes: sized.sizeBytes,
         wrongPlatform: classification === "wrong-platform",
       });

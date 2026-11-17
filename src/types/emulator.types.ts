@@ -1,6 +1,13 @@
 import type { GameShop } from "./game.types";
 
-export type EmulatorSystem = "ps1" | "ps2" | "ps3" | "ps4" | "psp" | "dolphin";
+export type EmulatorSystem =
+  | "ps1"
+  | "ps2"
+  | "ps3"
+  | "ps4"
+  | "psp"
+  | "dolphin"
+  | "xbox360";
 
 export type SkuRegion = "US" | "EU" | "JP" | "KR" | "ASIA";
 
@@ -10,7 +17,8 @@ export type EmulatorBinary =
   | "rpcs3"
   | "shadps4"
   | "ppsspp"
-  | "dolphin";
+  | "dolphin"
+  | "xenia";
 
 export interface RomFolder {
   id: string;
@@ -267,7 +275,15 @@ export interface ResolvedInstallOption {
   htmlUrl: string | null;
   linkUrl: string | null;
   linkKind: EmulatorInstallLinkKind | null;
+  /**
+   * Which build this is when an emulator offers more than one for the same
+   * platform: Xenia on Linux has a Windows build that runs through Proton and
+   * an experimental native build.
+   */
+  variant?: EmulatorInstallVariant | null;
 }
+
+export type EmulatorInstallVariant = "proton" | "native";
 
 export type EmulatorInstallPhase =
   | "downloading"

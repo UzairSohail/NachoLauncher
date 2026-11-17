@@ -7,6 +7,7 @@ import { resolveSniffTarget } from "./sniff-disc-platform";
 import { readChdLeadingData } from "./chd-reader";
 import { readCsoLeadingData } from "./cso-reader";
 import { extractDolphinGameId } from "./dolphin-disc-reader";
+import { extractXbox360TitleId } from "./xbox360-disc-reader";
 import { normalize } from "./sku-normalize";
 import { parseParamSfo, parseParamSfoValue } from "./param-sfo";
 import { readVerifiedPs3DirectoryTitleId } from "./verified-ps3-directory-title-id";
@@ -425,6 +426,8 @@ export const extractDiscSku = async (
       return extractPspDiscId(primaryPath);
     case "dolphin":
       return extractDolphinGameId(primaryPath);
+    case "xbox360":
+      return extractXbox360TitleId(primaryPath);
   }
 };
 

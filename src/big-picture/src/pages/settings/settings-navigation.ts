@@ -90,6 +90,7 @@ export const EMULATION_OVERVIEW_CARD_FOCUS_IDS = {
   ps4: "emulation-overview-ps4-card",
   psp: "emulation-overview-psp-card",
   dolphin: "emulation-overview-dolphin-card",
+  xbox360: "emulation-overview-xbox360-card",
   retroarch: "emulation-overview-retroarch-card",
 } as const;
 export const EMULATION_DETAIL_CORES_REGION_ID = "emulation-detail-cores-region";

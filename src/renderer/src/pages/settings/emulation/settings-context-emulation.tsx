@@ -26,6 +26,7 @@ import ps4Art from "@renderer/assets/emulation/ps4.png";
 import pspArt from "@renderer/assets/emulation/psp.png";
 import gameCubeArt from "@renderer/assets/emulation/gamecube.png";
 import wiiArt from "@renderer/assets/emulation/wii.png";
+import xbox360Art from "@renderer/assets/emulation/xbox360.png";
 import retroArchArt from "@renderer/assets/emulation/retroarch.png";
 import {
   ClassicsOnboardingModal,
@@ -77,6 +78,7 @@ const SYSTEM_LABELS: Record<EmulatorSystem, string> = {
   ps4: "PlayStation 4",
   psp: "PlayStation Portable",
   dolphin: "GameCube & Wii",
+  xbox360: "Xbox 360",
 };
 
 const SYSTEM_ART: Record<EmulatorSystem, string | readonly string[]> = {
@@ -86,6 +88,7 @@ const SYSTEM_ART: Record<EmulatorSystem, string | readonly string[]> = {
   ps4: ps4Art,
   psp: pspArt,
   dolphin: [gameCubeArt, wiiArt],
+  xbox360: xbox360Art,
 };
 
 const SYSTEM_REQUIREMENTS: Partial<

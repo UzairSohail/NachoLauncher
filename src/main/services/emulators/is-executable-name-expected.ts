@@ -7,7 +7,8 @@ export const isExecutableNameExpectedForBinary = (
   if (
     binary.binary !== "ppsspp" &&
     binary.binary !== "dolphin" &&
-    binary.binary !== "shadps4"
+    binary.binary !== "shadps4" &&
+    binary.binary !== "xenia"
   ) {
     return true;
   }

@@ -376,6 +376,26 @@ export class Umu {
     });
   }
 
+  /**
+   * The command that runs a Windows executable through umu-run, for callers
+   * that spawn and track the process themselves (emulators do, to keep their
+   * play sessions). Environment such as WINEPREFIX is left to the caller.
+   */
+  public static resolveRunCommand(
+    executablePath: string,
+    launchParameters: string[] = []
+  ): { command: string; args: string[] } {
+    const umuBinaryPath = getUmuBinaryPath();
+    ensureExecutablePermission(umuBinaryPath);
+    const pythonPath = getCompatiblePythonPath();
+    return pythonPath
+      ? {
+          command: pythonPath,
+          args: [umuBinaryPath, executablePath, ...launchParameters],
+        }
+      : { command: umuBinaryPath, args: [executablePath, ...launchParameters] };
+  }
+
   public static async launchExecutable(
     executablePath: string,
     launchParameters: string[] = [],

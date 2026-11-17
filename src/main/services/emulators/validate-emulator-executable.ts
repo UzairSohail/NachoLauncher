@@ -184,9 +184,27 @@ export const assertValidEmulatorExecutable = (executablePath: string): void => {
   }
 };
 
+// On Linux the Windows build of Xenia runs through Proton, which does not
+// need the file to be marked executable.
+const isProtonEmulatorExecutable = (
+  executablePath: string,
+  binary: { binary: string }
+): boolean => {
+  if (process.platform !== "linux" || binary.binary !== "xenia") return false;
+  const normalizedPath = path.normalize(executablePath);
+  if (path.extname(normalizedPath).toLowerCase() !== ".exe") return false;
+  try {
+    if (!statSync(normalizedPath).isFile()) return false;
+  } catch {
+    return false;
+  }
+  return hasPortableExecutableHeader(normalizedPath);
+};
+
 export const isValidEmulatorExecutableForBinary = (
   executablePath: string,
   binary: { binary: string }
 ): boolean =>
-  isValidEmulatorExecutable(executablePath) &&
+  (isValidEmulatorExecutable(executablePath) ||
+    isProtonEmulatorExecutable(executablePath, binary)) &&
   isExecutableNameExpectedForBinary(executablePath, binary);
