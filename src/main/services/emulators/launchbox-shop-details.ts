@@ -79,7 +79,7 @@ export const fetchShopDetailsForSkus = async (
       const response = await HydraApi.post<LaunchboxShopDetailsEntry[]>(
         "/games/shop-details",
         { shop: "launchbox", skus: skuChunk, language },
-        { needsAuth: false, signal }
+        { signal }
       );
 
       if (Array.isArray(response)) indexEntriesBySku(response, lookup);

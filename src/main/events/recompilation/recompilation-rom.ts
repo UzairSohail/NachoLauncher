@@ -12,13 +12,11 @@ import type {
   RecompilationRomMeta,
   RecompilationRomSource,
   RecompilationRomState,
-  User,
 } from "@types";
 import { isCompletedLikeDownload } from "../../../types";
-import { db, downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
+import { downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 import { t } from "i18next";
 import { logger, SevenZip, WindowManager } from "@main/services";
-import { HydraApi } from "@main/services/hydra-api";
 import { RecompCatalog } from "@main/services/recomp-catalog";
 import { parseParamSfoValue } from "@main/services/emulators/param-sfo";
 import {
@@ -893,14 +891,6 @@ const writePortSettings = async (
   }
 };
 
-const getHydraAccount = async () => {
-  if (!HydraApi.isLoggedIn()) return null;
-  const user = await db
-    .get<string, User | null>(levelKeys.user, { valueEncoding: "json" })
-    .catch(() => null);
-  return user?.displayName ? { displayName: user.displayName } : null;
-};
-
 /** A port that rebuilds the game per version prepares again right after an update. */
 export const shouldPrepareAfterUpdate = async (ref: RecompilationRef) => {
   if (!getRecompilationRomMeta(ref.slug)?.prepareOnUpdate) return false;
@@ -1002,7 +992,7 @@ export const prepareRecompilationRom = async (
       onlineEnv = await getOnlineLaunchEnv(
         meta.path.online,
         (template) => resolveRecompilationPath(template, baseDirectory, ""),
-        await getHydraAccount()
+        null
       );
     }
 

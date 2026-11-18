@@ -158,8 +158,7 @@ export function GameReviews({
         }
 
         const response = await window.electron.hydraApi.get(
-          `/games/${shop}/${objectId}/reviews?${params.toString()}`,
-          { needsAuth: false }
+          `/games/${shop}/${objectId}/reviews?${params.toString()}`
         );
 
         if (abortController.signal.aborted) {

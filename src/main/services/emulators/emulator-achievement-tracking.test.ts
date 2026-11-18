@@ -14,88 +14,39 @@ const connected = {
 } as UserPreferences;
 
 describe("emulator achievement tracking", () => {
-  it("enables realtime unlocks without a subscription", () => {
-    const tracking = resolveEmulatorAchievementTracking(
-      connected,
-      false,
-      "win32"
-    );
+  it("enables realtime unlocks with RetroAchievements credentials", () => {
+    const tracking = resolveEmulatorAchievementTracking(connected);
 
-    assert.deepEqual(tracking, { souvenirs: false, realtimeUnlocks: true });
+    assert.deepEqual(tracking, { realtimeUnlocks: true });
     assert.equal(isEmulatorAchievementTrackingActive(tracking), true);
   });
 
-  it("requires a subscription for souvenirs", () => {
-    assert.equal(
-      resolveEmulatorAchievementTracking(
-        { enableAchievementSouvenirs: true } as UserPreferences,
-        false,
-        "win32"
-      ).souvenirs,
-      false
-    );
-    assert.equal(
-      resolveEmulatorAchievementTracking(
-        { enableAchievementSouvenirs: true } as UserPreferences,
-        true,
-        "win32"
-      ).souvenirs,
-      true
-    );
-  });
-
   it("requires both RetroAchievements credentials for realtime unlocks", () => {
-    assert.equal(
-      resolveEmulatorAchievementTracking(
-        { retroAchievementsUsername: "player" } as UserPreferences,
-        true,
-        "win32"
-      ).realtimeUnlocks,
-      false
-    );
-  });
+    const tracking = resolveEmulatorAchievementTracking({
+      retroAchievementsUsername: "player",
+    } as UserPreferences);
 
-  it("is inactive when neither feature applies", () => {
-    const tracking = resolveEmulatorAchievementTracking(
-      { enableAchievementSouvenirs: false } as UserPreferences,
-      true,
-      "win32"
-    );
-
+    assert.equal(tracking.realtimeUnlocks, false);
     assert.equal(isEmulatorAchievementTrackingActive(tracking), false);
   });
 });
 
 describe("emulator overlay visibility", () => {
-  const noSouvenirs = { souvenirs: false, realtimeUnlocks: false };
-
   it("is needed while achievement notifications are on", () => {
-    assert.equal(needsEmulatorOverlayVisibility(null, noSouvenirs), true);
+    assert.equal(needsEmulatorOverlayVisibility(null), true);
     assert.equal(
-      needsEmulatorOverlayVisibility(
-        { achievementNotificationsEnabled: true } as UserPreferences,
-        noSouvenirs
-      ),
+      needsEmulatorOverlayVisibility({
+        achievementNotificationsEnabled: true,
+      } as UserPreferences),
       true
     );
   });
 
-  it("is needed for souvenirs even with notifications off", () => {
+  it("is not needed with notifications off", () => {
     assert.equal(
-      needsEmulatorOverlayVisibility(
-        { achievementNotificationsEnabled: false } as UserPreferences,
-        { souvenirs: true, realtimeUnlocks: false }
-      ),
-      true
-    );
-  });
-
-  it("is not needed with notifications and souvenirs off", () => {
-    assert.equal(
-      needsEmulatorOverlayVisibility(
-        { achievementNotificationsEnabled: false } as UserPreferences,
-        noSouvenirs
-      ),
+      needsEmulatorOverlayVisibility({
+        achievementNotificationsEnabled: false,
+      } as UserPreferences),
       false
     );
   });

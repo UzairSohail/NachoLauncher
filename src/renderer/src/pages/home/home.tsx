@@ -57,8 +57,7 @@ export default function Home() {
         `/catalogue/${category}`,
         {
           params,
-          needsAuth: false,
-        }
+          }
       );
 
       setCatalogue((prev) => ({

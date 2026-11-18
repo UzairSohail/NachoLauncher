@@ -7,7 +7,6 @@ import type {
   GameShop,
   LocalScreenshot,
   LocalScreenshotDraft,
-  LocalScreenshotUploadOptions,
 } from "@types";
 
 import { emulatorSessions } from "../emulators/emulator-session-tracker";
@@ -20,25 +19,14 @@ import {
   isWaylandCaptureBackend,
   stopAllLinuxGameCaptureSessions,
 } from "../linux-game-capture-session";
-import { HydraApi } from "../hydra-api";
 import { logger } from "../logger";
 import { NativeAddon } from "../native-addon";
 import { ScreenshotInputService } from "../screenshot-input";
 import { WindowManager } from "../window-manager";
 import { forgetForegroundGame } from "./foreground-game";
-import {
-  filterLocalScreenshotsForSignedInOwner,
-  isLocalScreenshotVisibleToSignedInOwner,
-} from "./local-screenshot-owner";
 import { LocalScreenshotStore } from "./local-screenshot-store";
-import {
-  pruneMissingLocalScreenshots,
-  removeLocalScreenshotIfMissing,
-} from "./local-screenshot-removal";
-import {
-  findLocalScreenshotGameObjectId,
-  getPublishedScreenshotIds,
-} from "./local-screenshot-game";
+import { pruneMissingLocalScreenshots } from "./local-screenshot-removal";
+import { findLocalScreenshotGameObjectId } from "./local-screenshot-game";
 import { buildLocalScreenshotDraftPatch } from "./screenshot-draft";
 import {
   clearScreenshotGameSession,
@@ -52,12 +40,9 @@ import {
   getScreenshotsFolder,
 } from "./screenshots-folder";
 import { startWaylandFocusWatch, stopWaylandFocusWatch } from "./wayland-focus";
-import { ScreenshotTelemetry } from "./screenshot-telemetry";
-import { screenshotUploadWorker } from "./screenshot-upload-worker";
 import { readUserPreferences } from "./screenshot-user-preferences";
 
 export { LocalScreenshotStore } from "./local-screenshot-store";
-export { screenshotUploadWorker } from "./screenshot-upload-worker";
 export { stopWaylandFocusWatch } from "./wayland-focus";
 
 const GAME_HELPERS_WARMUP_TIMEOUT_MS = 5_000;
@@ -65,10 +50,7 @@ const GAME_HELPERS_WARMUP_TIMEOUT_MS = 5_000;
 let initialized = false;
 
 const broadcastLocalScreenshots = (screenshots: LocalScreenshot[]) => {
-  WindowManager.sendToAppWindows(
-    "on-local-screenshots-change",
-    filterLocalScreenshotsForSignedInOwner(screenshots)
-  );
+  WindowManager.sendToAppWindows("on-local-screenshots-change", screenshots);
 };
 
 const isScreenshotCaptureAvailable = async () => {
@@ -85,19 +67,6 @@ export const initializeScreenshots = () => {
   });
 
   LocalScreenshotStore.onChange(broadcastLocalScreenshots);
-  HydraApi.onAuthContextChanged(() => {
-    void LocalScreenshotStore.list()
-      .then(broadcastLocalScreenshots)
-      .catch((error: unknown) => {
-        logger.error(
-          "Failed to refresh local screenshots for the account",
-          error
-        );
-      });
-  });
-
-  screenshotUploadWorker.onMissingFile(removeLocalScreenshotIfMissing);
-
   void backfillLocalScreenshotGameIds().catch((error) => {
     logger.error("Failed to back-fill local screenshot game ids", error);
   });
@@ -183,31 +152,17 @@ export const applyScreenshotsEnabledPreference = async (
 };
 
 export const getLocalScreenshots = async () =>
-  pruneMissingLocalScreenshots(
-    filterLocalScreenshotsForSignedInOwner(await LocalScreenshotStore.list())
-  );
+  pruneMissingLocalScreenshots(await LocalScreenshotStore.list());
 
 export const getLocalScreenshotsForGame = async (
   shop: GameShop,
   objectId: string
 ) =>
   pruneMissingLocalScreenshots(
-    filterLocalScreenshotsForSignedInOwner(
-      await LocalScreenshotStore.listForGame(shop, objectId)
-    )
+    await LocalScreenshotStore.listForGame(shop, objectId)
   );
 
 export const getScreenshotsFolderPath = () => getScreenshotsFolder();
-
-export const getPublishedScreenshotIdsForGame = async (
-  shop: GameShop,
-  objectId: string
-) => {
-  const ownerId = HydraApi.getAuthContext()?.userId;
-  if (!ownerId) return [];
-  const screenshots = await LocalScreenshotStore.listIncludingDeleted();
-  return getPublishedScreenshotIds(screenshots, shop, objectId, ownerId);
-};
 
 const backfillLocalScreenshotGameIds = async () => {
   const screenshots = await LocalScreenshotStore.listIncludingDeleted();
@@ -228,27 +183,10 @@ const backfillLocalScreenshotGameIds = async () => {
   );
 };
 
-export const flushScreenshotTelemetry = (timeoutMs: number) =>
-  Promise.race([
-    ScreenshotTelemetry.flush(),
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, timeoutMs).unref?.();
-    }),
-  ]);
-
-/** Screenshots stay on this device; Nacho doesn't upload them to Hydra. */
-export const uploadLocalScreenshot = async (
-  _clientId: string,
-  _options: LocalScreenshotUploadOptions
-): Promise<never> => {
-  throw new Error("Screenshot uploads are turned off");
-};
-
 export {
   countLocalScreenshotFilesForGame,
   deleteLocalScreenshot,
   deleteLocalScreenshotsForGame,
-  forgetPublishedScreenshots,
 } from "./local-screenshot-removal";
 
 export const updateLocalScreenshotDraft = async (
@@ -256,7 +194,7 @@ export const updateLocalScreenshotDraft = async (
   draft: LocalScreenshotDraft
 ) => {
   const screenshot = await LocalScreenshotStore.get(clientId);
-  if (!isLocalScreenshotVisibleToSignedInOwner(screenshot)) return null;
+  if (!screenshot) return null;
 
   return LocalScreenshotStore.update(clientId, (current) =>
     buildLocalScreenshotDraftPatch(current, draft)

@@ -123,7 +123,6 @@ const FEATURES_REQUEST_TIMEOUT_MS = 10_000;
 // Fails closed: without an answer from the API, archives go to 7-Zip.
 const isInPlaceExtractionEnabled = () =>
   HydraApi.get<string[]>("/features", null, {
-    needsAuth: false,
     timeout: FEATURES_REQUEST_TIMEOUT_MS,
   })
     .then(

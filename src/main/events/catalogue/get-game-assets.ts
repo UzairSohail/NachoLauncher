@@ -66,8 +66,7 @@ export const getGameAssets = async (
     `/games/${shop}/${objectId}/assets`,
     null,
     {
-      needsAuth: false,
-    }
+      }
   ).then(async (assets) => {
     if (!assets) return null;
     if (shop === "epic")

@@ -17,7 +17,7 @@ describe("getRequestKey", () => {
     );
     assert.notEqual(
       getRequestKey("/x", { params: { a: 1 }, needsAuth: true }),
-      getRequestKey("/x", { params: { a: 1 }, needsAuth: false })
+      getRequestKey("/x", { params: { a: 1 } })
     );
     assert.notEqual(
       getRequestKey("/x", options, "account-a"),

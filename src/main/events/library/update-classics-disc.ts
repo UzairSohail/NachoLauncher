@@ -9,7 +9,7 @@ import {
 } from "@shared";
 import { isCloudSaveSyncActive } from "@main/services/cloud-save/sync-game-cloud-save";
 import { isGameRunning } from "@main/services/process-watcher";
-import { HydraApi } from "@main/services/hydra-api";
+import { isDriveSignedIn } from "@main/services/cloud-save/cloud-save-access";
 
 interface ClassicsDiscPatch {
   selectedDiscPath?: string | null;
@@ -58,9 +58,8 @@ const updateClassicsDisc = async (
   }
 
   if (
-    HydraApi.isLoggedIn() &&
-    HydraApi.hasActiveSubscription() &&
     getCloudSaveRetroArchPlatform(shop, game.platform) &&
+    (await isDriveSignedIn()) &&
     !isGameRunning(objectId, shop) &&
     (patch.removeDiscPath ||
       (patch.selectedDiscPath !== undefined &&
@@ -108,9 +107,8 @@ const updateClassicsDisc = async (
 
   await gamesSublevel.put(gameKey, next);
   if (
-    HydraApi.isLoggedIn() &&
-    HydraApi.hasActiveSubscription() &&
     getCloudSaveRetroArchPlatform(shop, next.platform) &&
+    (await isDriveSignedIn()) &&
     next.selectedDiscPath &&
     next.selectedDiscPath !== game.selectedDiscPath &&
     !isGameRunning(objectId, shop)

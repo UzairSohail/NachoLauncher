@@ -552,8 +552,7 @@ export function GameDetailsContextProvider({
           `/games/${catalogueShop}/${catalogueObjectId}/download-sources`,
           {
             params,
-            needsAuth: false,
-          }
+            }
         );
 
         if (cancelled) return;
@@ -571,7 +570,7 @@ export function GameDetailsContextProvider({
         const results = await fetchHosterAvailability(
           downloadOptions,
           (url, data) =>
-            window.electron.hydraApi.post(url, { data, needsAuth: false })
+            window.electron.hydraApi.post(url, { data })
         );
 
         if (cancelled || results.length === 0) return;

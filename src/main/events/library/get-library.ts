@@ -1,4 +1,3 @@
-import { epicLibraryArtworkQueue } from "@main/services/epic-library-artwork";
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { logger } from "@main/services/logger";
 import path from "node:path";
@@ -15,8 +14,6 @@ import {
   levelKeys,
 } from "@main/level";
 import { composeAssetsWithArtwork } from "@shared";
-import { HydraApi } from "@main/services/hydra-api";
-import { belongsToLibraryCollection } from "@main/services/library-sync/game-visibility";
 import {
   resolveAchievementCount,
   resolveUnlockedAchievementCount,
@@ -88,10 +85,8 @@ const resolveInstallerSize = (
 };
 
 const getLibrary = async (
-  collection: "visible" | "hidden" | "all" = "visible"
 ): Promise<LibraryGame[]> => {
   const entries = (await gamesSublevel.iterator().all())
-    .filter(([_key, game]) => belongsToLibraryCollection(game, collection))
     .filter(([_key, game]) => !game.isDeleted);
   const keys = entries.map(([key]) => key);
   const catalogueKeys = entries.map(([key, game]) =>
@@ -183,20 +178,7 @@ const getLibrary = async (
         customCoverImageUrl: game.customCoverImageUrl,
       };
     })
-  ).then((library) => {
-    if (HydraApi.isLoggedIn()) epicLibraryArtworkQueue.schedule(library);
-    return library;
-  });
+  );
 };
 
-registerEvent(
-  "getLibrary",
-  (_event, includeConcealed = false) =>
-    getLibrary(includeConcealed ? "all" : "visible"),
-  { jsonSafeResult: true }
-);
-registerEvent(
-  "getHiddenLibrary",
-  () => (HydraApi.isLoggedIn() ? getLibrary("hidden") : Promise.resolve([])),
-  { jsonSafeResult: true }
-);
+registerEvent("getLibrary", () => getLibrary(), { jsonSafeResult: true });

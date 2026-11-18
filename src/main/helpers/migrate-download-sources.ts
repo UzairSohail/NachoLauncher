@@ -17,7 +17,7 @@ export const migrateDownloadSources = async () => {
           {
             url: value.url,
           },
-          { needsAuth: false, timeout: MIGRATION_REQUEST_TIMEOUT_MS }
+          { timeout: MIGRATION_REQUEST_TIMEOUT_MS }
         );
 
         await downloadSourcesSublevel.put(downloadSource.id, {

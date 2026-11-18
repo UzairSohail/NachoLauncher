@@ -145,7 +145,7 @@ export function ReviewThread({
 
       const response = await electron.hydraApi.get<
         { answers: GameReviewAnswer[]; totalCount: number } | undefined
-      >(`${baseUrl}?${params.toString()}`, { needsAuth: false });
+      >(`${baseUrl}?${params.toString()}`);
 
       const fetched = response?.answers ?? [];
 
@@ -301,7 +301,7 @@ export function ReviewThread({
 
       const response = await electron.hydraApi.get<
         { answers: GameReviewAnswer[]; totalCount: number } | undefined
-      >(`${baseUrl}?${params.toString()}`, { needsAuth: false });
+      >(`${baseUrl}?${params.toString()}`);
 
       if (response) {
         setTotalCount(response.totalCount);

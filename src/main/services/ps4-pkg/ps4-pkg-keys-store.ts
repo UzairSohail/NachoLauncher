@@ -62,7 +62,6 @@ export const getPs4PkgKeys = async (): Promise<Ps4PkgKeys> => {
   }
 
   const fetched = await HydraApi.get<unknown>("/emulators/ps4/pkg-keys", null, {
-    needsAuth: false,
     // The network log is written to disk and shared in bug reports.
     logResponseBody: false,
   }).catch((error) => {

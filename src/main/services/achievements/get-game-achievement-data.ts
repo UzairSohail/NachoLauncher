@@ -2,7 +2,6 @@ import { achievementSyncCoordinator } from "./achievement-sync-coordinator";
 import { HydraApi } from "../hydra-api";
 import type { HydraApiOptions } from "../hydra-api";
 import type { GameShop, SteamAchievement } from "@types";
-import { UserNotLoggedInError } from "@shared";
 import { logger } from "../logger";
 import { db, levelKeys } from "@main/level";
 import { AchievementMemoryStore } from "./achievement-memory-store";
@@ -14,15 +13,11 @@ export const getGameAchievementData = async (
   current?: () => boolean,
   requestOptions?: Pick<HydraApiOptions, "signal" | "timeout">
 ) => {
-  const context = HydraApi.getAuthContext();
   const valid =
     current ??
     achievementSyncCoordinator.captureCurrent(
       levelKeys.game(shop, objectId),
-      () =>
-        context
-          ? HydraApi.isAuthContextCurrent(context)
-          : HydraApi.getAuthContext() === null
+      () => true
     );
 
   if (shop === "custom") {
@@ -86,10 +81,6 @@ export const getGameAchievementData = async (
       return achievements;
     })
     .catch((err) => {
-      if (err instanceof UserNotLoggedInError) {
-        throw err;
-      }
-
       logger.error("Failed to get game achievements for", objectId, err);
 
       return cachedAchievements?.achievements ?? [];

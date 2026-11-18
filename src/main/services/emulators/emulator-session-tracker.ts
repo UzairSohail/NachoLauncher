@@ -4,7 +4,7 @@ import { gamesSublevel, levelKeys } from "@main/level";
 import { EMULATOR_SYSTEMS } from "@shared";
 import type { EmulatorSystem, Game, GameShop, RetroArchPlatform } from "@types";
 
-import { trackGamePlaytime } from "../library-sync";
+import { scheduleSettingsSync } from "../game-record-updater";
 import {
   deleteEmulatorGameRunning,
   setEmulatorGameRunning,
@@ -63,7 +63,6 @@ export interface EmulatorSession {
   sku: string | null;
   beforeTotalSeconds: number | null;
   startedAt: number;
-  heartbeat: ReturnType<typeof setInterval> | null;
   child: ChildProcess;
   souvenirSession: EmulatorSouvenirSession | null;
   knownShadps4Pids: Set<number>;
@@ -76,7 +75,6 @@ export interface EmulatorSession {
 
 export const emulatorSessions = new Map<string, EmulatorSession>();
 
-const PRESENCE_HEARTBEAT_INTERVAL_MS = 60_000;
 const SHADPS4_CORE_POLL_INTERVAL_MS = 2_000;
 
 const isShadps4ProcessName = (name: string): boolean =>
@@ -156,15 +154,6 @@ const refreshShadps4CorePid = async (
   adoptShadps4CorePid(gameKey, session, corePid);
 };
 
-const sendPresencePing = async (gameKey: string): Promise<void> => {
-  const game = await gamesSublevel.get(gameKey);
-  if (!game || game.shop === "custom") return;
-
-  await trackGamePlaytime(game, 0, new Date()).catch((error) => {
-    logger.error("Failed to send emulator presence ping", error);
-  });
-};
-
 const startTrophyWatcher = (
   system: EmulatorSessionSystem,
   gameKey: string,
@@ -215,7 +204,6 @@ export const startEmulatorSession = async ({
     sku,
     beforeTotalSeconds: before,
     startedAt: performance.now(),
-    heartbeat: null,
     child,
     souvenirSession,
     knownShadps4Pids: new Set([
@@ -248,14 +236,6 @@ export const startEmulatorSession = async ({
   }
   setEmulatorGameRunning(gameKey);
   void onScreenshotGameStarted(gameKey);
-
-  if (game.shop !== "custom") {
-    void sendPresencePing(gameKey);
-    session.heartbeat = setInterval(() => {
-      void sendPresencePing(gameKey);
-    }, PRESENCE_HEARTBEAT_INTERVAL_MS);
-    session.heartbeat.unref?.();
-  }
 
   if (game.shop === "launchbox") {
     const souvenirWatcherToken = {};
@@ -421,7 +401,6 @@ const finalizeEmulatorSession = async (gameKey: string): Promise<void> => {
   deleteEmulatorGameRunning(gameKey);
   stopLinuxGameCaptureSession(gameKey);
   onScreenshotGameClosed(gameKey);
-  if (session.heartbeat) clearInterval(session.heartbeat);
   if (session.coreWatch) clearInterval(session.coreWatch);
   if (session.relaunchWatch) clearInterval(session.relaunchWatch);
   stopEmulatorSouvenirWatcher(gameKey);
@@ -450,24 +429,8 @@ const finalizeEmulatorSession = async (gameKey: string): Promise<void> => {
 
   if (game.shop === "custom") return;
 
-  const pendingDelta =
-    deltaMs + (game.unsyncedDeltaPlayTimeInMilliseconds ?? 0);
-
-  trackGamePlaytime(updated, pendingDelta, updated.lastTimePlayed!)
-    .then(() => {
-      WindowManager.sendToAppWindows("on-game-session-synced");
-      return gamesSublevel.put(gameKey, {
-        ...updated,
-        unsyncedDeltaPlayTimeInMilliseconds: 0,
-      });
-    })
-    .catch((error) => {
-      logger.error("Failed to sync emulator playtime", error);
-      return gamesSublevel.put(gameKey, {
-        ...updated,
-        unsyncedDeltaPlayTimeInMilliseconds: pendingDelta,
-      });
-    });
+  // Shares this session's time with the user's other devices.
+  scheduleSettingsSync();
 
   if (game.shop === "launchbox") {
     if (hasCloudSaveLaunchGuard(game.objectId, game.shop)) {

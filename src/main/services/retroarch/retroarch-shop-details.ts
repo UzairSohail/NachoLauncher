@@ -46,8 +46,7 @@ export const fetchShopDetailsForHashes = async (
           hashFormat: "headerless-v1",
           roms: romChunk,
           language,
-        },
-        { needsAuth: false }
+        }
       );
       if (!Array.isArray(response)) {
         failed = true;

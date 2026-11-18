@@ -82,7 +82,7 @@ const searchCatalogue = async (
       skip: 0,
       downloadSourceIds: [],
     },
-    { needsAuth: false, signal }
+    { signal }
   );
   return Array.isArray(response?.edges) ? response.edges : [];
 };
@@ -99,7 +99,7 @@ const fetchEntriesByObjectId = async (
       const response = await HydraApi.post<LaunchboxShopDetailsEntry[]>(
         "/games/shop-details",
         { shop: "launchbox", objectIds: idChunk, language },
-        { needsAuth: false, signal }
+        { signal }
       );
       for (const entry of Array.isArray(response) ? response : []) {
         if (entry?.objectId && entry.data) entries.set(entry.objectId, entry);

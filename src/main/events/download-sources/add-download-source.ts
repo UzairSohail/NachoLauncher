@@ -19,19 +19,8 @@ export const addDownloadSourceByUrl = async (url: string) => {
       "/download-sources",
       {
         url,
-      },
-      { needsAuth: false }
-    );
-
-    if (HydraApi.isLoggedIn() && HydraApi.hasActiveSubscription()) {
-      try {
-        await HydraApi.post("/profile/download-sources", {
-          urls: [url],
-        });
-      } catch (error) {
-        logger.error("Failed to add download source to profile:", error);
       }
-    }
+    );
 
     await downloadSourcesSublevel.put(downloadSource.id, {
       ...downloadSource,

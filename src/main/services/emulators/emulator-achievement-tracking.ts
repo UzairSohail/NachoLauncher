@@ -1,8 +1,6 @@
 import type { UserPreferences } from "@types";
-import { isAchievementSouvenirsEnabled } from "../../../shared/souvenirs.js";
 
 export interface EmulatorAchievementTracking {
-  souvenirs: boolean;
   realtimeUnlocks: boolean;
 }
 
@@ -15,26 +13,15 @@ export const hasRetroAchievementsCredentials = (
   );
 
 export const resolveEmulatorAchievementTracking = (
-  userPreferences: UserPreferences | null | undefined,
-  hasActiveSubscription: boolean,
-  platform: NodeJS.Platform
+  userPreferences: UserPreferences | null | undefined
 ): EmulatorAchievementTracking => ({
-  souvenirs:
-    hasActiveSubscription &&
-    isAchievementSouvenirsEnabled(
-      userPreferences?.enableAchievementSouvenirs,
-      platform
-    ),
   realtimeUnlocks: hasRetroAchievementsCredentials(userPreferences),
 });
 
 export const isEmulatorAchievementTrackingActive = (
   tracking: EmulatorAchievementTracking
-) => tracking.souvenirs || tracking.realtimeUnlocks;
+) => tracking.realtimeUnlocks;
 
 export const needsEmulatorOverlayVisibility = (
-  userPreferences: UserPreferences | null | undefined,
-  tracking: EmulatorAchievementTracking
-) =>
-  tracking.souvenirs ||
-  userPreferences?.achievementNotificationsEnabled !== false;
+  userPreferences: UserPreferences | null | undefined
+) => userPreferences?.achievementNotificationsEnabled !== false;

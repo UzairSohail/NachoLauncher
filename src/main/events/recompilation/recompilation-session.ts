@@ -21,11 +21,9 @@ import {
   setEmulatorGameRunning,
   setRecompilationGameRunning,
 } from "@main/services/game-running-state";
-import { HydraApi } from "@main/services/hydra-api";
 import { NativeAddon } from "@main/services/native-addon";
-import { createGame, trackGamePlaytime } from "@main/services/library-sync";
-import { getHydraPlaytimeRevision } from "@main/services/library-sync/library-write-queue";
 import { persistGamePlaytime } from "@main/services/process-watcher";
+import { scheduleSettingsSync } from "@main/services/game-record-updater";
 import { logger } from "@main/services/logger";
 import { killWindowsProcessTree } from "@main/helpers/kill-windows-process-tree";
 import { WindowManager } from "@main/services/window-manager";
@@ -38,7 +36,6 @@ import {
 } from "./recompilation-trophy-watcher";
 
 const SHOP = "launchbox";
-const PRESENCE_HEARTBEAT_INTERVAL_MS = 60_000;
 const CLOSE_GRACE_PERIOD_MS = 10_000;
 const PORT_PROCESS_POLL_INTERVAL_MS = 2_000;
 
@@ -46,7 +43,6 @@ interface RecompilationSession {
   ref: RecompilationRef;
   child: ChildProcess;
   startedAt: number;
-  heartbeat: ReturnType<typeof setInterval> | null;
   portProcessWatch: ReturnType<typeof setInterval> | null;
   baseGameReady: Promise<void>;
   trophyWatcher: RecompilationTrophyWatcher | null;
@@ -114,9 +110,6 @@ const getOrAddBaseGame = async (ref: RecompilationRef): Promise<Game> => {
   const key = baseKeyOf(ref);
   const existing = await gamesSublevel.get(key);
   if (existing && !existing.isDeleted) {
-    if (!existing.remoteId && HydraApi.isLoggedIn()) {
-      await createGame(existing).catch(() => {});
-    }
     return existing;
   }
 
@@ -145,68 +138,22 @@ const getOrAddBaseGame = async (ref: RecompilationRef): Promise<Game> => {
       };
   await gamesSublevel.put(key, game);
   WindowManager.sendToAppWindows("on-library-batch-complete");
-  if (HydraApi.isLoggedIn()) await createGame(game).catch(() => {});
   return game;
-};
-
-const sendPresencePing = async (baseKey: string) => {
-  if (!HydraApi.isLoggedIn()) return;
-  const game = await gamesSublevel.get(baseKey);
-  if (!game?.remoteId) return;
-  await trackGamePlaytime(game, 0, new Date()).catch((error) => {
-    logger.error("Failed to send recompilation presence ping", error);
-  });
 };
 
 const creditPlaytime = async (baseKey: string, deltaMs: number) => {
   const game = await gamesSublevel.get(baseKey);
   if (!game) return;
 
-  const authContext = HydraApi.getAuthContext();
-  const hydraRevision = getHydraPlaytimeRevision(baseKey);
-  const deltaToSync = deltaMs + (game.unsyncedDeltaPlayTimeInMilliseconds ?? 0);
-  const lastTimePlayed = new Date();
-
-  await persistGamePlaytime(baseKey, { lastTimePlayed }, authContext, deltaMs);
+  await persistGamePlaytime(baseKey, { lastTimePlayed: new Date() }, deltaMs);
   WindowManager.sendToAppWindows("on-library-batch-complete");
-
-  if (!game.remoteId) {
-    await createGame({ ...game, lastTimePlayed }).catch((error) => {
-      logger.error(
-        "Failed to add the recompilation's game to the profile",
-        error
-      );
-    });
-    return;
-  }
-
-  await trackGamePlaytime(game, deltaToSync, lastTimePlayed)
-    .then(() => {
-      WindowManager.sendToAppWindows("on-game-session-synced");
-      return persistGamePlaytime(
-        baseKey,
-        { unsyncedDeltaPlayTimeInMilliseconds: 0 },
-        authContext,
-        undefined,
-        hydraRevision
-      );
-    })
-    .catch((error) => {
-      logger.error("Failed to sync recompilation playtime", error);
-      return persistGamePlaytime(
-        baseKey,
-        { unsyncedDeltaPlayTimeInMilliseconds: deltaToSync },
-        authContext,
-        undefined,
-        hydraRevision
-      );
-    });
+  // Shares this session's time with the user's other devices.
+  scheduleSettingsSync();
 };
 
 const endSession = (session: RecompilationSession) => {
   const portKey = portKeyOf(session.ref);
   sessions.delete(portKey);
-  if (session.heartbeat) clearInterval(session.heartbeat);
   if (session.portProcessWatch) clearInterval(session.portProcessWatch);
   deleteEmulatorGameRunning(portKey);
   deleteRecompilationGameRunning(portKey);
@@ -287,7 +234,6 @@ export const startRecompilationSession = async (
     ref,
     child,
     startedAt: performance.now(),
-    heartbeat: null,
     portProcessWatch: null,
     trophyWatcher: null,
     baseGameReady: getOrAddBaseGame(ref)
@@ -320,13 +266,6 @@ export const startRecompilationSession = async (
   }
 
   await session.baseGameReady;
-  if (sessions.get(portKey) !== session) return;
-
-  void sendPresencePing(baseKey);
-  session.heartbeat = setInterval(() => {
-    void sendPresencePing(baseKey);
-  }, PRESENCE_HEARTBEAT_INTERVAL_MS);
-  session.heartbeat.unref?.();
 };
 
 export const isRecompilationRunning = (ref: RecompilationRef) =>
@@ -407,7 +346,7 @@ export const saveRecompilationPlaytimeOnQuit = async () => {
   await Promise.all(
     Array.from(sessions.values(), async (session) => {
       const deltaMs = endSession(session);
-      // The port keeps running after the Hydra quits: the last trophy read
+      // The port keeps running after Nacho quits: the last trophy read
       // runs now, and a clean-up after a reset waits for the next launch.
       await session.trophyWatcher?.finish(false).catch((error) => {
         logger.error("Failed to finish the port trophy watcher", error);
@@ -422,7 +361,6 @@ export const saveRecompilationPlaytimeOnQuit = async () => {
           unsyncedDeltaPlayTimeInMilliseconds:
             deltaMs + (game.unsyncedDeltaPlayTimeInMilliseconds ?? 0),
         },
-        HydraApi.getAuthContext(),
         deltaMs
       );
     })

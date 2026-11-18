@@ -1,14 +1,7 @@
 import { appVersion, defaultDownloadsPath, isStaging } from "@main/constants";
 import { ipcMain } from "electron";
 import { ScreenshotService } from "@main/services/screenshot";
-import {
-  cleanupAchievementSouvenirSync,
-  getAchievementSouvenirSyncDetails,
-  getAchievementSouvenirSyncStatus,
-  retryAchievementSouvenirSync,
-} from "@main/services/achievements/grouped-souvenir-worker";
 
-import "./auth";
 import "./autoupdater";
 import "./big-picture";
 import "./catalogue";
@@ -40,16 +33,4 @@ ipcMain.handle("isStaging", () => isStaging);
 ipcMain.handle("getDefaultDownloadsPath", () => defaultDownloadsPath);
 ipcMain.handle("getScreenshotsPath", () =>
   ScreenshotService.getScreenshotsPath()
-);
-ipcMain.handle("getAchievementSouvenirSyncStatus", () =>
-  getAchievementSouvenirSyncStatus()
-);
-ipcMain.handle("getAchievementSouvenirSyncDetails", () =>
-  getAchievementSouvenirSyncDetails()
-);
-ipcMain.handle("retryAchievementSouvenirSync", () =>
-  retryAchievementSouvenirSync()
-);
-ipcMain.handle("cleanupAchievementSouvenirSync", () =>
-  cleanupAchievementSouvenirSync()
 );

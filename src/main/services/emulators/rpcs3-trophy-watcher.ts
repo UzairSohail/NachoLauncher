@@ -7,10 +7,7 @@ import { gamesSublevel } from "@main/level";
 import { AchievementMemoryStore } from "../achievements/achievement-memory-store";
 import { getGameAchievementData } from "../achievements/get-game-achievement-data";
 import { mergeAchievements } from "../achievements/merge-achievements";
-import { HydraApi } from "../hydra-api";
-import { prepareLinuxGameCaptureSession } from "../linux-game-capture-session";
 import { achievementsLogger } from "../logger";
-import { loadEmulatorAchievementTracking } from "./load-emulator-achievement-tracking";
 import {
   RPCS3_CATALOGUE_RETRY_INTERVAL_MS,
   resolveRpcs3TrophySources,
@@ -42,13 +39,6 @@ const hasTrophyCatalogue = async (game: Game): Promise<boolean> => {
   return catalogue.length > 0;
 };
 
-const prepareCaptureOnce = async (gameKey: string, game: Game) => {
-  const tracking = await loadEmulatorAchievementTracking();
-  if (tracking.souvenirs && game.remoteId) {
-    await prepareLinuxGameCaptureSession(gameKey);
-  }
-};
-
 const readFilesVersion = async (files: string[]) => {
   const stats = await Promise.all(
     files.map((file) => fs.stat(file).catch(() => null))
@@ -69,13 +59,10 @@ export const startRpcs3TrophyWatcher = ({
   let lastVersion: string | null = null;
   let hasFoundTrophies = false;
   let hasImportedExistingUnlocks = false;
-  let hasPreparedCapture = false;
   let nextCatalogueAttemptAt = 0;
   let inFlightRead: Promise<void> | null = null;
 
   const readTrophies = async (isFinalRead: boolean) => {
-    if (!HydraApi.isLoggedIn()) return;
-
     const game = await gamesSublevel.get(gameKey);
     if (!game) return;
 
@@ -92,17 +79,6 @@ export const startRpcs3TrophyWatcher = ({
     if (version === lastVersion) return;
     hasFoundTrophies = true;
 
-    if (!hasPreparedCapture && !isFinalRead) {
-      hasPreparedCapture = true;
-      prepareCaptureOnce(gameKey, game).catch((error) => {
-        achievementsLogger.warn(
-          "Failed to prepare RPCS3 trophy capture",
-          gameKey,
-          error
-        );
-      });
-    }
-
     const unlockedTrophies = await readRpcs3UnlockedTrophies(files);
     if (!unlockedTrophies) return;
 
@@ -118,7 +94,7 @@ export const startRpcs3TrophyWatcher = ({
         game,
         unlockedTrophies,
         hasImportedExistingUnlocks,
-        { skipSouvenirCapture: isFinalRead, alwaysUpdateInterface: true }
+        { alwaysUpdateInterface: true }
       );
     }
 
@@ -152,7 +128,7 @@ export const startRpcs3TrophyWatcher = ({
       await inFlightRead;
       await runRead(true);
 
-      if (!hasFoundTrophies && HydraApi.isLoggedIn()) {
+      if (!hasFoundTrophies) {
         achievementsLogger.warn(
           "No RPCS3 trophy file for this session",
           gameKey

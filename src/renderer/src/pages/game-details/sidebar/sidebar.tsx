@@ -64,8 +64,7 @@ const getProtonDBData = (shop: string, objectId: string) => {
 
   const request = window.electron.hydraApi
     .get<ProtonDBData | null>(`/games/${shop}/${objectId}/protondb`, {
-      needsAuth: false,
-    })
+      })
     .then((protonData) => {
       protonDBResponseCache.set(cacheKey, protonData);
       return protonData;
@@ -180,8 +179,7 @@ export function Sidebar() {
         .get<HowLongToBeatCategory[] | null>(
           `/games/${catalogueGame.shop}/${catalogueGame.objectId}/how-long-to-beat`,
           {
-            needsAuth: false,
-          }
+            }
         )
         .then((howLongToBeatData) => {
           setHowLongToBeat({

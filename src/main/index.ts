@@ -29,25 +29,12 @@ import { DownloadManager } from "./services/download/download-manager";
 import { db, gamesSublevel, levelKeys } from "./level";
 import { GameShop, UserPreferences } from "@types";
 import { launchGame, openClassicsGame } from "./helpers";
-import {
-  flushScreenshotTelemetry,
-  stopWaylandFocusWatch,
-} from "./services/screenshots";
+import { stopWaylandFocusWatch } from "./services/screenshots";
 import { isWaylandSession } from "./services/linux-game-capture-session";
 import { recompilationGameSessions } from "./services/game-running-state";
 import { refreshPortableShortcutLauncher } from "./helpers/shortcut-launch";
 import { lookupCachedPlatform } from "./events/library/get-library";
 import { loadState } from "./main";
-import {
-  closeSteamOpenIdWindow,
-  notifySteamConnectError,
-  notifySteamConnected,
-} from "./services/steam-integration/steam-store-session";
-import {
-  completeSteamOpenIdConnection,
-  parseSteamOpenIdReturn,
-} from "./services/steam-integration/steam-openid-return";
-import { steamSyncOrchestrator } from "./services/steam-integration/steam-sync-orchestrator";
 import { achievementNotificationPresenter } from "./services/achievement-notification-presenter-electron";
 import { removeAppImageLibraryPath } from "./helpers/remove-appimage-library-path";
 
@@ -350,16 +337,6 @@ const handleDeepLinkPath = (uri?: string) => {
       return;
     }
 
-    if (url.host === "profile") {
-      const userId = url.searchParams.get("userId");
-
-      if (userId) {
-        WindowManager.redirect(`profile/${userId}`);
-      }
-
-      return;
-    }
-
     if (url.host === "install-theme") {
       const themeName = url.searchParams.get("theme");
       const authorId = url.searchParams.get("authorId");
@@ -372,20 +349,6 @@ const handleDeepLinkPath = (uri?: string) => {
       }
 
       return;
-    }
-
-    if (url.host === "steam-connected") {
-      closeSteamOpenIdWindow();
-      const result = parseSteamOpenIdReturn(uri);
-      if (result?.kind === "error") {
-        notifySteamConnectError(result.code);
-        return;
-      }
-      completeSteamOpenIdConnection({
-        clearReconnectRequired: () =>
-          steamSyncOrchestrator.clearReconnectRequired(),
-        notifyConnected: notifySteamConnected,
-      });
     }
   } catch (error) {
     logger.error("Error handling deep link", uri, error);
@@ -427,8 +390,6 @@ app.on("window-all-closed", () => {
   WindowManager.clearMainWindow();
 });
 
-const SCREENSHOT_TELEMETRY_QUIT_FLUSH_TIMEOUT_MS = 2_000;
-
 const saveRecompilationPlaytimeOnQuit = async () => {
   if (recompilationGameSessions.size === 0) return;
   const session = await import("./events/recompilation/recompilation-session");
@@ -458,7 +419,6 @@ app.on("before-quit", async (e) => {
       clearGamesPlaytime(),
       saveRecompilationPlaytimeOnQuit(),
       emulators.stopAllEmulatorSouvenirCaptureSessions(),
-      flushScreenshotTelemetry(SCREENSHOT_TELEMETRY_QUIT_FLUSH_TIMEOUT_MS),
     ]);
     for (const result of results) {
       if (result.status === "rejected") {

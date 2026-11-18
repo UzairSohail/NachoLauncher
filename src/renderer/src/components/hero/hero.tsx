@@ -31,8 +31,7 @@ export function Hero() {
     window.electron.hydraApi
       .get<TrendingGame[]>("/catalogue/featured", {
         params: { language },
-        needsAuth: false,
-      })
+        })
       .then((result) => {
         const featured = ensureArray<TrendingGame>(
           result,

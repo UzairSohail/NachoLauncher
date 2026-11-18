@@ -9,7 +9,6 @@ import { getEmulatorConfig } from "./emulators-repository";
 import { createRpcs3SessionConfig } from "./rpcs3-session-config";
 import { resolveRpcs3TrophySources } from "./rpcs3-trophy-sources";
 import { logger } from "../logger";
-import { HydraApi } from "../hydra-api";
 import { db, levelKeys } from "@main/level";
 import type { Game, UserPreferences } from "@types";
 import { rpcs3TitleIdsForGame } from "../cloud-save/rpcs3-title-ids";
@@ -17,7 +16,6 @@ import { extractVerifiedPs3TitleId } from "./extract-disc-sku";
 import {
   isEmulatorAchievementTrackingActive,
   needsEmulatorOverlayVisibility,
-  resolveEmulatorAchievementTracking,
 } from "./emulator-achievement-tracking";
 import { loadEmulatorAchievementTracking } from "./load-emulator-achievement-tracking";
 import {
@@ -32,14 +30,7 @@ const shouldKeepRpcs3Borderless = async () => {
     })
     .catch(() => null);
 
-  return needsEmulatorOverlayVisibility(
-    userPreferences,
-    resolveEmulatorAchievementTracking(
-      userPreferences,
-      HydraApi.hasActiveSubscription(),
-      process.platform
-    )
-  );
+  return needsEmulatorOverlayVisibility(userPreferences);
 };
 
 const resolveRpcs3TitleIds = async (

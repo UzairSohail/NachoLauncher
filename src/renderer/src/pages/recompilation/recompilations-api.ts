@@ -21,7 +21,7 @@ const portPath = (objectId: string, slug: string) =>
 
 const getHydraRecompilations = (objectId: string) =>
   window.electron.hydraApi
-    .get<RecompilationSummary[]>(gamePath(objectId), { needsAuth: false })
+    .get<RecompilationSummary[]>(gamePath(objectId))
     .then((items) => (Array.isArray(items) ? items : []));
 
 /**
@@ -55,8 +55,7 @@ export const getGameRecompilations = async (
 export const getRecompilation = async (objectId: string, slug: string) => {
   if (!isCatalogSlug(slug)) {
     return window.electron.hydraApi.get<RecompilationDetails>(
-      portPath(objectId, slug),
-      { needsAuth: false }
+      portPath(objectId, slug)
     );
   }
   const details = await window.electron.getCatalogRecompilation(objectId, slug);
@@ -72,7 +71,7 @@ export const getRecompilationReadme = async (
   if (!isCatalogSlug(slug)) {
     return window.electron.hydraApi.get<RecompilationReadme>(
       `${portPath(objectId, slug)}/readme`,
-      { params: { language }, needsAuth: false }
+      { params: { language } }
     );
   }
   const readme = await window.electron.getCatalogRecompilationReadme(slug);
@@ -84,8 +83,7 @@ export const getRecompilationReleases = (objectId: string, slug: string) =>
   isCatalogSlug(slug)
     ? window.electron.getCatalogRecompilationReleases(slug)
     : window.electron.hydraApi.get<RecompilationReleases>(
-        `${portPath(objectId, slug)}/releases`,
-        { needsAuth: false }
+        `${portPath(objectId, slug)}/releases`
       );
 
 export const buildRecompilationPath = (objectId: string, slug: string) =>
@@ -133,8 +131,7 @@ export const findCatalogueGameForRecomp = async (item: RecompCatalogItem) => {
       skip: 0,
       downloadSourceIds: [],
     },
-    needsAuth: false,
-  });
+    });
 
   const match = pickCatalogueGameForRecomp(
     Array.isArray(response?.edges) ? response.edges : [],

@@ -13,7 +13,6 @@ import type {
   ScreenshotTriggerSource,
 } from "@types";
 
-import { getSignedInScreenshotOwnerId } from "./local-screenshot-owner";
 import { hasTrackedGamesRunning } from "../game-running-state";
 import { logger } from "../logger";
 import {
@@ -62,7 +61,6 @@ import {
   ensureRootMarkerId,
   getScreenshotsRoot,
 } from "./screenshots-root-marker";
-import { ScreenshotTelemetry } from "./screenshot-telemetry";
 import { readUserPreferences } from "./screenshot-user-preferences";
 import { CaptureCallTimeoutError } from "./window-bound-promise";
 
@@ -200,8 +198,6 @@ interface FinishCaptureOptions {
   capturedAt: Date;
   size: { width: number; height: number };
   defaultVisibility: ProfileVisibility;
-  source: ScreenshotTriggerSource;
-  ownerId: string | null;
   previewPath: string | null;
 }
 
@@ -212,13 +208,11 @@ const finishCapture = async ({
   capturedAt,
   size,
   defaultVisibility,
-  source,
-  ownerId,
   previewPath,
 }: FinishCaptureOptions) => {
   const screenshot = await LocalScreenshotStore.put({
     clientId: randomUUID(),
-    ownerId,
+    ownerId: null,
     shop: target.shop,
     objectId: target.objectId,
     gameTitle,
@@ -240,7 +234,6 @@ const finishCapture = async ({
     previewPath,
   });
 
-  ScreenshotTelemetry.record("capture", "saved", source);
 
   return screenshot;
 };
@@ -305,8 +298,8 @@ const playCaptureSound = () => {
   });
 };
 
-const showCapturedToast = (gameTitle: string, ownerId: string | null) => {
-  showCaptureToast(ownerId ? "captured" : "saved_locally", gameTitle);
+const showCapturedToast = (gameTitle: string) => {
+  showCaptureToast("saved_locally", gameTitle);
 };
 
 const wrapNativeImage = (
@@ -426,7 +419,6 @@ const getWaylandShareBlocker = async (
     state,
     failure,
   });
-  ScreenshotTelemetry.record("capture", "ignored", `share_${failure ?? state}`);
   return failure ? WAYLAND_SHARE_FAILURES[failure] : "share_pending";
 };
 
@@ -442,8 +434,6 @@ const recordCaptureFailure = (
     stage,
     error: error instanceof Error ? error.message : error,
   });
-  const errorName = error instanceof Error ? error.name : "unknown_error";
-  ScreenshotTelemetry.record("capture", "failed", `${stage}_${errorName}`);
 };
 
 const createCaptureTimer = (
@@ -467,11 +457,6 @@ const createCaptureTimer = (
 
 type SaveCapturedScreenshot = () => Promise<void>;
 
-const recordUnexpectedFailure = (error: unknown) => {
-  const errorName = error instanceof Error ? error.name : "unknown_error";
-  ScreenshotTelemetry.record("capture", "failed", `unexpected_${errorName}`);
-};
-
 const reportUnresolvedGame = (
   source: ScreenshotTriggerSource,
   unresolved: UnresolvedForegroundGame,
@@ -479,7 +464,6 @@ const reportUnresolvedGame = (
 ) => {
   const failure = getUnresolvedGameFailure(source, unresolved);
   if (unresolved.candidates.length) {
-    ScreenshotTelemetry.record("capture", "ignored", "no_foreground_game");
   }
   if (failure && toastEnabled) {
     showCaptureFailure(failure.kind, failure.gameTitle);
@@ -506,7 +490,6 @@ const grabResolvedGame = async (
     return null;
   }
 
-  const ownerId = getSignedInScreenshotOwnerId();
 
   const failCapture = (
     stage: CaptureFailureStage,
@@ -575,8 +558,6 @@ const grabResolvedGame = async (
         capturedAt,
         size: { width: frame.width, height: frame.height },
         defaultVisibility: preferences.defaultVisibility,
-        source,
-        ownerId,
         previewPath,
       });
     } catch (error) {
@@ -584,7 +565,7 @@ const grabResolvedGame = async (
       await discardUnrecordedCapture(filePath, previewPath);
       return;
     }
-    showCapturedToast(gameTitle, ownerId);
+    showCapturedToast(gameTitle);
     timer.mark("saved");
     timer.flush(target.gameKey);
   };
@@ -612,7 +593,6 @@ const grabScreenshot = async (
     lookup = await resolveForegroundGame(source);
   } catch (error) {
     logger.error("Failed to resolve the screenshot game", error);
-    recordUnexpectedFailure(error);
     if (preferences.toastEnabled && hasTrackedGamesRunning()) {
       showCaptureFailure("unexpected_error", null);
     }
@@ -628,7 +608,6 @@ const grabScreenshot = async (
     return await grabResolvedGame(lookup, source, preferences, timer);
   } catch (error) {
     logger.error("Screenshot capture failed", error);
-    recordUnexpectedFailure(error);
     showCaptureFailure("unexpected_error", null);
     return null;
   }

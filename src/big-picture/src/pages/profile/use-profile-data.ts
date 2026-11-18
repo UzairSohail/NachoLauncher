@@ -330,7 +330,7 @@ export function useProfileBadges() {
 
   useEffect(() => {
     globalThis.window.electron.hydraApi
-      .get<Badge[]>("/badges?locale=en", { needsAuth: false })
+      .get<Badge[]>("/badges?locale=en")
       .then((response) => setBadges(ensureArray(response)))
       .catch(() => setBadges([]));
   }, []);

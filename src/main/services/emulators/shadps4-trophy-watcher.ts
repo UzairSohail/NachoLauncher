@@ -8,11 +8,8 @@ import { gamesSublevel } from "@main/level";
 import { AchievementMemoryStore } from "../achievements/achievement-memory-store";
 import { getGameAchievementData } from "../achievements/get-game-achievement-data";
 import { mergeAchievements } from "../achievements/merge-achievements";
-import { HydraApi } from "../hydra-api";
-import { prepareLinuxGameCaptureSession } from "../linux-game-capture-session";
 import { achievementsLogger } from "../logger";
 import { getEmulatorConfig } from "./emulators-repository";
-import { loadEmulatorAchievementTracking } from "./load-emulator-achievement-tracking";
 import {
   createShadps4LogScan,
   mergeTrophyUnlocks,
@@ -48,16 +45,6 @@ const hasTrophyCatalogue = async (game: Game): Promise<boolean> => {
   return catalogue.length > 0;
 };
 
-const prepareSouvenirCapture = async (gameKey: string) => {
-  const [game, tracking] = await Promise.all([
-    gamesSublevel.get(gameKey),
-    loadEmulatorAchievementTracking(),
-  ]);
-  if (tracking.souvenirs && game?.remoteId) {
-    await prepareLinuxGameCaptureSession(gameKey);
-  }
-};
-
 export const startShadps4TrophyWatcher = ({
   gameKey,
   executablePath,
@@ -88,7 +75,6 @@ export const startShadps4TrophyWatcher = ({
     }
 
     await mergeAchievements(game, unlocks, publishNotification, {
-      skipSouvenirCapture: isFinalRead,
       alwaysUpdateInterface: true,
     });
     return true;
@@ -169,8 +155,6 @@ export const startShadps4TrophyWatcher = ({
   };
 
   const readTrophies = async (isFinalRead: boolean) => {
-    if (!HydraApi.isLoggedIn()) return;
-
     const game = await gamesSublevel.get(gameKey);
     if (!game) return;
 
@@ -193,14 +177,6 @@ export const startShadps4TrophyWatcher = ({
     return inFlightRead;
   };
 
-  prepareSouvenirCapture(gameKey).catch((error) => {
-    achievementsLogger.warn(
-      "Failed to prepare shadPS4 trophy capture",
-      gameKey,
-      error
-    );
-  });
-
   const timer = setInterval(() => {
     if (inFlightRead === null) void runRead(false);
   }, INTERVALS.achievementWatcher);
@@ -215,7 +191,7 @@ export const startShadps4TrophyWatcher = ({
       const foundGameLog = [...logScans.values()].some(
         (scan) => scan.matchesGame
       );
-      if (!foundTrophyFile && !foundGameLog && HydraApi.isLoggedIn()) {
+      if (!foundTrophyFile && !foundGameLog) {
         achievementsLogger.warn(
           "No shadPS4 trophy file or game log for this session",
           gameKey

@@ -487,8 +487,7 @@ export function ProfileContent() {
     setIsLoadingReviews(true);
     try {
       const response = await window.electron.hydraApi.get<UserReviewsResponse>(
-        `/users/${userProfile.id}/reviews`,
-        { needsAuth: false }
+        `/users/${userProfile.id}/reviews`
       );
       setReviews(response.reviews);
       setReviewsTotalCount(response.totalCount);

@@ -389,17 +389,16 @@ export function useCatalogueData() {
       ] = await Promise.allSettled([
         globalThis.window.electron.hydraApi.get<string[]>(
           "/catalogue/steam/genres",
-          { params: { language: "en" }, needsAuth: false }
+          { params: { language: "en" } }
         ),
         globalThis.window.electron.hydraApi.get<Record<string, number>>(
           "/catalogue/steam/tags",
-          { params: { language: "en" }, needsAuth: false }
+          { params: { language: "en" } }
         ),
         globalThis.window.electron.getCatalogueNames("developers"),
         globalThis.window.electron.getCatalogueNames("publishers"),
         globalThis.window.electron.hydraApi.get<LaunchboxFiltersResponse>(
-          "/catalogue/filters?shop=launchbox",
-          { needsAuth: false }
+          "/catalogue/filters?shop=launchbox"
         ),
         levelDBService.values("downloadSources"),
       ]);
@@ -505,8 +504,7 @@ export function useCatalogueData() {
                 take: pageSize,
                 skip,
               },
-              needsAuth: false,
-            }
+              }
           );
 
         if (

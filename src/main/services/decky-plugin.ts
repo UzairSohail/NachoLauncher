@@ -29,8 +29,7 @@ export class DeckyPlugin {
     try {
       const response = await HydraApi.get<DeckyReleaseInfo>(
         "/decky/release",
-        {},
-        { needsAuth: false }
+        {}
       );
 
       this.releaseInfo = response;

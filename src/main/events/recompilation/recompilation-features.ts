@@ -17,7 +17,6 @@ export const isRecompilationCloudSaveEnabled = async () => {
 
   try {
     const features = await HydraApi.get<unknown>("/features", undefined, {
-      needsAuth: false,
       timeout: FEATURE_REQUEST_TIMEOUT_MS,
     });
     const enabled =

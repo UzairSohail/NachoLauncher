@@ -1,6 +1,6 @@
-export const HYDRA_GAME_REQUEST_TIMEOUT_MS = 20_000;
+export const GAME_REQUEST_TIMEOUT_MS = 20_000;
 
-/** Preserve the order of Hydra writes for games also touched by a batch. */
+/** Preserve the order of writes for games also touched by a batch. */
 export class GameRequestQueue {
   private readonly tails = new Map<string, Promise<void>>();
   run<T>(

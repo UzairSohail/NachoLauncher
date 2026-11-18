@@ -5,11 +5,6 @@ import icon from "@resources/icon.png?asset";
 import trayIconDark from "@resources/tray-icon-dark.png?asset";
 import trayIcon from "@resources/tray-icon.png?asset";
 import {
-  AUTH_WINDOW_CONTENT_HEIGHT,
-  AUTH_WINDOW_CONTENT_WIDTH,
-  AuthPage,
-  CUSTOM_WINDOW_BORDER_WIDTH,
-  CUSTOM_WINDOW_TITLE_BAR_HEIGHT,
   MAIN_WINDOW_TITLE_BAR_HEIGHT,
   NATIVE_WINDOW_DECORATIONS_ARGUMENT,
 } from "@shared";
@@ -25,7 +20,6 @@ import {
   MenuItem,
   MenuItemConstructorOptions,
   Tray,
-  WebContentsView,
   app,
   nativeImage,
   nativeTheme,
@@ -36,7 +30,6 @@ import { t } from "i18next";
 import { orderBy } from "lodash-es";
 import path from "node:path";
 import UserAgent from "user-agents";
-import { HydraApi } from "./hydra-api";
 import { logger } from "./logger";
 import {
   addSteamGridDbCacheControl,
@@ -62,7 +55,6 @@ export class WindowManager {
   private static bigPicture: Electron.BrowserWindow | null = null;
   private static mainWindowShownResult: boolean | null = null;
   private static mainWindowShownListeners: Array<(shown: boolean) => void> = [];
-  private static authWindow: Electron.BrowserWindow | null = null;
   private static retroAchievementsConnectionWindow: Electron.BrowserWindow | null =
     null;
   private static deferredMainMaximize = false;
@@ -686,152 +678,6 @@ export class WindowManager {
   public static focusMainWindowAndNavigate(path: string) {
     this.focusMainWindow();
     this.mainWindow?.webContents.send("on-navigate", path);
-  }
-
-  private static bindAuthNavigation(
-    contents: Electron.WebContents,
-    closeWindow: () => void
-  ) {
-    contents.on("will-navigate", (_event, url) => {
-      if (url.startsWith("hydralauncher://auth")) {
-        closeWindow();
-
-        HydraApi.handleExternalAuth(url);
-        return;
-      }
-
-      if (url.startsWith("hydralauncher://update-account")) {
-        closeWindow();
-
-        WindowManager.sendToAppWindows("on-account-updated");
-      }
-    });
-  }
-
-  public static openAuthWindow(page: AuthPage, searchParams: URLSearchParams) {
-    const parentWindow =
-      this.bigPicture && !this.bigPicture.isDestroyed()
-        ? this.bigPicture
-        : this.mainWindow;
-
-    if (!parentWindow || parentWindow.isDestroyed()) return;
-
-    const authUrl = `${import.meta.env.MAIN_VITE_AUTH_URL}${page}?${searchParams.toString()}`;
-
-    if (process.platform === "linux") {
-      this.openLinuxAuthWindow(parentWindow, authUrl);
-      return;
-    }
-
-    const authWindow = new BrowserWindow({
-      width: AUTH_WINDOW_CONTENT_WIDTH,
-      height: AUTH_WINDOW_CONTENT_HEIGHT,
-      backgroundColor: "#1c1c1c",
-      parent: parentWindow,
-      modal: true,
-      show: false,
-      maximizable: false,
-      resizable: false,
-      minimizable: false,
-      webPreferences: {
-        sandbox: false,
-        nodeIntegrationInSubFrames: true,
-      },
-    });
-
-    authWindow.removeMenu();
-
-    if (!app.isPackaged) authWindow.webContents.openDevTools();
-
-    authWindow.loadURL(authUrl);
-
-    authWindow.once("ready-to-show", () => {
-      authWindow.show();
-    });
-
-    authWindow.once("closed", () => {
-      if (!parentWindow.isDestroyed()) {
-        parentWindow.focus();
-      }
-    });
-
-    this.bindAuthNavigation(authWindow.webContents, () => authWindow.close());
-  }
-
-  private static openLinuxAuthWindow(
-    parentWindow: Electron.BrowserWindow,
-    authUrl: string
-  ) {
-    const authWindow = new BrowserWindow({
-      width: AUTH_WINDOW_CONTENT_WIDTH + CUSTOM_WINDOW_BORDER_WIDTH * 2,
-      height:
-        AUTH_WINDOW_CONTENT_HEIGHT +
-        CUSTOM_WINDOW_TITLE_BAR_HEIGHT +
-        CUSTOM_WINDOW_BORDER_WIDTH * 2,
-      parent: parentWindow,
-      modal: true,
-      show: false,
-      maximizable: false,
-      resizable: false,
-      frame: false,
-      icon,
-      backgroundColor: "#1c1c1c",
-      webPreferences: {
-        preload: path.join(__dirname, "../preload/index.mjs"),
-        sandbox: false,
-      },
-    });
-
-    this.authWindow = authWindow;
-
-    authWindow.removeMenu();
-
-    const authView = new WebContentsView({
-      webPreferences: {
-        sandbox: false,
-        nodeIntegrationInSubFrames: true,
-      },
-    });
-
-    authWindow.contentView.addChildView(authView);
-    authView.setBounds({
-      x: CUSTOM_WINDOW_BORDER_WIDTH,
-      y: CUSTOM_WINDOW_BORDER_WIDTH + CUSTOM_WINDOW_TITLE_BAR_HEIGHT,
-      width: AUTH_WINDOW_CONTENT_WIDTH,
-      height: AUTH_WINDOW_CONTENT_HEIGHT,
-    });
-
-    this.loadWindowURL(authWindow, "auth-window");
-    authView.webContents.loadURL(authUrl);
-
-    if (!app.isPackaged) authView.webContents.openDevTools();
-
-    authWindow.once("ready-to-show", () => {
-      authWindow.show();
-    });
-
-    authWindow.once("closed", () => {
-      this.authWindow = null;
-      if (!parentWindow.isDestroyed()) {
-        parentWindow.focus();
-      }
-    });
-
-    this.bindAuthNavigation(authView.webContents, () => {
-      if (!authWindow.isDestroyed()) authWindow.close();
-    });
-  }
-
-  public static minimizeAuthWindow() {
-    if (this.authWindow && !this.authWindow.isDestroyed()) {
-      this.authWindow.minimize();
-    }
-  }
-
-  public static closeAuthWindow() {
-    if (this.authWindow && !this.authWindow.isDestroyed()) {
-      this.authWindow.close();
-    }
   }
 
   public static openRetroAchievementsConnectionWindow() {

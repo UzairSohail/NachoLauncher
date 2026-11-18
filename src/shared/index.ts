@@ -44,10 +44,6 @@ export * from "./direct-hosts";
 export * from "./romsfun";
 export * from "./official-chat";
 export * from "./constants";
-export {
-  shouldAutoStartSteamSync,
-  type SteamAutoStartRunStatus,
-} from "./should-auto-start-steam-sync";
 export * from "./steam-session";
 export * from "./leaderboard-notifications";
 export * from "./window-layout";

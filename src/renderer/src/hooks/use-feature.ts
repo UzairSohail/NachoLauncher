@@ -39,7 +39,7 @@ export function useFeature() {
 
   useEffect(() => {
     window.electron.hydraApi
-      .get<string[]>("/features", { needsAuth: false })
+      .get<string[]>("/features")
       .then((response) => {
         const safeFeatures = ensureArray<string>(response, "/features");
         localStorage.setItem("features", JSON.stringify(safeFeatures));

@@ -244,8 +244,7 @@ export function useGameDetails(
     if (IS_DESKTOP && catalogueShop !== "custom") {
       globalThis.window.electron.hydraApi
         .get<HowLongToBeatCategory[] | null>(
-          `/games/${catalogueShop}/${catalogueObjectId}/how-long-to-beat`,
-          { needsAuth: false }
+          `/games/${catalogueShop}/${catalogueObjectId}/how-long-to-beat`
         )
         .then((data) => {
           if (current) setHowLongToBeat(Array.isArray(data) ? data : null);
@@ -258,8 +257,7 @@ export function useGameDetails(
         .get<ProtonDBData | null>(
           `/games/${catalogueShop}/${catalogueObjectId}/protondb`,
           {
-            needsAuth: false,
-          }
+            }
         )
         .then((data) => {
           if (current) setProtonDBData(data);

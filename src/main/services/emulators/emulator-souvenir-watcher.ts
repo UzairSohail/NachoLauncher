@@ -7,7 +7,6 @@ import { INTERVALS } from "@main/constants";
 import { achievementsLogger } from "../logger";
 import { duckstationLogPath, pcsx2LogPath } from "./emulator-log-paths";
 import type { EmulatorSessionSystem } from "./emulator-session-tracker";
-import { prepareLinuxGameCaptureSession } from "../linux-game-capture-session";
 import { createRetroAchievementsRealtimeUnlocks } from "../retro-achievements/retro-achievements-realtime-unlocks";
 import { readEmulatorSignedInUsername } from "../retro-achievements/emulator-credentials/emulator-credential-sync";
 import type { DetectedRetroAchievementUnlock } from "../retro-achievements/retro-achievements-unlock-confirmer";
@@ -210,18 +209,6 @@ export const startEmulatorSouvenirWatcher = async ({
     return;
   }
 
-  if (tracking.souvenirs && !game.remoteId) {
-    achievementsLogger.warn(
-      "Emulator souvenirs are unavailable because the remote game was not resolved",
-      { objectId: game.objectId, shop: game.shop }
-    );
-  }
-
-  const capturePreparation =
-    tracking.souvenirs && game.remoteId
-      ? prepareLinuxGameCaptureSession(gameKey)
-      : null;
-
   startLogWatcher({
     getEmulatorUsername: () =>
       readEmulatorSignedInUsername(system, executablePath),
@@ -236,7 +223,6 @@ export const startEmulatorSouvenirWatcher = async ({
     primeRealtimeUnlocks: tracking.realtimeUnlocks,
   });
 
-  await capturePreparation;
 };
 
 export const stopEmulatorSouvenirWatcher = (

@@ -27,28 +27,6 @@ export const isLocalScreenshotFileForGame = (
   matchesLocalScreenshotGame(screenshot, shop, objectId) &&
   GAME_FILE_STATES.has(screenshot.state);
 
-export const isPublishedLocalScreenshot = (screenshot: LocalScreenshot) =>
-  screenshot.state === "uploaded" && Boolean(screenshot.screenshotId);
-
-export const getPublishedScreenshotIds = (
-  screenshots: LocalScreenshot[],
-  shop: GameShop,
-  objectId: string,
-  ownerId: string
-) => [
-  ...new Set(
-    screenshots.flatMap((screenshot) =>
-      screenshot.screenshotId &&
-      screenshot.shop === shop &&
-      screenshot.objectId === objectId &&
-      screenshot.ownerId === ownerId &&
-      (screenshot.state === "uploaded" || screenshot.state === "deleted")
-        ? [screenshot.screenshotId]
-        : []
-    )
-  ),
-];
-
 export const findLocalScreenshotGameObjectId = (
   screenshot: LocalScreenshot,
   games: Game[]

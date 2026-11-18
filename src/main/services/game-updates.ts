@@ -100,8 +100,7 @@ export class GameUpdates {
     const { shop, objectId } = catalogueIdentity(game);
     const repacks = await HydraApi.get<GameRepack[]>(
       `/games/${shop}/${objectId}/download-sources`,
-      { take: 100, skip: 0, downloadSourceIds },
-      { needsAuth: false }
+      { take: 100, skip: 0, downloadSourceIds }
     );
     return Array.isArray(repacks) ? repacks : [];
   }

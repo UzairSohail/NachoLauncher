@@ -80,7 +80,7 @@ const requestLibraryPage = (url: string) =>
   window.electron.hydraApi.get<{
     library: UserGame[];
     pinnedGames: UserGame[];
-  }>(url, { needsAuth: false, timeout: LIBRARY_REQUEST_TIMEOUT_MS });
+  }>(url, { timeout: LIBRARY_REQUEST_TIMEOUT_MS });
 
 const fetchLibraryPage = (url: string) =>
   requestLibraryPage(url).catch(() => requestLibraryPage(url));
@@ -197,8 +197,7 @@ export function UserProfileContextProvider({
 
       window.electron.hydraApi
         .get<UserStats>(`/users/${userId}/stats?${params.toString()}`, {
-          needsAuth: false,
-        })
+          })
         .then((stats) => {
           if (requestId !== userStatsRequestIdRef.current) return;
 
@@ -469,8 +468,7 @@ export function UserProfileContextProvider({
 
     return window.electron.hydraApi
       .get<UserProfile>(`/users/${userId}?${profileParams.toString()}`, {
-        needsAuth: false,
-      })
+        })
       .then(async (userProfile) => {
         if (previousUserIdRef.current !== userId) return;
         setUserProfile(userProfile);
@@ -501,8 +499,7 @@ export function UserProfileContextProvider({
     const params = new URLSearchParams({ locale: language });
 
     const badges = await window.electron.hydraApi.get<Badge[]>(
-      `/badges?${params.toString()}`,
-      { needsAuth: false }
+      `/badges?${params.toString()}`
     );
     setBadges(ensureArray<Badge>(badges, "/badges"));
   }, [i18n]);

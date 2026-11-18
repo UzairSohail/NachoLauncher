@@ -115,8 +115,7 @@ export const fetchCatalogueTitleIds = async (
   const { HydraApi } = await import("../hydra-api.js");
   const entries = await HydraApi.post<CatalogueEntry[]>(
     "/games/shop-details",
-    { shop: "launchbox", objectIds: [game.objectId] },
-    { needsAuth: false }
+    { shop: "launchbox", objectIds: [game.objectId] }
   );
   const ids = catalogueTitleIdsFromEntries(entries, game.objectId);
   if (ids.size) {

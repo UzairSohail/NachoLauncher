@@ -1,6 +1,5 @@
 import { registerEvent } from "../register-event";
 import type { GameShop } from "@types";
-import { createGame } from "@main/services/library-sync";
 import {
   gamesShopAssetsSublevel,
   gamesShopCacheSublevel,
@@ -79,8 +78,6 @@ const addGameToLibrary = async (
   }
 
   if (game) {
-    await createGame(game).catch(() => {});
-
     AchievementWatcherManager.syncGameAchievementFiles(
       game.shop,
       game.objectId

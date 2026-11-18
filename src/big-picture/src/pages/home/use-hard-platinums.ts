@@ -15,8 +15,7 @@ async function getHardPlatinums(downloadSourceIds: string[]) {
         skip: 0,
         downloadSourceIds,
       },
-      needsAuth: false,
-    }
+      }
   );
 
   return normalizeHomeChallengeGameList(response);

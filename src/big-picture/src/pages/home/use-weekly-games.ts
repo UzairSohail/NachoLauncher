@@ -12,8 +12,7 @@ async function getWeeklyGames(downloadSourceIds: string[]) {
         skip: 0,
         downloadSourceIds,
       },
-      needsAuth: false,
-    }
+      }
   );
 
   return normalizeShopAssetsList(response);

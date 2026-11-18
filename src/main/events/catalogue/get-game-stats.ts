@@ -26,8 +26,7 @@ const getGameStats = async (
   }
 
   return HydraApi.get<GameStats>(`/games/${shop}/${objectId}/stats`, null, {
-    needsAuth: false,
-  }).then(async (data) => {
+    }).then(async (data) => {
     await gamesStatsCacheSublevel.put(levelKeys.game(shop, objectId), {
       ...data,
       updatedAt: Date.now(),

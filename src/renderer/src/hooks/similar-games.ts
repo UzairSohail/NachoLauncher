@@ -136,8 +136,7 @@ export const fetchSimilarGames = async (
     `/catalogue/${query.shop}/${encodeURIComponent(query.objectId)}/similar`,
     {
       params: { take: SIMILAR_GAMES_LIMIT, downloadSourceIds },
-      needsAuth: false,
-    }
+      }
   );
 
   return normalizeSimilarGamesResponse(response, query);

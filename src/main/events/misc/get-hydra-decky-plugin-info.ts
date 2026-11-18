@@ -24,8 +24,7 @@ const getHydraDeckyPluginInfo = async (
     try {
       const releaseInfo = await HydraApi.get<DeckyReleaseInfo>(
         "/decky/release",
-        {},
-        { needsAuth: false }
+        {}
       );
       expectedVersion = releaseInfo.version;
     } catch (error) {

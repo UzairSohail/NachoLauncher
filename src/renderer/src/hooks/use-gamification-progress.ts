@@ -57,7 +57,7 @@ export function useGamificationFeatureSync() {
   useEffect(() => {
     let cancelled = false;
     globalThis.window.electron.hydraApi
-      .get<string[]>("/features", { needsAuth: false })
+      .get<string[]>("/features")
       .then((response) => {
         if (cancelled) return;
         const features = ensureArray<string>(response, "/features");

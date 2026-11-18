@@ -24,8 +24,7 @@ const getCatalogueNames = async (
   try {
     const names = await HydraApi.get<string[]>(
       `/catalogue/steam/${list}`,
-      null,
-      { needsAuth: false }
+      null
     );
 
     if (!Array.isArray(names)) {

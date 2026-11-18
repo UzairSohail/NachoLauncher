@@ -1,5 +1,3 @@
-import "./download-game-artifact";
-import "./export-game-artifact";
 import "./get-cloud-save-overview";
 import "./get-cloud-save-v2-file-details";
 import "./get-emulator-disc-identity-status";
@@ -13,7 +11,6 @@ import "./resolve-cloud-save-conflict";
 import "./retroarch-local-battery";
 import "./select-game-backup-path";
 import "./set-cloud-save-automatic-sync-enabled";
-import "./upload-save-game";
 import "./select-cloud-save-custom-path";
 import "./rebind-cloud-save-custom-path";
 import "./remove-cloud-save-custom-path";

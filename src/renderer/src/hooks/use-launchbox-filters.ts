@@ -32,7 +32,7 @@ const fetchLaunchboxFilters = async (): Promise<LaunchboxCatalogueFilters> => {
       genres?: string[];
       developers?: string[];
       publishers?: string[];
-    } | null>("/catalogue/filters?shop=launchbox", { needsAuth: false })
+    } | null>("/catalogue/filters?shop=launchbox")
     .then((response) => {
       const normalized: LaunchboxCatalogueFilters = {
         platforms: (response?.platforms ?? []).map((platform) =>

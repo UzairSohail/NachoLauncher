@@ -82,8 +82,7 @@ export function GameReviews({
           reviews: GameReview[];
           totalCount: number;
         }>(`/games/${shop}/${objectId}/reviews?${params.toString()}`, {
-          needsAuth: false,
-        });
+          });
 
         if (abortController.signal.aborted) return;
 

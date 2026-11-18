@@ -75,8 +75,7 @@ export default function Notifications() {
       const language = i18n.language.split("-")[0];
       const params = new URLSearchParams({ locale: language });
       const badgesResponse = await window.electron.hydraApi.get<Badge[]>(
-        `/badges?${params.toString()}`,
-        { needsAuth: false }
+        `/badges?${params.toString()}`
       );
       setBadges(ensureArray<Badge>(badgesResponse, "/badges"));
     } catch (error) {

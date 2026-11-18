@@ -165,8 +165,7 @@ async function fetchDownloadOptions(
         skip: 0,
         downloadSourceIds: sortedSources.map((source) => source.id),
       },
-      needsAuth: false,
-    });
+      });
     const options = Array.isArray(response)
       ? filterDownloadableRepacks(response, multipartHosterDownloads)
       : [];
@@ -178,7 +177,7 @@ async function fetchDownloadOptions(
     }
 
     const results = await fetchHosterAvailability(options, (url, data) =>
-      globalThis.window.electron.hydraApi.post(url, { data, needsAuth: false })
+      globalThis.window.electron.hydraApi.post(url, { data })
     );
 
     if (results.length === 0) return;

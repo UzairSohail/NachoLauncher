@@ -1,94 +1,31 @@
-import { setTimeout } from "node:timers/promises";
-import { isAxiosError } from "axios";
 import {
   achievementSyncCoordinator,
   AchievementSyncCancelledError,
-  ACHIEVEMENT_RESET_RETRY_BUDGET_MS,
-  ACHIEVEMENT_SYNC_REQUEST_TIMEOUT_MS,
 } from "@main/services/achievements/achievement-sync-coordinator";
-import type { HydraApiAuthContext } from "@main/services/hydra-auth-context";
-import {
-  achievementSyncWorker,
-  getAchievementSyncRetryDelay,
-  isRetryableAchievementSyncStatus,
-} from "@main/services/achievements/achievement-sync-worker";
 import { registerEvent } from "../register-event";
 import { collectGameAchievementFiles } from "@main/services/achievements/collect-game-achievement-files";
 import fs from "fs";
 import {
   achievementsLogger,
   emulators,
-  HydraApi,
   WindowManager,
 } from "@main/services";
 import { getUnlockedAchievements } from "../user/get-unlocked-achievements";
 import { gamesSublevel, levelKeys } from "@main/level";
 import type { GameShop } from "@types";
 import { AchievementMemoryStore } from "@main/services/achievements/achievement-memory-store";
-import { AchievementSouvenirStore } from "@main/services/achievements/achievement-souvenir-store";
 import { UnlockedAchievementsCache } from "@main/services/achievements/unlocked-achievements-cache";
-import {
-  cancelPendingSouvenirsForGame,
-  deleteLocalSouvenirAssetsForGame,
-} from "@main/services/achievements/grouped-souvenir-worker";
 import { AchievementWatcherManager } from "@main/services/achievements/achievement-watcher-manager";
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { removeShadps4TrophyFile } from "@main/services/emulators/shadps4-trophy-watcher";
 import { removeRpcs3TrophyFiles } from "@main/services/emulators/rpcs3-trophy-sources";
 import { resetRecompilationTrophies } from "../recompilation/recompilation-trophy-reset";
 
-const deleteRemoteAchievements = async (
-  levelKey: string,
-  remoteId: string | null,
-  context: HydraApiAuthContext,
-  current: () => boolean,
-  deadline = Date.now() + ACHIEVEMENT_RESET_RETRY_BUDGET_MS,
-  attempt = 0
-): Promise<void> => {
-  try {
-    await achievementSyncCoordinator.runResetRequest(
-      levelKey,
-      () =>
-        HydraApi.delete(`/profile/games/achievements/${remoteId}`, {
-          authContext: context,
-          timeout: ACHIEVEMENT_SYNC_REQUEST_TIMEOUT_MS,
-        }),
-      current
-    );
-  } catch (error) {
-    const status = isAxiosError(error) ? error.response?.status : undefined;
-    const remaining = deadline - Date.now();
-    if (
-      remaining <= 0 ||
-      status === undefined ||
-      !isRetryableAchievementSyncStatus(status)
-    )
-      throw error;
-    achievementsLogger.warn(
-      "Achievement reset request failed, retrying",
-      levelKey,
-      status
-    );
-    await setTimeout(
-      Math.min(getAchievementSyncRetryDelay(error, attempt), remaining)
-    );
-    await deleteRemoteAchievements(
-      levelKey,
-      remoteId,
-      context,
-      current,
-      deadline,
-      attempt + 1
-    );
-  }
-};
-
 const resetGameAchievementsNow = async (
   shop: GameShop,
   objectId: string,
-  context: HydraApiAuthContext
+  current: () => boolean
 ) => {
-  const current = () => HydraApi.isAuthContextCurrent(context);
   const assertCurrent = () => {
     if (!current()) throw new AchievementSyncCancelledError();
   };
@@ -99,10 +36,6 @@ const resetGameAchievementsNow = async (
 
     assertCurrent();
     if (!game) return;
-
-    await achievementSyncWorker.cancelGame(levelKey);
-    await cancelPendingSouvenirsForGame(levelKey);
-    assertCurrent();
 
     const achievementFiles = await collectGameAchievementFiles(game, {
       includeSteamCache: false,
@@ -135,7 +68,6 @@ const resetGameAchievementsNow = async (
       });
     }
 
-    await deleteRemoteAchievements(levelKey, game.remoteId, context, current);
     assertCurrent();
     const gameAchievements = AchievementMemoryStore.get(shop, objectId);
     if (gameAchievements) {
@@ -146,11 +78,8 @@ const resetGameAchievementsNow = async (
     }
     const since = UnlockedAchievementsCache.invalidate(shop, objectId);
 
-    await deleteLocalSouvenirAssetsForGame(levelKey);
-    assertCurrent();
-    AchievementSouvenirStore.invalidate(shop, objectId);
     achievementsLogger.log(
-      `Deleted Hydra achievements from ${game.remoteId} - ${game.objectId} - ${game.title}`
+      `Reset achievements for ${game.objectId} - ${game.title}`
     );
 
     const updatedAchievements = await getUnlockedAchievements(
@@ -183,8 +112,6 @@ const resetGameAchievements = (
   shop: GameShop,
   objectId: string
 ) => {
-  const context = HydraApi.getAuthContext();
-  if (!context) return Promise.reject(new AchievementSyncCancelledError());
   if (
     emulators.emulatorSessions.get(levelKeys.game(shop, objectId))?.system ===
     "ps3"
@@ -194,8 +121,7 @@ const resetGameAchievements = (
   UnlockedAchievementsCache.invalidate(shop, objectId);
   return achievementSyncCoordinator.resetGame(
     levelKeys.game(shop, objectId),
-    () => resetGameAchievementsNow(shop, objectId, context),
-    () => HydraApi.isAuthContextCurrent(context)
+    () => resetGameAchievementsNow(shop, objectId, () => true)
   );
 };
 registerEvent("resetGameAchievements", resetGameAchievements);
