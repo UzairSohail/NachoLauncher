@@ -6,12 +6,7 @@ import {
 } from "@shared";
 import type { LibraryGame, StartGameDownloadPayload } from "@types";
 
-import {
-  useAppSelector,
-  useDownload,
-  useFeature,
-  useUserDetails,
-} from "@renderer/hooks";
+import { useAppSelector, useDownload, useFeature } from "@renderer/hooks";
 import {
   getDefaultDownloader,
   getDownloadOptions,
@@ -33,7 +28,6 @@ export function useUpdateAllGames() {
     (state) => state.userPreferences.value
   );
   const { isFeatureEnabled } = useFeature();
-  const { hasActiveSubscription } = useUserDetails();
   const { startDownload, addGameToQueue, lastPacket } = useDownload();
   const [isUpdatingAll, setIsUpdatingAll] = useState(false);
 
@@ -61,7 +55,6 @@ export function useUpdateAllGames() {
 
             const available = getDownloadOptions(repack, {
               userPreferences,
-              hasActiveSubscription,
               isFeatureEnabled,
             })
               .filter((option) => option.isAvailable)
@@ -116,7 +109,6 @@ export function useUpdateAllGames() {
     },
     [
       userPreferences,
-      hasActiveSubscription,
       isFeatureEnabled,
       startDownload,
       addGameToQueue,

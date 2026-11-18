@@ -1774,11 +1774,8 @@ contextBridge.exposeInMainWorld("electron", {
       shop,
       raGameId
     ),
-  resetRetroAchievementsAchievements: (pendingSouvenirsOnly = false) =>
-    ipcRenderer.invoke(
-      "resetRetroAchievementsAchievements",
-      pendingSouvenirsOnly
-    ),
+  resetRetroAchievementsAchievements: () =>
+    ipcRenderer.invoke("resetRetroAchievementsAchievements"),
   openRetroAchievementsConnectionWindow: () =>
     ipcRenderer.invoke("openRetroAchievementsConnectionWindow"),
   minimizeRetroAchievementsConnectionWindow: () =>
@@ -1793,6 +1790,19 @@ contextBridge.exposeInMainWorld("electron", {
       username,
       password
     ),
+  connectRetroAchievements: (
+    username: string,
+    password: string,
+    webApiKey: string
+  ) =>
+    ipcRenderer.invoke(
+      "connectRetroAchievements",
+      username,
+      password,
+      webApiKey
+    ),
+  getRetroAchievementsConnectionStatus: () =>
+    ipcRenderer.invoke("getRetroAchievementsConnectionStatus"),
   onRetroAchievementsConnected: (cb: () => void) => {
     const listener = (_event: Electron.IpcRendererEvent) => cb();
     ipcRenderer.on("on-retroachievements-connected", listener);

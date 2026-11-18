@@ -176,10 +176,6 @@ async function fixture(
       calls.push(["achievements", shop, objectId]);
       return [];
     },
-    syncEpicGameOnGamePage: async (objectId: string) => {
-      calls.push(["sync", "epic", objectId]);
-      return false;
-    },
     syncSteamGameOnGamePage: async (objectId: string) => {
       calls.push(["sync", "steam", objectId]);
       return false;
@@ -205,7 +201,6 @@ async function fixture(
   };
   Object.assign(dom.window, { electron: bridge });
   const dispatch = () => {};
-  const userDetails = { id: "owner" };
   const location = { pathname: "/game/steam/123", state: null };
   const preferencesState = { userPreferences: { value: null } };
   const presentationHook = loadModule(
@@ -248,7 +243,6 @@ async function fixture(
       useAppSelector: (selector: (state: typeof preferencesState) => unknown) =>
         selector(preferencesState),
       useDownload: () => ({ lastPacket }),
-      useUserDetails: () => ({ userDetails }),
       useFeature: () => ({
         isFeatureEnabled: () => false,
         Feature: { MultipartHosterDownloads: "MULTIPART_HOSTER_DOWNLOADS" },
@@ -611,18 +605,7 @@ describe("Desktop catalogue page", () => {
     );
     assert.equal(epic.playTimeInMilliseconds, 1000);
     assert.equal(steam.playTimeInMilliseconds, 2000);
-    assert.ok(
-      state.calls.some(
-        ([action, shop, id]) =>
-          action === "sync" && shop === "steam" && id === "123"
-      )
-    );
-    assert.equal(
-      state.calls.filter(
-        ([action, shop]) => action === "sync" && shop === "steam"
-      ).length,
-      1
-    );
+    assert.equal(state.calls.filter(([action]) => action === "sync").length, 0);
   });
 });
 

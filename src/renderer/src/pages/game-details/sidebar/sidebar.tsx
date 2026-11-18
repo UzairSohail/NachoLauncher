@@ -3,7 +3,6 @@ import type {
   HowLongToBeatCategory,
   ProtonDBData,
   SteamAppDetails,
-  UserAchievement,
 } from "@types";
 import { useTranslation } from "react-i18next";
 import { Button } from "@renderer/components/button/button";
@@ -16,12 +15,10 @@ import {
   useDate,
   useFeature,
   useFormat,
-  useUserDetails,
 } from "@renderer/hooks";
 import {
   DownloadIcon,
   EyeClosedIcon,
-  LockIcon,
   PeopleIcon,
   StarIcon,
 } from "@primer/octicons-react";
@@ -63,8 +60,7 @@ const getProtonDBData = (shop: string, objectId: string) => {
   }
 
   const request = window.electron.hydraApi
-    .get<ProtonDBData | null>(`/games/${shop}/${objectId}/protondb`, {
-      })
+    .get<ProtonDBData | null>(`/games/${shop}/${objectId}/protondb`, {})
     .then((protonData) => {
       protonDBResponseCache.set(cacheKey, protonData);
       return protonData;
@@ -78,40 +74,6 @@ const getProtonDBData = (shop: string, objectId: string) => {
   return request;
 };
 
-const achievementsPlaceholder: UserAchievement[] = [
-  {
-    displayName: "Timber!!",
-    name: "1",
-    hidden: false,
-    description: "Chop down your first tree.",
-    icon: "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/105600/0fbb33098c9da39d1d4771d8209afface9c46e81.jpg",
-    icongray:
-      "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/105600/0fbb33098c9da39d1d4771d8209afface9c46e81.jpg",
-    unlocked: true,
-    unlockTime: Date.now(),
-  },
-  {
-    displayName: "Supreme Helper Minion!",
-    name: "2",
-    hidden: false,
-    icon: "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/105600/0a6ff6a36670c96ceb4d30cf6fd69d2fdf55f38e.jpg",
-    icongray:
-      "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/105600/0a6ff6a36670c96ceb4d30cf6fd69d2fdf55f38e.jpg",
-    unlocked: false,
-    unlockTime: null,
-  },
-  {
-    displayName: "Feast of Midas",
-    name: "3",
-    hidden: false,
-    icon: "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/105600/2d10311274fe7c92ab25cc29afdca86b019ad472.jpg",
-    icongray:
-      "https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/105600/2d10311274fe7c92ab25cc29afdca86b019ad472.jpg",
-    unlocked: false,
-    unlockTime: null,
-  },
-];
-
 export function Sidebar() {
   const shouldShowProtonFeatures = window.electron.platform === "linux";
   const [howLongToBeat, setHowLongToBeat] = useState<{
@@ -123,7 +85,6 @@ export function Sidebar() {
     data: ProtonDBData | null;
   }>({ isLoading: shouldShowProtonFeatures, data: null });
 
-  const { userDetails, hasActiveSubscription } = useUserDetails();
   const [activeRequirement, setActiveRequirement] =
     useState<keyof SteamAppDetails["pc_requirements"]>("minimum");
 
@@ -138,9 +99,6 @@ export function Sidebar() {
     achievements,
   } = useContext(gameDetailsContext);
   const myScreenshotsGame = game ?? catalogueGame;
-  const communityScreenshotsGame = catalogueGame.objectId
-    ? catalogueGame
-    : myScreenshotsGame;
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
   );
@@ -151,7 +109,7 @@ export function Sidebar() {
   const { numberFormatter } = useFormat();
   const achievementsCount = achievements?.length ?? 0;
   const shouldRenderAchievementsSection =
-    (!!userDetails && achievementsCount > 0) ||
+    achievementsCount > 0 ||
     (shop === "launchbox" &&
       !!shopDetails?.retroAchievementsGameId &&
       !userPreferences?.retroAchievementsWebApiKey);
@@ -162,7 +120,6 @@ export function Sidebar() {
   const STEAM_ACHIEVEMENTS_CATEGORY_ID = 22;
   const isAchievementsSectionPending =
     !shouldRenderAchievementsSection &&
-    !!userDetails &&
     achievements === null &&
     ((shop === "steam" &&
       !!shopDetails?.categories?.some(
@@ -178,8 +135,7 @@ export function Sidebar() {
       window.electron.hydraApi
         .get<HowLongToBeatCategory[] | null>(
           `/games/${catalogueGame.shop}/${catalogueGame.objectId}/how-long-to-beat`,
-          {
-            }
+          {}
         )
         .then((howLongToBeatData) => {
           setHowLongToBeat({
@@ -235,37 +191,6 @@ export function Sidebar() {
         </Suspense>
       )}
 
-      {userDetails === null && !shouldRenderAchievementsSection && (
-        <SidebarSection title={t("achievements")}>
-          <div className="achievements-placeholder">
-            <LockIcon size={36} />
-            <h3>{t("sign_in_to_see_achievements")}</h3>
-          </div>
-          <ul className="list achievements-placeholder__blur">
-            {achievementsPlaceholder.map((achievement) => (
-              <li key={achievement.name}>
-                <div className="list__item">
-                  <img
-                    className={`list__item-image achievements-placeholder__blur ${
-                      achievement.unlocked ? "" : "list__item-image--locked"
-                    }`}
-                    src={achievement.icon}
-                    alt={achievement.displayName}
-                  />
-                  <div>
-                    <p>{achievement.displayName}</p>
-                    <small>
-                      {achievement.unlockTime != null &&
-                        formatDateTime(achievement.unlockTime)}
-                    </small>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </SidebarSection>
-      )}
-
       {isAchievementsSectionPending && (
         <SidebarSection title={t("achievements")}>
           <AchievementsSkeletonList />
@@ -287,9 +212,7 @@ export function Sidebar() {
           <ul className="list">
             <RetroAchievementsConnectBanner />
 
-            {!hasActiveSubscription && achievementsCount > 0 && (
-              <AchievementSyncStatus />
-            )}
+            {achievementsCount > 0 && <AchievementSyncStatus />}
 
             {(achievements ?? []).slice(0, 4).map((achievement) => {
               const concealed = isAchievementConcealed(
@@ -390,10 +313,7 @@ export function Sidebar() {
       )}
 
       {myScreenshotsGame.shop !== "custom" && myScreenshotsGame.objectId ? (
-        <GameScreenshots
-          libraryGame={myScreenshotsGame}
-          catalogueGame={communityScreenshotsGame}
-        />
+        <GameScreenshots libraryGame={myScreenshotsGame} />
       ) : null}
 
       {shop === "launchbox" && (

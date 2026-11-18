@@ -122,7 +122,6 @@ function useUpdateCheck() {
 }
 
 export interface AppTitleBarProps {
-  hasActiveSubscription: boolean;
   version: string;
   isWindowMaximized: boolean;
 }
@@ -133,7 +132,6 @@ export interface AppTitleBarProps {
  * controls each platform needs.
  */
 export function AppTitleBar({
-  hasActiveSubscription,
   version,
   isWindowMaximized,
 }: Readonly<AppTitleBarProps>) {
@@ -176,14 +174,7 @@ export function AppTitleBar({
       style={titleBarStyle}
     >
       <div className="title-bar__brand">
-        {hasCustomFrame && (
-          <h4>
-            Nacho Launcher
-            {hasActiveSubscription && (
-              <span className="title-bar__cloud-text"> Cloud</span>
-            )}
-          </h4>
-        )}
+        {hasCustomFrame && <h4>Nacho Launcher</h4>}
 
         {version && (
           <button

@@ -1,13 +1,13 @@
 import type { GameShop } from "@types";
 import { getCloudSaveEmulatorProvider } from "../../../../shared/cloud-save-emulator-provider.js";
+import { platformToEmulationSavePlatform } from "../../../../shared/cloud-save-access.js";
 
-export type CloudSaveUiMode = "legacy" | "v2";
-export type LegacyCloudSavePurpose = "active" | "archive";
+export type CloudSaveUiMode = "emulator" | "v2";
 
 export interface CloudSaveSettingsVisibility {
   showV2: boolean;
-  showLegacy: boolean;
-  legacyPurpose: LegacyCloudSavePurpose;
+  /** The Drive emulator saves panel for PS1, PS2, PSP, GameCube, Wii and Xbox 360. */
+  showEmulatorSaves: boolean;
 }
 
 export interface CloudSaveVisibility {
@@ -15,68 +15,32 @@ export interface CloudSaveVisibility {
   settings: CloudSaveSettingsVisibility;
 }
 
-export const isLegacyCloudSaveSettingsAvailable = (
-  settings: CloudSaveSettingsVisibility,
-  hasActiveSubscription: boolean,
-  artifactCount: number
-): boolean =>
-  settings.showLegacy &&
-  (settings.legacyPurpose === "active" ||
-    (hasActiveSubscription && artifactCount > 0));
-
 export const getCloudSaveVisibility = (
   shop: GameShop,
   platform?: string | null
 ): CloudSaveVisibility => {
   if (shop === "steam") {
-    return {
-      hero: "v2",
-      settings: {
-        showV2: true,
-        showLegacy: true,
-        legacyPurpose: "archive",
-      },
-    };
-  }
-
-  if (shop === "epic") {
-    return {
-      hero: "v2",
-      settings: {
-        showV2: true,
-        showLegacy: false,
-        legacyPurpose: "archive",
-      },
-    };
+    return { hero: "v2", settings: { showV2: true, showEmulatorSaves: false } };
   }
 
   if (shop === "launchbox") {
     if (getCloudSaveEmulatorProvider(shop, platform)) {
       return {
         hero: "v2",
-        settings: {
-          showV2: true,
-          showLegacy: true,
-          legacyPurpose: "archive",
-        },
+        settings: { showV2: true, showEmulatorSaves: false },
       };
     }
     return {
-      hero: "legacy",
+      hero: "emulator",
       settings: {
         showV2: false,
-        showLegacy: true,
-        legacyPurpose: "active",
+        showEmulatorSaves: platformToEmulationSavePlatform(platform) !== null,
       },
     };
   }
 
   return {
     hero: null,
-    settings: {
-      showV2: false,
-      showLegacy: true,
-      legacyPurpose: "active",
-    },
+    settings: { showV2: false, showEmulatorSaves: false },
   };
 };

@@ -5,28 +5,18 @@ import type { GameSettingsCategoryId } from "./types";
 export interface GameSettingsCategoryAvailability {
   cloudSaveAccessAction: CloudSaveAccessAction;
   showCloudSaveV2Settings: boolean;
-  showLegacyCloudSaveSettings: boolean;
+  showEmulatorSaves: boolean;
   showDownloadSettings: boolean;
 }
 
+/** Cloud categories only show once Google Drive sign-in makes them usable. */
 export const getCloudGameSettingsCategories = (
-  availability: GameSettingsCategoryAvailability,
-  legacyPurpose: "active" | "archive"
+  availability: GameSettingsCategoryAvailability
 ): GameSettingsCategoryId[] => {
+  if (availability.cloudSaveAccessAction !== "open") return [];
   const categories: GameSettingsCategoryId[] = [];
-  // Cloud saves go through the user's own Google Drive instead, so Hydra Cloud
-  // only shows for an account that already has it, never as an upsell.
-  const showHydra = availability.cloudSaveAccessAction === "open";
-  if (showHydra && availability.showCloudSaveV2Settings) {
-    categories.push("hydra_cloud");
-  }
-  const showLegacy = showHydra && availability.showLegacyCloudSaveSettings;
-  if (showLegacy && legacyPurpose === "active") {
-    categories.push("hydra_cloud_legacy");
-  }
-  if (showLegacy && legacyPurpose === "archive") {
-    categories.push("hydra_cloud_legacy");
-  }
+  if (availability.showCloudSaveV2Settings) categories.push("hydra_cloud");
+  if (availability.showEmulatorSaves) categories.push("emulator_saves");
   return categories;
 };
 
@@ -56,8 +46,8 @@ export const getAvailableGameSettingsCategory = (
   }
 
   if (
-    category === "hydra_cloud_legacy" &&
-    (!availability.showLegacyCloudSaveSettings ||
+    category === "emulator_saves" &&
+    (!availability.showEmulatorSaves ||
       availability.cloudSaveAccessAction !== "open")
   ) {
     return "general";

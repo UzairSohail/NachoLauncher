@@ -1,18 +1,31 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getCloudSaveAccessAction } from "./cloud-save-access.js";
+import { resolveCloudSaveAccessAction } from "./cloud-save-access.js";
 
 describe("cloud save access", () => {
-  it("sends unauthenticated users to sign in", () => {
-    assert.equal(getCloudSaveAccessAction(false, false), "sign-in");
+  it("asks for Google sign-in for emulator games when signed out", () => {
+    assert.equal(
+      resolveCloudSaveAccessAction("launchbox", "Sony Playstation 2", {
+        driveSignedIn: false,
+      }),
+      "sign-in"
+    );
   });
 
-  it("sends authenticated users without a subscription to the paywall", () => {
-    assert.equal(getCloudSaveAccessAction(true, false), "paywall");
+  it("opens emulator cloud saves once signed in to Google", () => {
+    assert.equal(
+      resolveCloudSaveAccessAction("launchbox", "Sony Playstation 2", {
+        driveSignedIn: true,
+      }),
+      "open"
+    );
   });
 
-  it("opens cloud saves only for active subscribers", () => {
-    assert.equal(getCloudSaveAccessAction(true, true), "open");
+  it("leaves PC games to Cloud Save Manager", () => {
+    assert.equal(
+      resolveCloudSaveAccessAction("steam", null, { driveSignedIn: true }),
+      "unavailable"
+    );
   });
 });

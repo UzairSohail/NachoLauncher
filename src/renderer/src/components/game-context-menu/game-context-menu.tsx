@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  applyLibraryGroupAction,
   getRemoveFilesTarget,
   isLibraryGameDownloading,
   type RemoveFilesTarget,
@@ -23,8 +22,6 @@ import {
   XIcon,
   PinIcon,
   PinSlashIcon,
-  EyeClosedIcon,
-  LockIcon,
   SyncIcon,
 } from "@primer/octicons-react";
 import SteamLogo from "@renderer/assets/steam-logo.svg?react";
@@ -41,7 +38,6 @@ import {
   useDownload,
   useGameCollections,
   useToast,
-  useUserDetails,
   useLibrary,
   useLibraryGamePresentation,
   useSteamUninstallAction,
@@ -77,10 +73,9 @@ export function GameContextMenu({
 }: GameContextMenuProps) {
   const { t } = useTranslation("game_details");
   const { showSuccessToast, showErrorToast } = useToast();
-  const { userDetails } = useUserDetails();
   const group = useLibraryGamePresentation(game);
   const preferenceGame = group ?? game;
-  const { library, updateLibrary } = useLibrary();
+  const { library } = useLibrary();
   const [searchParams] = useSearchParams();
   const [showConfirmRemoveLibrary, setShowConfirmRemoveLibrary] =
     useState(false);
@@ -99,12 +94,7 @@ export function GameContextMenu({
     null
   );
   const [isFavoritePending, setIsFavoritePending] = useState(false);
-  const [isVisibilityPending, setIsVisibilityPending] = useState(false);
   const [hasPs4GameFolder, setHasPs4GameFolder] = useState(false);
-  const [visibility, setVisibility] = useState({
-    isHiddenFromOthers: Boolean(preferenceGame.isHiddenFromOthers),
-    isConcealed: Boolean(preferenceGame.isConcealed),
-  });
   const {
     collections,
     isLoading: isCollectionsLoading,
@@ -209,38 +199,7 @@ export function GameContextMenu({
 
     setLocalCollectionIds(getGameCollectionIds(preferenceGame));
     setIsFavoriteSelected(Boolean(preferenceGame.favorite));
-    setVisibility({
-      isHiddenFromOthers: Boolean(preferenceGame.isHiddenFromOthers),
-      isConcealed: Boolean(preferenceGame.isConcealed),
-    });
   }, [visible, preferenceGame]);
-
-  const handleVisibilityChange = async (
-    field: "isHiddenFromOthers" | "isConcealed",
-    value: boolean
-  ) => {
-    if (isVisibilityPending) return;
-    setIsVisibilityPending(true);
-    try {
-      await applyLibraryGroupAction(group?.members ?? [game], (member) =>
-        window.electron.setGameVisibility(
-          member.shop,
-          member.objectId,
-          field,
-          value
-        )
-      );
-      setVisibility((previous) => ({ ...previous, [field]: value }));
-      window.dispatchEvent(new Event("hydra:game-visibility-updated"));
-      showSuccessToast(t("game_visibility_updated"));
-      onClose();
-    } catch {
-      showErrorToast(t("failed_update_game_visibility"));
-    } finally {
-      await updateLibrary();
-      setIsVisibilityPending(false);
-    }
-  };
 
   const handleAssignGameCollection = async (collectionId: string) => {
     if (pendingCollectionId || isFavoritePending) return;
@@ -440,33 +399,6 @@ export function GameContextMenu({
           icon: <ImageIcon size={16} />,
           onClick: () => handleOpenGameOptions("assets"),
           disabled: isDeleting,
-        },
-        ...(game.shop === "custom"
-          ? []
-          : [
-              {
-                id: "hide-game",
-                label: visibility.isHiddenFromOthers
-                  ? t("unhide_game")
-                  : t("hide_game"),
-                icon: <EyeClosedIcon size={16} />,
-                onClick: () =>
-                  void handleVisibilityChange(
-                    "isHiddenFromOthers",
-                    !visibility.isHiddenFromOthers
-                  ),
-                closeOnClick: false,
-                disabled: isDeleting || isVisibilityPending || !userDetails,
-              },
-            ]),
-        {
-          id: "conceal-game",
-          label: visibility.isConcealed ? t("reveal_game") : t("conceal_game"),
-          icon: <LockIcon size={16} />,
-          onClick: () =>
-            void handleVisibilityChange("isConcealed", !visibility.isConcealed),
-          closeOnClick: false,
-          disabled: isDeleting || isVisibilityPending || !userDetails,
         },
         ...(hasPs4GameFolder
           ? [

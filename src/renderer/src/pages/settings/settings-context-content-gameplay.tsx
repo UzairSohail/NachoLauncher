@@ -4,15 +4,12 @@ import { useTranslation } from "react-i18next";
 import {
   Button,
   CheckboxField,
-  ConfirmationModal,
   GuideLink,
   TextField,
 } from "@renderer/components";
 import { settingsContext } from "@renderer/context";
-import { useAppSelector, useFeature, useUserDetails } from "@renderer/hooks";
+import { useAppSelector, useFeature } from "@renderer/hooks";
 import { FileDirectoryIcon, HistoryIcon } from "@primer/octicons-react";
-import { useLocation } from "react-router-dom";
-import { isAchievementSouvenirsEnabled } from "@shared";
 import type { UserPreferences } from "@types";
 
 import "./settings-context-content-gameplay.scss";
@@ -24,10 +21,6 @@ const buildForm = (preferences: UserPreferences | null) => ({
   showHiddenAchievementsDescription:
     preferences?.showHiddenAchievementsDescription ?? false,
   enableSteamAchievements: preferences?.enableSteamAchievements ?? false,
-  enableAchievementSouvenirs: isAchievementSouvenirsEnabled(
-    preferences?.enableAchievementSouvenirs,
-    window.electron.platform
-  ),
   enableNewDownloadOptionsBadges:
     preferences?.enableNewDownloadOptionsBadges ?? true,
   hideClassicsBookmark: preferences?.hideClassicsBookmark ?? false,
@@ -46,8 +39,6 @@ const buildForm = (preferences: UserPreferences | null) => ({
 export function SettingsContextContentGameplay() {
   const { t } = useTranslation("settings");
   const { updateUserPreferences } = useContext(settingsContext);
-  const { hasActiveSubscription } = useUserDetails();
-  const { hash } = useLocation();
   const { isFeatureEnabled, Feature } = useFeature();
   const isScreenshotsEnabled = isFeatureEnabled(Feature.Screenshots);
 
@@ -56,11 +47,7 @@ export function SettingsContextContentGameplay() {
   );
 
   const [form, setForm] = useState(() => buildForm(userPreferences));
-  const [showWaylandSouvenirsWarning, setShowWaylandSouvenirsWarning] =
-    useState(false);
   const [screenshotsPath, setScreenshotsPath] = useState("");
-  const canManageScreenshots =
-    hasActiveSubscription && form.enableAchievementSouvenirs;
 
   useEffect(() => {
     void window.electron.getScreenshotsPath().then(setScreenshotsPath);
@@ -72,45 +59,12 @@ export function SettingsContextContentGameplay() {
     setForm(buildForm(userPreferences));
   }, [userPreferences]);
 
-  useEffect(() => {
-    if (hash !== "#achievement-souvenirs") return;
-
-    const frameId = window.requestAnimationFrame(() => {
-      const souvenirToggle = document.getElementById("achievement-souvenirs");
-      souvenirToggle?.scrollIntoView({ block: "center" });
-      souvenirToggle?.focus();
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [hash, hasActiveSubscription]);
-
   const handleChange = (values: Partial<typeof form>) => {
     setForm((prev) => ({ ...prev, ...values }));
     updateUserPreferences(values);
   };
 
-  const handleAchievementSouvenirsChange = () => {
-    if (form.enableAchievementSouvenirs) {
-      handleChange({ enableAchievementSouvenirs: false });
-      return;
-    }
-
-    if (window.electron.isWayland) {
-      setShowWaylandSouvenirsWarning(true);
-      return;
-    }
-
-    handleChange({ enableAchievementSouvenirs: true });
-  };
-
-  const handleWaylandSouvenirsConfirm = () => {
-    setShowWaylandSouvenirsWarning(false);
-    handleChange({ enableAchievementSouvenirs: true });
-  };
-
   const handleChooseScreenshotsPath = async () => {
-    if (!canManageScreenshots) return;
-
     const { canceled, filePaths } = await window.electron.showOpenDialog({
       defaultPath: screenshotsPath || undefined,
       properties: ["openDirectory"],
@@ -126,16 +80,12 @@ export function SettingsContextContentGameplay() {
   };
 
   const handleOpenScreenshotsPath = async () => {
-    if (!canManageScreenshots) return;
-
     const currentPath =
       screenshotsPath || (await window.electron.getScreenshotsPath());
     await window.electron.openFolder(currentPath);
   };
 
   const handleResetScreenshotsPath = async () => {
-    if (!canManageScreenshots) return;
-
     await updateUserPreferences({ achievementScreenshotsPath: undefined });
     setScreenshotsPath(await window.electron.getScreenshotsPath());
   };
@@ -229,15 +179,6 @@ export function SettingsContextContentGameplay() {
           }
         />
 
-        {hasActiveSubscription ? (
-          <CheckboxField
-            id="achievement-souvenirs"
-            label={t("enable_achievement_souvenirs")}
-            checked={form.enableAchievementSouvenirs}
-            onChange={handleAchievementSouvenirsChange}
-          />
-        ) : null}
-
         <div className="settings-context-content-gameplay__screenshots-directory">
           <TextField
             label={t("screenshots_directory")}
@@ -246,11 +187,7 @@ export function SettingsContextContentGameplay() {
             disabled
             rightContent={
               <>
-                <Button
-                  theme="outline"
-                  disabled={!canManageScreenshots}
-                  onClick={handleChooseScreenshotsPath}
-                >
+                <Button theme="outline" onClick={handleChooseScreenshotsPath}>
                   <FileDirectoryIcon size={14} />
                   {t("change_screenshots_directory")}
                 </Button>
@@ -258,7 +195,6 @@ export function SettingsContextContentGameplay() {
                   <Button
                     className="settings-context-content-gameplay__reset-screenshots-button"
                     theme="outline"
-                    disabled={!canManageScreenshots}
                     tooltip={t("reset_screenshots_directory")}
                     aria-label={t("reset_screenshots_directory")}
                     onClick={handleResetScreenshotsPath}
@@ -273,7 +209,6 @@ export function SettingsContextContentGameplay() {
           <Button
             className="settings-context-content-gameplay__open-screenshots-button"
             theme="outline"
-            disabled={!canManageScreenshots}
             onClick={handleOpenScreenshotsPath}
           >
             <FileDirectoryIcon size={14} />
@@ -378,16 +313,6 @@ export function SettingsContextContentGameplay() {
           }
         />
       </div>
-      <ConfirmationModal
-        visible={showWaylandSouvenirsWarning}
-        title={t("wayland_souvenirs_warning_title")}
-        descriptionText={t("wayland_souvenirs_warning_description")}
-        cancelButtonLabel={t("wayland_souvenirs_warning_cancel")}
-        confirmButtonLabel={t("wayland_souvenirs_warning_confirm")}
-        clickOutsideToClose={false}
-        onConfirm={handleWaylandSouvenirsConfirm}
-        onClose={() => setShowWaylandSouvenirsWarning(false)}
-      />
     </div>
   );
 }

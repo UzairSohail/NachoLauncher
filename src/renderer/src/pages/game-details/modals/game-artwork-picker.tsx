@@ -19,7 +19,6 @@ import {
   isArtworkRowSettled,
   useGameArtworkGrid,
   useToast,
-  useUserDetails,
 } from "@renderer/hooks";
 import type {
   ArtworkAssetType,
@@ -412,7 +411,6 @@ export function GameArtworkPicker({
   const { t } = useTranslation("sidebar");
   const { t: tProfile } = useTranslation("user_profile");
   const { showErrorToast, showSuccessToast } = useToast();
-  const { userDetails } = useUserDetails();
   const scrollId = useId();
 
   const onError = useCallback(() => {
@@ -440,7 +438,7 @@ export function GameArtworkPicker({
     objectId: game.objectId,
     lookupIdentity,
     assetType,
-    enabled: Boolean(userDetails),
+    enabled: true,
     onChanged,
     onError,
     onPicked,
@@ -590,14 +588,6 @@ export function GameArtworkPicker({
     setIsScrolled(false);
     scrollRef.current?.scrollTo({ top: 0 });
   }, [assetType, game.objectId, game.shop]);
-
-  if (!userDetails) {
-    return (
-      <div className="game-artwork__hint">
-        {t("steamgriddb_sign_in_required")}
-      </div>
-    );
-  }
 
   const showReload = isStale || hasFailed;
   const isEmpty = !isLoading && items.length === 0;

@@ -202,7 +202,6 @@ async function fixture(
         calls.push(["success", ...args]),
       showErrorToast: (...args: unknown[]) => calls.push(["error", ...args]),
     }),
-    useUserDetails: () => ({ userDetails: null }),
   };
   const shared = {
     findLibraryGamePresentation,

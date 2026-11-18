@@ -142,7 +142,7 @@ import type {
   AchievementSyncStatus,
   CompanionLinkStatus,
 } from "@types";
-import type { AxiosProgressEvent } from "axios";
+import type { RetroAchievementsIntegration } from "@renderer/pages/settings/retroachievements-integration";
 
 export interface DriveInfo {
   root: string;
@@ -1385,9 +1385,7 @@ declare global {
       shop: GameShop,
       raGameId?: number
     ) => Promise<UserAchievement[] | null>;
-    resetRetroAchievementsAchievements: (
-      pendingSouvenirsOnly?: boolean
-    ) => Promise<void>;
+    resetRetroAchievementsAchievements: () => Promise<void>;
     openRetroAchievementsConnectionWindow: () => Promise<void>;
     minimizeRetroAchievementsConnectionWindow: () => Promise<void>;
     closeRetroAchievementsConnectionWindow: () => Promise<void>;
@@ -1396,6 +1394,12 @@ declare global {
       username: string,
       password: string
     ) => Promise<boolean>;
+    connectRetroAchievements: (
+      username: string,
+      password: string,
+      webApiKey: string
+    ) => Promise<{ username: string }>;
+    getRetroAchievementsConnectionStatus: () => Promise<RetroAchievementsIntegration>;
     onRetroAchievementsConnected: (
       cb: () => void
     ) => () => Electron.IpcRenderer;

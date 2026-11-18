@@ -4,7 +4,7 @@ export type GameSettingsCategoryId =
   | "assets"
   | "personal_cloud"
   | "hydra_cloud"
-  | "hydra_cloud_legacy"
+  | "emulator_saves"
   | "compatibility"
   | "downloads"
   | "danger_zone";

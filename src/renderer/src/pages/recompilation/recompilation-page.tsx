@@ -13,12 +13,10 @@ import {
   toRecompilationCloudSaveObjectId,
 } from "@shared";
 
-import { useAppDispatch, useFeature, useUserDetails } from "@renderer/hooks";
+import { useAppDispatch, useFeature } from "@renderer/hooks";
 import { setHeaderTitle } from "@renderer/features";
 import { logger } from "@renderer/logger";
 import { CloudSaveV2Provider } from "../game-details/cloud-save-v2";
-import { GameReviews } from "../game-details/game-reviews";
-import { useUserReviewStatus } from "../game-details/use-user-review-status";
 import { RecompilationHero } from "./recompilation-hero";
 import { RecompilationInstallModal } from "./recompilation-install-modal";
 import { RomDownloadModal } from "./rom-download-modal";
@@ -42,7 +40,6 @@ type RecompilationTab = "about" | "releases";
 export default function RecompilationPage() {
   const { objectId = "", slug = "" } = useParams();
   const { t, i18n } = useTranslation("recompilation");
-  const { userDetails } = useUserDetails();
   const { isFeatureEnabled, isFeaturesSettled, Feature } = useFeature();
   // Community catalog ports don't depend on Hydra's switch for its own list.
   const isRecompilationsEnabled =
@@ -193,14 +190,6 @@ export default function RecompilationPage() {
     };
   }, [isCloudSaveEnabled, details, installState, cloudSaveObjectId]);
 
-  const { hasUserReviewed, isCheckingUserReview, updateHasUserReviewed } =
-    useUserReviewStatus({
-      shop: "launchbox",
-      objectId,
-      userDetailsId: userDetails?.id,
-      recompilationSlug: slug,
-    });
-
   if (!isRecompilationsEnabled && !isFeaturesSettled) {
     return <div className="recompilation-page" aria-busy="true" />;
   }
@@ -285,19 +274,7 @@ export default function RecompilationPage() {
             className="game-details__description-content recompilation-page__tab-content"
           >
             {activeTab === "about" && (
-              <>
-                <RecompilationReadmeSection details={details} readme={readme} />
-                <GameReviews
-                  shop="launchbox"
-                  objectId={objectId}
-                  game={game}
-                  userDetailsId={userDetails?.id}
-                  hasUserReviewed={hasUserReviewed}
-                  isCheckingUserReview={isCheckingUserReview}
-                  onUserReviewedChange={updateHasUserReviewed}
-                  recompilationSlug={slug}
-                />
-              </>
+              <RecompilationReadmeSection details={details} readme={readme} />
             )}
 
             {activeTab === "releases" && (

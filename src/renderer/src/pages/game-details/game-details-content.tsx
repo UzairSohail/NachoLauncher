@@ -8,37 +8,23 @@ import {
 } from "react";
 import { PencilIcon } from "@primer/octicons-react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
 
 import { HeroPanel } from "./hero";
 import { DescriptionHeader } from "./description-header/description-header";
 import { GallerySlider } from "./gallery-slider/gallery-slider";
 import { Sidebar } from "./sidebar/sidebar";
-import { GameReviews } from "./game-reviews";
-import { ReviewPromptBanner } from "./review-prompt-banner";
-import { useReviewPrompt } from "./use-review-prompt";
-import { useUserReviewStatus } from "./use-user-review-status";
 import { GameLogo } from "./game-logo";
 import { CloudSaveWidget } from "./cloud-save-v2";
 import { PersonalCloudWidget } from "./personal-cloud";
 import { getCloudSaveVisibility } from "./cloud-save-visibility";
 import { SimilarGames } from "./similar-games/similar-games";
 
-import {
-  AuthPage,
-  getDisplayedPlayTimeInMilliseconds,
-  usesDriveCloudSaves,
-} from "@shared";
-import { cloudSyncContext, gameDetailsContext } from "@renderer/context";
+import { usesDriveCloudSaves } from "@shared";
+import { gameDetailsContext } from "@renderer/context";
 
 import cloudIconAnimated from "@renderer/assets/icons/cloud-animated.gif";
 import tvEffectVideo from "@renderer/assets/emulation/tv-effect.mp4";
-import {
-  useUserDetails,
-  useLibrary,
-  useAppSelector,
-  useGoogleDriveSignedIn,
-} from "@renderer/hooks";
+import { useAppSelector, useGoogleDriveSignedIn } from "@renderer/hooks";
 import {
   CLASSICS_PS_PLATFORM_LABELS,
   resolveClassicsBadge,
@@ -86,8 +72,6 @@ const getImageWithCustomPriority = (
 
 export function GameDetailsContent() {
   const { t } = useTranslation("game_details");
-  const [searchParams] = useSearchParams();
-  const reviewsRef = useRef<HTMLDivElement>(null);
 
   const {
     objectId,
@@ -101,11 +85,8 @@ export function GameDetailsContent() {
     setGameOptionsInitialCategory,
   } = useContext(gameDetailsContext);
 
-  const { userDetails, hasActiveSubscription } = useUserDetails();
   const driveSignedIn = useGoogleDriveSignedIn();
-  const { library } = useLibrary();
 
-  const { getGameArtifacts } = useContext(cloudSyncContext);
   const cloudSaveVisibility = game
     ? getCloudSaveVisibility(game.shop, game.platform)
     : null;
@@ -114,8 +95,7 @@ export function GameDetailsContent() {
   const isDriveEmulatorGame = game
     ? usesDriveCloudSaves(game.shop, game.platform)
     : false;
-  const canOpenCloudSaves =
-    hasActiveSubscription || (isDriveEmulatorGame && driveSignedIn);
+  const canOpenCloudSaves = isDriveEmulatorGame && driveSignedIn;
 
   const aboutTheGame = useMemo(() => {
     const aboutTheGame = shopDetails?.about_the_game;
@@ -142,46 +122,6 @@ export function GameDetailsContent() {
   const [isDescriptionOverflowing, setIsDescriptionOverflowing] =
     useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
-
-  // Check if the current game is in the user's library
-  const isGameInLibrary = useMemo(() => {
-    if (!library || !shop || !objectId) return false;
-    return library.some(
-      (libItem) => libItem.shop === shop && libItem.objectId === objectId
-    );
-  }, [library, shop, objectId]);
-
-  const { hasUserReviewed, isCheckingUserReview, updateHasUserReviewed } =
-    useUserReviewStatus({
-      shop,
-      objectId,
-      userDetailsId: userDetails?.id,
-    });
-
-  const { showPrompt, isPromptPending, dismissPrompt } = useReviewPrompt({
-    shop,
-    objectId,
-    playTimeInMilliseconds: getDisplayedPlayTimeInMilliseconds({
-      playTimeInMilliseconds: game?.playTimeInMilliseconds ?? 0,
-      steamPlayTimeInMilliseconds: game?.steamPlayTimeInMilliseconds,
-      epicPlayTimeInMilliseconds: game?.epicPlayTimeInMilliseconds,
-      otherDevicesPlayTimeInMilliseconds:
-        game?.otherDevicesPlayTimeInMilliseconds,
-    }),
-    userDetailsId: userDetails?.id,
-    isGameInLibrary,
-    hasUserReviewed,
-    isCheckingUserReview,
-  });
-
-  const handleReviewPromptYes = () => {
-    dismissPrompt({ persist: false });
-    reviewsRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleReviewPromptLater = () => {
-    dismissPrompt({ persist: true });
-  };
 
   useEffect(() => {
     setBackdropOpacity(1);
@@ -243,13 +183,8 @@ export function GameDetailsContent() {
     };
   }, [aboutTheGame]);
 
-  const handleLegacyCloudSaveButtonClick = () => {
-    if (!userDetails) {
-      globalThis.window.electron.openAuthWindow(AuthPage.SignIn);
-      return;
-    }
-
-    setGameOptionsInitialCategory("hydra_cloud_legacy");
+  const handleEmulatorSavesButtonClick = () => {
+    setGameOptionsInitialCategory("emulator_saves");
     setShowGameOptionsModal(true);
   };
 
@@ -257,20 +192,6 @@ export function GameDetailsContent() {
     setGameOptionsInitialCategory("assets");
     setShowGameOptionsModal(true);
   };
-
-  useEffect(() => {
-    getGameArtifacts();
-  }, [getGameArtifacts]);
-
-  // Scroll to reviews section if reviews=true in URL
-  useEffect(() => {
-    const shouldScrollToReviews = searchParams.get("reviews") === "true";
-    if (shouldScrollToReviews && reviewsRef.current) {
-      setTimeout(() => {
-        reviewsRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 500);
-    }
-  }, [searchParams, objectId]);
 
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
@@ -490,11 +411,11 @@ export function GameDetailsContent() {
 
                 {game &&
                   canOpenCloudSaves &&
-                  cloudSaveVisibility?.hero === "legacy" && (
+                  cloudSaveVisibility?.hero === "emulator" && (
                     <button
                       type="button"
                       className="game-details__cloud-sync-button"
-                      onClick={handleLegacyCloudSaveButtonClick}
+                      onClick={handleEmulatorSavesButtonClick}
                     >
                       <div className="game-details__cloud-icon-container">
                         <img
@@ -529,14 +450,6 @@ export function GameDetailsContent() {
         <div className="game-details__description-container">
           <div className="game-details__description-content">
             <DescriptionHeader />
-
-            {(showPrompt || isPromptPending) && (
-              <ReviewPromptBanner
-                pending={!showPrompt}
-                onYesClick={handleReviewPromptYes}
-                onLaterClick={handleReviewPromptLater}
-              />
-            )}
 
             <GallerySlider />
 
@@ -578,20 +491,6 @@ export function GameDetailsContent() {
                 objectId={catalogueGame.objectId}
                 shop={catalogueGame.shop}
               />
-            )}
-
-            {shop !== "custom" && shop && objectId && (
-              <div ref={reviewsRef}>
-                <GameReviews
-                  shop={shop}
-                  objectId={objectId}
-                  game={game}
-                  userDetailsId={userDetails?.id}
-                  hasUserReviewed={hasUserReviewed}
-                  isCheckingUserReview={isCheckingUserReview}
-                  onUserReviewedChange={updateHasUserReviewed}
-                />
-              </div>
             )}
           </div>
 
