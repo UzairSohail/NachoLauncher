@@ -38,6 +38,7 @@ import {
 } from "./download-choice";
 import { format } from "date-fns";
 import { AchievementNotificationInfo, GameRepack } from "@types";
+import { NACHO_NOTIFICATION_ICON_DATA_URI } from "./nacho-icon";
 
 export * from "./archive-org";
 export * from "./direct-hosts";
@@ -452,7 +453,7 @@ export const generateAchievementCustomNotificationTest = (
       ns: "notifications",
       lng: language ?? "en",
     }),
-    iconUrl: "https://cdn.losbroxas.org/favicon.svg",
+    iconUrl: NACHO_NOTIFICATION_ICON_DATA_URI,
     points: 2440,
     isHidden: options.isHidden ?? false,
     isRare: options.isRare ?? false,
