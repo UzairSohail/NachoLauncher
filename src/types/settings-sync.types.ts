@@ -10,7 +10,7 @@ export type SettingsSyncErrorReason =
   | "drive_refused"
   /** No connection to Google. */
   | "offline"
-  /** `hydra/settings.json` in Drive couldn't be read. */
+  /** `Nacho/settings.json` in Drive couldn't be read. */
   | "bad_file"
   | "unknown";
 

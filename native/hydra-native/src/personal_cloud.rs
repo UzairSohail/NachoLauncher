@@ -13,6 +13,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use anyhow::{anyhow, bail, Context, Result};
 use cloud_save_manager::app::{device_name, endpoints, App};
 use cloud_save_manager::background::{Playing, UploadGuard};
+use cloud_save_manager::blob::{move_folder, FolderMove};
 use cloud_save_manager::catalogue::{Catalogue, Game};
 use cloud_save_manager::detect::{self, Learned};
 use cloud_save_manager::device::Device;
@@ -28,8 +29,11 @@ use napi::bindgen_prelude::{Buffer, Error};
 use crate::google_device;
 use napi_derive::napi;
 
-/// Hydra's own files in the Drive folder live under this key.
-const HYDRA_PREFIX: &str = "hydra/";
+/// Nacho Launcher's own files in the Drive folder live in this folder.
+const APP_FOLDER: &str = "Nacho";
+const APP_PREFIX: &str = "Nacho/";
+/// Where builds before the rebrand kept them. Moved to `APP_FOLDER`.
+const LEGACY_FOLDER: &str = "hydra";
 
 /// Exe names that many unrelated games share, so a name match alone isn't enough.
 const GENERIC_EXES: &[&str] = &[
@@ -624,17 +628,17 @@ pub async fn personal_cloud_delete_version(game_id: String, version_id: String) 
         .await
 }
 
-// Hydra's own files in Drive, such as synced settings
+// Nacho Launcher's own files in Drive, such as synced settings
 
-fn hydra_key(key: &str) -> Result<String> {
+fn app_key(key: &str) -> Result<String> {
     let key = key.trim_start_matches('/');
-    if !key.starts_with(HYDRA_PREFIX)
-        || key.len() == HYDRA_PREFIX.len()
+    if !key.starts_with(APP_PREFIX)
+        || key.len() == APP_PREFIX.len()
         || key.ends_with('/')
         || key.split('/').any(|part| part.is_empty() || part == "." || part == "..")
         || key.contains('\\')
     {
-        bail!("cloud file keys must be inside {HYDRA_PREFIX}");
+        bail!("cloud file keys must be inside {APP_PREFIX}");
     }
     Ok(key.to_string())
 }
@@ -642,7 +646,7 @@ fn hydra_key(key: &str) -> Result<String> {
 #[napi]
 pub async fn personal_cloud_read_file(key: String) -> napi::Result<Option<Buffer>> {
     blocking(move || {
-        let key = hydra_key(&key)?;
+        let key = app_key(&key)?;
         let app = open_app()?;
         Ok(app.remote()?.get(&key)?.map(Buffer::from))
     })
@@ -653,21 +657,51 @@ pub async fn personal_cloud_read_file(key: String) -> napi::Result<Option<Buffer
 pub async fn personal_cloud_write_file(key: String, data: Buffer) -> napi::Result<()> {
     let data = data.to_vec();
     blocking(move || {
-        let key = hydra_key(&key)?;
+        let key = app_key(&key)?;
         let app = open_app()?;
         app.remote()?.put(&key, &data)
     })
     .await
 }
 
-/// Removes one of Hydra's own files from the Drive folder. Missing files are
+/// Removes one of Nacho Launcher's own files from the Drive folder. Missing files are
 /// not an error.
 #[napi]
 pub async fn personal_cloud_delete_file(key: String) -> napi::Result<()> {
     blocking(move || {
-        let key = hydra_key(&key)?;
+        let key = app_key(&key)?;
         let app = open_app()?;
         app.remote()?.delete(&key)
+    })
+    .await
+}
+
+#[napi(object)]
+pub struct PersonalCloudFolderMove {
+    /// "nothing", "renamed" or "merged".
+    pub outcome: String,
+    /// Files copied from the old folder when both folders existed.
+    pub copied: u32,
+}
+
+/// Moves the files older builds kept in `hydra/` to `Nacho/`. A lone
+/// `hydra/` folder is renamed. If both exist, because a build that hasn't
+/// updated wrote to `hydra/` again, files `Nacho/` lacks are copied across
+/// and `hydra/` goes to the Drive bin only after every copy succeeded.
+#[napi]
+pub async fn personal_cloud_move_legacy_folder() -> napi::Result<PersonalCloudFolderMove> {
+    blocking(move || {
+        let app = open_app()?;
+        let remote = app.remote()?;
+        let moved = move_folder(remote.as_ref(), LEGACY_FOLDER, APP_FOLDER)?;
+        Ok(match moved {
+            FolderMove::Nothing => PersonalCloudFolderMove { outcome: "nothing".into(), copied: 0 },
+            FolderMove::Renamed => PersonalCloudFolderMove { outcome: "renamed".into(), copied: 0 },
+            FolderMove::Merged { copied } => PersonalCloudFolderMove {
+                outcome: "merged".into(),
+                copied: u32::try_from(copied).unwrap_or(u32::MAX),
+            },
+        })
     })
     .await
 }
@@ -726,10 +760,19 @@ mod tests {
     }
 
     #[test]
-    fn cloud_file_keys_stay_inside_the_hydra_folder() {
-        assert_eq!(hydra_key("hydra/settings.json").unwrap(), "hydra/settings.json");
-        for bad in ["catalogue.json", "hydra/", "hydra/../catalogue.json", "hydra//x", "games/x/head.json", "hydra\\x"] {
-            assert!(hydra_key(bad).is_err(), "{bad} should be refused");
+    fn cloud_file_keys_stay_inside_the_app_folder() {
+        assert_eq!(app_key("Nacho/settings.json").unwrap(), "Nacho/settings.json");
+        for bad in [
+            "catalogue.json",
+            "Nacho/",
+            "Nacho/../catalogue.json",
+            "Nacho//x",
+            "games/x/head.json",
+            "Nacho\\x",
+            "hydra/settings.json",
+            "nacho/settings.json",
+        ] {
+            assert!(app_key(bad).is_err(), "{bad} should be refused");
         }
     }
 }

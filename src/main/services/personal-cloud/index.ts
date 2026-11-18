@@ -21,6 +21,7 @@ import { NativeAddon } from "../native-addon";
 import { Wine } from "../wine";
 import { WindowManager } from "../window-manager";
 
+import { createAppFolderGate } from "./app-folder";
 import {
   getPersonalCloudLinkInput,
   PRE_LAUNCH_SYNC_TIMEOUT_MS,
@@ -30,6 +31,12 @@ import {
 export * from "./policy";
 
 const native = () => NativeAddon.personalCloud();
+
+const ensureAppFolder = createAppFolderGate(
+  () => native().personalCloudMoveLegacyFolder(),
+  (result) =>
+    logger.info("[Personal Cloud] Moved the old hydra folder to Nacho", result)
+);
 
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
@@ -367,17 +374,20 @@ export class PersonalCloud {
     return this.syncNow(shop, objectId);
   }
 
-  /** Reads one of Hydra's own files in the Drive folder, under `hydra/`. */
-  public static readFile(key: string) {
+  /** Reads one of Nacho Launcher's own files in the Drive folder, under `Nacho/`. */
+  public static async readFile(key: string) {
+    await ensureAppFolder();
     return native().personalCloudReadFile(key);
   }
 
-  public static writeFile(key: string, data: Buffer) {
+  public static async writeFile(key: string, data: Buffer) {
+    await ensureAppFolder();
     return native().personalCloudWriteFile(key, data);
   }
 
-  /** Moves one of Hydra's own files under `hydra/` to the Drive bin. */
-  public static deleteFile(key: string) {
+  /** Moves one of Nacho Launcher's own files under `Nacho/` to the Drive bin. */
+  public static async deleteFile(key: string) {
+    await ensureAppFolder();
     return native().personalCloudDeleteFile(key);
   }
 

@@ -25,7 +25,7 @@ import { SyncedUnlocksStore } from "./synced-unlocks-store";
 
 export { SyncedUnlocksStore } from "./synced-unlocks-store";
 
-const ACHIEVEMENTS_FILE = "hydra/achievements.json";
+const ACHIEVEMENTS_FILE = "Nacho/achievements.json";
 const PUSH_DELAY_MS = 10_000;
 // Other devices' unlocks normally arrive through DriveChangeFeed; this is
 // only a safety net in case a change notice is missed.
@@ -58,7 +58,7 @@ const splitGameKey = (key: string): [GameShop, string] | null => {
  * Google sign-in shared with cloud saves and settings sync. Unlocks from every
  * device are merged: once unlocked anywhere, an achievement shows as unlocked
  * everywhere, at the earliest time any device saw it. The file is
- * `hydra/achievements.json`.
+ * `Nacho/achievements.json`.
  */
 export class AchievementSync {
   private static record: LocalAchievementRecord | null = null;

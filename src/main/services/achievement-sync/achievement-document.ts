@@ -9,7 +9,7 @@ export interface SyncedUnlock {
 /** Unlocks per game key (`shop:objectId`), then per upper-case achievement name. */
 export type SyncedAchievements = Record<string, Record<string, SyncedUnlock>>;
 
-/** The file at `hydra/achievements.json` in the user's Drive. */
+/** The file at `Nacho/achievements.json` in the user's Drive. */
 export interface AchievementSyncDocument {
   version: 1;
   updatedAt: number;

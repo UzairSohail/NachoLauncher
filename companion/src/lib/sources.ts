@@ -1,7 +1,7 @@
 import { PHONE_DEVICE_ID } from "./config";
 import { readFile, writeFile } from "./drive";
 
-const SETTINGS_FILE = "hydra/settings.json";
+const SETTINGS_FILE = "Nacho/settings.json";
 
 interface SyncEntry<T> {
   value: T | null;

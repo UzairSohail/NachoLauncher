@@ -3,18 +3,18 @@
  * Kept free of imports so the phone app can use this file as it is.
  *
  * Each file has exactly one writer, so nobody overwrites anybody:
- * - `hydra/companion.json`: written by the phone. The requests: downloads,
+ * - `Nacho/companion.json`: written by the phone. The requests: downloads,
  *   uninstalls and removals from the library.
- * - `hydra/devices/<deviceId>.json`: written by that launcher. Its name, free
+ * - `Nacho/devices/<deviceId>.json`: written by that launcher. Its name, free
  *   space, a short library list and what it did with each request.
  *
  * Storage is kept small on purpose: no images, no catalogue data (both come
  * from the catalogue API), and requests are removed by the phone once done.
  */
 
-export const COMPANION_FILE = "hydra/companion.json";
+export const COMPANION_FILE = "Nacho/companion.json";
 export const companionDeviceFile = (deviceId: string) =>
-  `hydra/devices/${deviceId}.json`;
+  `Nacho/devices/${deviceId}.json`;
 
 /** Sent as a request's target to let the first launcher that opens take it. */
 export const ANY_DEVICE = "any";
