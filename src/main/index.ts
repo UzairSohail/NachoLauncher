@@ -33,6 +33,10 @@ import { stopWaylandFocusWatch } from "./services/screenshots";
 import { isWaylandSession } from "./services/linux-game-capture-session";
 import { recompilationGameSessions } from "./services/game-running-state";
 import { refreshPortableShortcutLauncher } from "./helpers/shortcut-launch";
+import {
+  DEEP_LINK_PROTOCOLS,
+  findAppDeepLink,
+} from "./helpers/deep-link-protocol";
 import { lookupCachedPlatform } from "./events/library/get-library";
 import { loadState } from "./main";
 import { achievementNotificationPresenter } from "./services/achievement-notification-presenter-electron";
@@ -73,8 +77,6 @@ i18n.init({
   },
 });
 
-const PROTOCOL = "hydralauncher";
-
 // Register the custom schemes as privileged so the renderer can fetch them
 // (supportFetchAPI) and use the results on a canvas without tainting it
 // (corsEnabled). Must run before the app is ready.
@@ -89,14 +91,18 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
+// nacho:// is the app's link scheme. hydralauncher:// stays registered so
+// shortcuts made before the rebrand keep working.
+for (const scheme of DEEP_LINK_PROTOCOLS) {
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient(scheme, process.execPath, [
+        path.resolve(process.argv[1]),
+      ]);
+    }
+  } else {
+    app.setAsDefaultProtocolClient(scheme);
   }
-} else {
-  app.setAsDefaultProtocolClient(PROTOCOL);
 }
 
 const initializeApp = async () => {
@@ -201,9 +207,7 @@ const initializeApp = async () => {
   if (language) i18n.changeLanguage(language);
 
   // Check if starting from a "run" deep link - don't show main window in that case
-  const deepLinkArg = process.argv.find((arg) =>
-    arg.startsWith("hydralauncher://")
-  );
+  const deepLinkArg = findAppDeepLink(process.argv);
   const forceBigPicture = process.argv.includes("--big-picture");
 
   if (
@@ -356,9 +360,7 @@ const handleDeepLinkPath = (uri?: string) => {
 };
 
 app.on("second-instance", (_event, commandLine) => {
-  const deepLink = commandLine.find((arg) =>
-    arg.startsWith("hydralauncher://")
-  );
+  const deepLink = findAppDeepLink(commandLine);
   const forceBigPicture = commandLine.includes("--big-picture");
 
   // Check if this is a "run" deep link - don't show main window in that case

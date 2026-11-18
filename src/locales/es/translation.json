@@ -1019,6 +1019,7 @@
     "executable_not_found_description": "No se encontró el ejecutable en la ruta seleccionada. Selecciona otro en la pestaña Opciones > Ubicaciones.",
     "executable_not_found_big_picture_description": "No se encontró el ejecutable en la ruta seleccionada. Selecciona otro en la pestaña Opciones > Inicio.",
     "settings_category_hydra_cloud": "Nacho Cloud",
+    "settings_category_emulator_saves": "Partidas del emulador",
     "settings_category_legacy_saves": "Partidas guardadas antiguas",
     "legacy_saves_description": "Las partidas guardadas antiguas son copias de seguridad creadas antes de la actualización al nuevo sistema de guardado en la nube. Solo estarán disponibles durante unos meses. Te avisaremos por correo electrónico con anticipación la fecha exacta en que se eliminarán de nuestros servidores.",
     "legacy_save_download_success": "Partida guardada antigua descargada",
@@ -2827,10 +2828,10 @@
     "hotkey_modifier_required": "Añade Ctrl o Alt a esta tecla para que no se active mientras escribes o te mueves",
     "hotkey_portal_unsupported_key": "Pausa y Enter del teclado numérico no se pueden usar como atajo de captura de pantalla en esta sesión de Wayland. Elige otra tecla.",
     "hotkey_reserved": "Este atajo está reservado por el sistema. Elige otro.",
-    "hotkey_unavailable": "El atajo de captura de pantalla no está disponible ahora mismo. Puedes asignar hydralauncher://screenshot a un atajo en la configuración del sistema.",
-    "hotkey_unavailable_wayland": "Nacho Launcher no puede leer el teclado en esta sesión de Wayland. Asigna hydralauncher://screenshot a un atajo en la configuración del escritorio. Añadir tu usuario al grupo input también funciona, pero permite que cualquier aplicación que ejecutes lea todo lo que escribes.",
+    "hotkey_unavailable": "El atajo de captura de pantalla no está disponible ahora mismo. Puedes asignar nacho://screenshot a un atajo en la configuración del sistema.",
+    "hotkey_unavailable_wayland": "Nacho Launcher no puede leer el teclado en esta sesión de Wayland. Asigna nacho://screenshot a un atajo en la configuración del escritorio. Añadir tu usuario al grupo input también funciona, pero permite que cualquier aplicación que ejecutes lea todo lo que escribes.",
     "hotkey_unsupported_key": "Esta tecla no se puede usar para capturas de pantalla",
-    "hotkey_xwayland_only": "El atajo de captura de pantalla solo funciona en juegos que se ejecutan con XWayland. Para hacer capturas en otros juegos, asigna hydralauncher://screenshot a un atajo en la configuración del escritorio."
+    "hotkey_xwayland_only": "El atajo de captura de pantalla solo funciona en juegos que se ejecutan con XWayland. Para hacer capturas en otros juegos, asigna nacho://screenshot a un atajo en la configuración del escritorio."
   },
   "screenshots_capture": {
     "cancel": "Cancelar",

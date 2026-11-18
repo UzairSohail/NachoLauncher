@@ -78,6 +78,7 @@ linux:
   maintainer: electronjs.org
   category: Game
   mimeTypes:
+    - x-scheme-handler/nacho
     - x-scheme-handler/hydralauncher
 appImage:
   # No version in the name, so auto-updates replace the file in place and

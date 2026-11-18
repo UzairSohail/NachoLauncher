@@ -935,6 +935,7 @@
     "customize_game": "Customize",
     "settings_category_launch": "Launch",
     "settings_category_hydra_cloud": "Nacho Cloud",
+    "settings_category_emulator_saves": "Emulator Saves",
     "settings_category_legacy_saves": "Legacy Saves",
     "legacy_saves_description": "Legacy saves are backups created before the upgrade to the new cloud save system. They will only be available for a few months. We will notify you in advance by email of the exact date they will be removed from our servers.",
     "legacy_save_download_success": "Legacy save downloaded",
@@ -3408,10 +3409,10 @@
     "hotkey_modifier_required": "Add Ctrl or Alt to this key so it doesn't fire while you type or move",
     "hotkey_portal_unsupported_key": "Pause and Numpad Enter can't be used as the screenshot hotkey in this Wayland session. Choose another key.",
     "hotkey_reserved": "This shortcut is reserved by the system. Choose another one.",
-    "hotkey_unavailable": "The screenshot hotkey isn't available right now. You can bind hydralauncher://screenshot to a shortcut in your system settings instead.",
-    "hotkey_unavailable_wayland": "Nacho Launcher can't read the keyboard in this Wayland session. Bind hydralauncher://screenshot to a shortcut in your desktop settings instead. Adding your user to the input group also works, but it lets every app you run read everything you type.",
+    "hotkey_unavailable": "The screenshot hotkey isn't available right now. You can bind nacho://screenshot to a shortcut in your system settings instead.",
+    "hotkey_unavailable_wayland": "Nacho Launcher can't read the keyboard in this Wayland session. Bind nacho://screenshot to a shortcut in your desktop settings instead. Adding your user to the input group also works, but it lets every app you run read everything you type.",
     "hotkey_unsupported_key": "This key can't be used for screenshots",
-    "hotkey_xwayland_only": "The screenshot hotkey only works in games running through XWayland. To take screenshots in other games, bind hydralauncher://screenshot to a shortcut in your desktop settings."
+    "hotkey_xwayland_only": "The screenshot hotkey only works in games running through XWayland. To take screenshots in other games, bind nacho://screenshot to a shortcut in your desktop settings."
   },
   "screenshots_capture": {
     "cancel": "Cancel",

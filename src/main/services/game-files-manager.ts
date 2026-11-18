@@ -54,6 +54,7 @@ import { SystemPath } from "./system-path";
 import { WindowManager } from "./window-manager";
 import { runAutomaticCloudSaveSync } from "./cloud-save";
 import { updateGameRecord } from "./game-record-updater";
+import { buildAppDeepLink } from "@main/helpers/deep-link-protocol";
 import {
   installPs4Pkg,
   isPs4PkgPath,
@@ -1164,12 +1165,10 @@ export class GameFilesManager {
   }
 
   private buildRunDeepLink() {
-    const query = new URLSearchParams({
-      shop: this.shop,
-      objectId: this.objectId,
-    });
-
-    return `hydralauncher://run?${query.toString()}`;
+    return buildAppDeepLink(
+      "run",
+      new URLSearchParams({ shop: this.shop, objectId: this.objectId })
+    );
   }
 
   private quoteLinuxExecArg(value: string) {

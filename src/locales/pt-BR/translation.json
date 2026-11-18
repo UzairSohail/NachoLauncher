@@ -965,6 +965,7 @@
     "customize_game": "Personalizar",
     "settings_category_launch": "Inicialização",
     "settings_category_hydra_cloud": "Nacho Cloud",
+    "settings_category_emulator_saves": "Saves do emulador",
     "settings_category_legacy_saves": "Saves legados",
     "legacy_saves_description": "Saves legados são backups criados antes da atualização para o novo sistema de salvamento na nuvem. Eles ficarão disponíveis por apenas alguns meses. Informaremos com antecedência, por e-mail, a data exata em que serão removidos dos nossos servidores.",
     "legacy_save_download_success": "Save legado baixado",
@@ -3329,10 +3330,10 @@
     "hotkey_modifier_required": "Adicione Ctrl ou Alt a esta tecla para que ela não seja acionada enquanto você digita ou se move",
     "hotkey_portal_unsupported_key": "Pause e Enter do teclado numérico não podem ser usados como atalho de captura de tela nesta sessão Wayland. Escolha outra tecla.",
     "hotkey_reserved": "Este atalho é reservado pelo sistema. Escolha outro.",
-    "hotkey_unavailable": "O atalho de captura de tela não está disponível no momento. Você pode associar hydralauncher://screenshot a um atalho nas configurações do sistema.",
-    "hotkey_unavailable_wayland": "O Nacho Launcher não consegue ler o teclado nesta sessão Wayland. Associe hydralauncher://screenshot a um atalho nas configurações da área de trabalho. Adicionar o seu usuário ao grupo input também funciona, mas permite que qualquer aplicativo que você execute leia tudo o que você digita.",
+    "hotkey_unavailable": "O atalho de captura de tela não está disponível no momento. Você pode associar nacho://screenshot a um atalho nas configurações do sistema.",
+    "hotkey_unavailable_wayland": "O Nacho Launcher não consegue ler o teclado nesta sessão Wayland. Associe nacho://screenshot a um atalho nas configurações da área de trabalho. Adicionar o seu usuário ao grupo input também funciona, mas permite que qualquer aplicativo que você execute leia tudo o que você digita.",
     "hotkey_unsupported_key": "Esta tecla não pode ser usada para capturas de tela",
-    "hotkey_xwayland_only": "O atalho de captura de tela só funciona em jogos executados pelo XWayland. Para capturar a tela em outros jogos, associe hydralauncher://screenshot a um atalho nas configurações da área de trabalho."
+    "hotkey_xwayland_only": "O atalho de captura de tela só funciona em jogos executados pelo XWayland. Para capturar a tela em outros jogos, associe nacho://screenshot a um atalho nas configurações da área de trabalho."
   },
   "screenshots_capture": {
     "cancel": "Cancelar",

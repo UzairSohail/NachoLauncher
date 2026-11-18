@@ -2,7 +2,6 @@ import react from "@vitejs/plugin-react";
 import {
   defineConfig,
   externalizeDepsPlugin,
-  loadEnv,
   swcPlugin,
 } from "electron-vite";
 import JavaScriptObfuscator from "javascript-obfuscator";
@@ -64,7 +63,6 @@ const obfuscate = (): Plugin => ({
 });
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode);
   const csp = contentSecurityPolicy();
 
   const isProduction = mode === "production";
