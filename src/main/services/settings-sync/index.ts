@@ -41,6 +41,11 @@ import { GameCollections } from "../game-collections";
 import { recordCollection, recordLocalValues } from "./sync-merge";
 import { describeSettingsSyncError } from "./sync-error";
 import {
+  applySyncedArtwork,
+  readArtworkSyncStore,
+  type SyncedArtwork,
+} from "../game-artwork-cloud";
+import {
   otherDevicesPlaytime,
   recordGameFlags,
   recordOwnPlaytime,
@@ -219,13 +224,14 @@ export class SettingsSync {
 
   /** Stamps whatever changed on this device since the last sync. */
   private static async recordLocal(record: LocalSyncRecord, now: number) {
-    const [preferences, sources, themes, collections, games] =
+    const [preferences, sources, themes, collections, games, artwork] =
       await Promise.all([
         getUserPreferences(),
         downloadSourcesSublevel.values().all(),
         themesSublevel.values().all(),
         GameCollections.all(),
         gamesSublevel.iterator().all() as Promise<GameWithKey[]>,
+        readArtworkSyncStore(),
       ]);
 
     const sourceItems: Record<string, SyncedDownloadSource> = {};
@@ -279,6 +285,12 @@ export class SettingsSync {
       ),
       gameFlags: recordGameFlags(state.gameFlags, games, now, deviceId),
       playtime: recordOwnPlaytime(state.playtime, games, now, deviceId),
+      gameArtwork: recordLocalValues<SyncedArtwork>(
+        state.gameArtwork,
+        artwork,
+        now,
+        deviceId
+      ),
     } satisfies SettingsSyncState;
   }
 
@@ -317,6 +329,22 @@ export class SettingsSync {
 
     await this.applyGameCollections(merged, incoming.gameCollections);
     await this.applyGameLibrary(merged, incoming.gameFlags, deviceId);
+    await this.applyGameArtwork(merged);
+  }
+
+  /** Applies artwork choices that differ from what this device recorded. */
+  private static async applyGameArtwork(merged: SettingsSyncState) {
+    const store = await readArtworkSyncStore();
+    const changes: Record<string, SyncedArtwork | null> = {};
+    for (const [key, entry] of Object.entries(merged.gameArtwork)) {
+      const value = entry.deleted ? null : entry.value;
+      const local = store[key] ?? null;
+      if (JSON.stringify(value) !== JSON.stringify(local)) changes[key] = value;
+    }
+    if (Object.keys(changes).length === 0) return;
+    if (await applySyncedArtwork(changes)) {
+      WindowManager.sendToAppWindows("on-library-batch-complete");
+    }
   }
 
   /**

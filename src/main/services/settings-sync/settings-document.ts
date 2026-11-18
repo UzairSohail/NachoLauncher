@@ -4,6 +4,7 @@ import type {
   Theme,
   UserPreferences,
 } from "@types";
+import type { SyncedArtwork } from "../game-artwork-cloud";
 import type { PreferenceSecrets } from "../user-preferences/preference-secrets";
 import { openJson, sealJson, type SealedBox } from "./secret-box.js";
 import {
@@ -51,6 +52,8 @@ export interface SettingsSyncState {
   gameFlags: SyncEntries<SyncedGameFlags>;
   /** Keyed by `<deviceId>/<game key>`. */
   playtime: SyncEntries<SyncedDevicePlaytime>;
+  /** Keyed by `<game key>/<artwork type>`. */
+  gameArtwork: SyncEntries<SyncedArtwork>;
 }
 
 /** `hydra/settings.json` in Drive. */
@@ -66,6 +69,7 @@ export interface SettingsSyncDocument {
   gameCollections?: SyncEntries<SyncedGameCollection>;
   gameFlags?: SyncEntries<SyncedGameFlags>;
   playtime?: SyncEntries<SyncedDevicePlaytime>;
+  gameArtwork?: SyncEntries<SyncedArtwork>;
 }
 
 export const emptySettingsSyncState = (): SettingsSyncState => ({
@@ -76,6 +80,7 @@ export const emptySettingsSyncState = (): SettingsSyncState => ({
   gameCollections: {},
   gameFlags: {},
   playtime: {},
+  gameArtwork: {},
 });
 
 export const pickSyncedPreferences = (
@@ -116,6 +121,7 @@ export const toSettingsDocument = (
   gameCollections: state.gameCollections,
   gameFlags: state.gameFlags,
   playtime: state.playtime,
+  gameArtwork: state.gameArtwork,
 });
 
 export const fromSettingsDocument = (
@@ -136,6 +142,7 @@ export const fromSettingsDocument = (
     gameCollections: document.gameCollections ?? {},
     gameFlags: document.gameFlags ?? {},
     playtime: document.playtime ?? {},
+    gameArtwork: document.gameArtwork ?? {},
   };
 };
 
@@ -155,6 +162,7 @@ const SECTIONS = [
   "gameCollections",
   "gameFlags",
   "playtime",
+  "gameArtwork",
 ] as const satisfies readonly (keyof SettingsSyncState)[];
 
 export const mergeSettingsState = (
