@@ -537,6 +537,10 @@ export class AllDebridClient {
     }));
   }
 
+  static isAuthorized() {
+    return Boolean(this.apiToken);
+  }
+
   static async unlockDownloadLink(link: string) {
     const unlockData = await this.unlockLink(link);
     return decodeURIComponent(unlockData.link);

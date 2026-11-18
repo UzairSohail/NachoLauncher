@@ -1,21 +1,14 @@
-import { HydraApi } from "../hydra-api";
+import { AllDebridClient } from "../download/all-debrid";
 
-interface UnlockResponse {
-  link: string;
-}
-
+/**
+ * VikingFile links used to be unlocked by Hydra's paid API. Nacho unlocks them
+ * through the user's AllDebrid account instead.
+ */
 export class VikingFileApi {
   public static async getDownloadUrl(uri: string): Promise<string> {
-    const response = await HydraApi.post<UnlockResponse>(
-      "/hosters/vikingfile/unlock",
-      { url: uri },
-      { needsSubscription: true }
-    );
-
-    if (!response?.link) {
-      throw new Error("Failed to unlock VikingFile URL");
+    if (!AllDebridClient.isAuthorized()) {
+      throw new Error("VikingFile downloads need AllDebrid");
     }
-
-    return response.link;
+    return AllDebridClient.unlockDownloadLink(uri);
   }
 }

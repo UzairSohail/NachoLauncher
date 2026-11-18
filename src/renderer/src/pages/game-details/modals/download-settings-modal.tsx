@@ -24,7 +24,6 @@ import {
   useFeature,
   useToast,
 } from "@renderer/hooks";
-import { useSubscription } from "@renderer/hooks/use-subscription";
 import {
   DownloadError,
   Downloader,
@@ -357,7 +356,6 @@ export function DownloadSettingsModal({
   const startAbortControllerRef = useRef<AbortController | null>(null);
 
   const { isFeatureEnabled, Feature } = useFeature();
-  const { showHydraCloudModal } = useSubscription();
 
   const selectedUri = useMemo(() => {
     if (!repack || selectedDownloader === null) return null;
@@ -1417,11 +1415,6 @@ export function DownloadSettingsModal({
                           option.isAvailableButNotConfigured
                         ) {
                           setDebridToSetUp(option.downloader);
-                        } else if (
-                          option.downloader === Downloader.VikingFile &&
-                          option.isAvailableButNotConfigured
-                        ) {
-                          showHydraCloudModal("vikingfile");
                         } else {
                           setSelectedDownloader(option.downloader);
                         }

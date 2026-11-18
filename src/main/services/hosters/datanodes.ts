@@ -1,20 +1,14 @@
-import { HydraApi } from "../hydra-api";
+import { AllDebridClient } from "../download/all-debrid";
 
-interface UnlockResponse {
-  link: string;
-}
-
+/**
+ * Datanodes links used to be unlocked by Hydra's paid API. Nacho unlocks them
+ * through the user's AllDebrid account instead.
+ */
 export class DatanodesApi {
   public static async getDownloadUrl(uri: string): Promise<string> {
-    const response = await HydraApi.post<UnlockResponse>(
-      "/hosters/datanodes/unlock",
-      { url: uri }
-    );
-
-    if (!response?.link) {
-      throw new Error("Failed to unlock Datanodes URL");
+    if (!AllDebridClient.isAuthorized()) {
+      throw new Error("Datanodes downloads need AllDebrid");
     }
-
-    return response.link;
+    return AllDebridClient.unlockDownloadLink(uri);
   }
 }
