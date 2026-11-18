@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CloudIcon } from "@phosphor-icons/react";
 
-import { Button, PhoneSignInModal } from "@renderer/components";
-import { useToast } from "@renderer/hooks";
+import { Button, PhoneSignInModal, SelectField } from "@renderer/components";
+import { settingsContext } from "@renderer/context";
+import { useAppSelector, useToast } from "@renderer/hooks";
+import {
+  CLOUD_SAVE_BACKUP_INTERVAL_CHOICES,
+  normalizeCloudSaveBackupInterval,
+} from "@shared";
 import type { PersonalCloudStatus } from "@types";
 
 import { SettingsIntegrationCard } from "./settings-integration-card";
@@ -16,6 +21,12 @@ export function SettingsPersonalCloud() {
   const [isLoading, setIsLoading] = useState(true);
   const [isWorking, setIsWorking] = useState(false);
   const [showPhoneSignIn, setShowPhoneSignIn] = useState(false);
+  const { updateUserPreferences } = useContext(settingsContext);
+  const backupInterval = normalizeCloudSaveBackupInterval(
+    useAppSelector(
+      (state) => state.userPreferences.value?.cloudSaveBackupIntervalMinutes
+    )
+  );
 
   const refresh = useCallback(async () => {
     try {
@@ -102,6 +113,30 @@ export function SettingsPersonalCloud() {
       </p>
       {status?.signedIn && (
         <p className="settings-integration-card__meta">{t("pause_note")}</p>
+      )}
+      {status?.signedIn && (
+        <>
+          <SelectField
+            label={t("backup_interval")}
+            value={String(backupInterval)}
+            onChange={(event) =>
+              void updateUserPreferences({
+                cloudSaveBackupIntervalMinutes: Number(event.target.value),
+              })
+            }
+            options={CLOUD_SAVE_BACKUP_INTERVAL_CHOICES.map((minutes) => ({
+              key: String(minutes),
+              value: String(minutes),
+              label:
+                minutes === 0
+                  ? t("backup_interval_off")
+                  : t("backup_interval_minutes", { count: minutes }),
+            }))}
+          />
+          <p className="settings-integration-card__meta">
+            {t("backup_interval_hint")}
+          </p>
+        </>
       )}
 
       <PhoneSignInModal

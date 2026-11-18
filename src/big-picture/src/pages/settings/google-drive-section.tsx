@@ -9,11 +9,22 @@ import { ArrowsClockwiseIcon, CloudIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button, Checkbox, VerticalFocusGroup } from "../../components";
+import {
+  CLOUD_SAVE_BACKUP_INTERVAL_CHOICES,
+  normalizeCloudSaveBackupInterval,
+} from "@shared";
+
+import {
+  Button,
+  Checkbox,
+  DropdownSelect,
+  VerticalFocusGroup,
+} from "../../components";
 import { PhoneSignInModal } from "../../components/modals";
-import { useBigPictureToast } from "../../hooks";
+import { useBigPictureToast, useUserPreferences } from "../../hooks";
 import type { FocusOverrideTarget, FocusOverrides } from "../../services";
 import {
+  GOOGLE_DRIVE_BACKUP_INTERVAL_ID,
   GOOGLE_DRIVE_BROWSER_SIGN_IN_BUTTON_ID,
   GOOGLE_DRIVE_CLOUD_SAVES_BUTTON_ID,
   GOOGLE_DRIVE_SECTION_REGION_ID,
@@ -48,6 +59,39 @@ export function GoogleDriveSection({
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isTogglingPause, setIsTogglingPause] = useState(false);
   const [showPhoneSignIn, setShowPhoneSignIn] = useState(false);
+  const userPreferences = useUserPreferences();
+  const [backupInterval, setBackupInterval] = useState(() =>
+    normalizeCloudSaveBackupInterval(
+      userPreferences?.cloudSaveBackupIntervalMinutes
+    )
+  );
+
+  useEffect(() => {
+    setBackupInterval(
+      normalizeCloudSaveBackupInterval(
+        userPreferences?.cloudSaveBackupIntervalMinutes
+      )
+    );
+  }, [userPreferences?.cloudSaveBackupIntervalMinutes]);
+
+  const changeBackupInterval = async (minutes: number) => {
+    setBackupInterval(minutes);
+    await globalThis.window.electron.updateUserPreferences({
+      cloudSaveBackupIntervalMinutes: minutes,
+    });
+  };
+
+  const backupIntervalOptions = useMemo(
+    () =>
+      CLOUD_SAVE_BACKUP_INTERVAL_CHOICES.map((minutes) => ({
+        value: String(minutes),
+        label:
+          minutes === 0
+            ? t("backup_interval_off")
+            : t("backup_interval_minutes", { count: minutes }),
+      })),
+    [t]
+  );
 
   const refresh = useCallback(async () => {
     const electron = globalThis.window.electron;
@@ -125,6 +169,7 @@ export function GoogleDriveSection({
   const focusIds = useMemo(() => {
     const ids = [GOOGLE_DRIVE_CLOUD_SAVES_BUTTON_ID];
     if (offersPhoneSignIn) ids.push(GOOGLE_DRIVE_BROWSER_SIGN_IN_BUTTON_ID);
+    if (signedIn) ids.push(GOOGLE_DRIVE_BACKUP_INTERVAL_ID);
     if (signedIn) ids.push(GOOGLE_DRIVE_SYNC_CHECKBOX_ID);
     if (syncEnabled) ids.push(GOOGLE_DRIVE_SYNC_BUTTON_ID);
     return ids;
@@ -218,6 +263,22 @@ export function GoogleDriveSection({
 
           {signedIn ? (
             <>
+              <DropdownSelect
+                label={t("backup_interval")}
+                value={String(backupInterval)}
+                options={backupIntervalOptions}
+                focusId={GOOGLE_DRIVE_BACKUP_INTERVAL_ID}
+                focusNavigationOverrides={overridesFor(
+                  GOOGLE_DRIVE_BACKUP_INTERVAL_ID
+                )}
+                onValueChange={(value) =>
+                  void changeBackupInterval(Number(value))
+                }
+              />
+              <p className="integration-provider-section__helper">
+                {t("backup_interval_hint")}
+              </p>
+
               <p className="integration-provider-section__helper">
                 <ArrowsClockwiseIcon size={16} weight="bold" />{" "}
                 {t("settings_sync_title")}: {syncStatusLabel}

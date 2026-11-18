@@ -59,6 +59,21 @@ export interface PersonalCloudSyncResult {
   unclear: string[];
 }
 
+export interface PersonalCloudBackupResult {
+  outcome:
+    | "pushed"
+    | "up_to_date"
+    | "skipped"
+    | "no_saves"
+    | "offline"
+    | "paused"
+    | "waiting_for_prefix"
+    | "not_in_catalogue";
+  versionId?: string | null;
+  /** The save from before the session, pinned until the session ends. */
+  pinnedVersionId?: string | null;
+}
+
 export interface PersonalCloudVersion {
   id: string;
   device: string;

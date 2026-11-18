@@ -9,6 +9,8 @@ export const HOME_PAGE_REGION_ID = "home-page";
 export const HOME_HARD_PLATINUMS_GRID_REGION_ID = "home-hard-platinums-grid";
 export const HOME_TRENDING_GAMES_CAROUSEL_REGION_ID =
   "home-trending-games-carousel";
+export const HOME_CONTINUE_PLAYING_CAROUSEL_REGION_ID =
+  "home-continue-playing-carousel";
 export const HOME_WEEKLY_GAMES_CAROUSEL_REGION_ID =
   "home-weekly-games-carousel";
 
@@ -28,4 +30,10 @@ export function getHomeWeeklyGameItemId(
   game: Pick<ShopAssets, "shop" | "objectId">
 ) {
   return `home-weekly-game-${getGameIdentityKey(game, { separator: "-" })}`;
+}
+
+export function getHomeContinuePlayingItemId(
+  game: Pick<ShopAssets, "shop" | "objectId">
+) {
+  return `home-continue-playing-${getGameIdentityKey(game, { separator: "-" })}`;
 }

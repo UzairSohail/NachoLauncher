@@ -13,10 +13,13 @@ import { useHotGames } from "./use-hot-games";
 import { useHomeChallengeGridNavigation } from "./use-home-challenge-grid-navigation";
 import { useHardPlatinums } from "./use-hard-platinums";
 import { useWeeklyGames } from "./use-weekly-games";
+import { getContinuePlayingGames } from "./continue-playing";
 import {
   getHomeChallengeGameItemId,
+  getHomeContinuePlayingItemId,
   getHomeTrendingGameItemId,
   getHomeWeeklyGameItemId,
+  HOME_CONTINUE_PLAYING_CAROUSEL_REGION_ID,
   HOME_HARD_PLATINUMS_GRID_REGION_ID,
   HOME_HERO_ACTIONS_REGION_ID,
   HOME_PAGE_REGION_ID,
@@ -62,7 +65,13 @@ import type { FocusOverrideTarget, FocusOverrides } from "../../services";
 
 import "./page.scss";
 
-const HOME_SECTION_ORDER = ["hero", "weekly", "trending", "challenge"] as const;
+const HOME_SECTION_ORDER = [
+  "hero",
+  "continue",
+  "weekly",
+  "trending",
+  "challenge",
+] as const;
 
 type HomeSectionId = (typeof HOME_SECTION_ORDER)[number];
 type DownloadModalGame = Pick<
@@ -346,7 +355,13 @@ export default function Home() {
     void updateLibrary();
   }, [updateLibrary]);
 
+  const continuePlayingGames = useMemo(
+    () => getContinuePlayingGames(library),
+    [library]
+  );
+
   const hasHero = featuredGame != null;
+  const hasContinue = continuePlayingGames.length > 0;
   const hasWeekly = weeklyGames.length > 0;
   const hasTrending = hotGames.length > 0;
   const hasChallenge = hardPlatinums.length > 0;
@@ -355,6 +370,7 @@ export default function Home() {
     Exclude<HomeSectionId, "hero">,
     string
   > = {
+    continue: HOME_CONTINUE_PLAYING_CAROUSEL_REGION_ID,
     weekly: HOME_WEEKLY_GAMES_CAROUSEL_REGION_ID,
     trending: HOME_TRENDING_GAMES_CAROUSEL_REGION_ID,
     challenge: HOME_HARD_PLATINUMS_GRID_REGION_ID,
@@ -364,6 +380,8 @@ export default function Home() {
     switch (sectionId) {
       case "hero":
         return hasHero;
+      case "continue":
+        return hasContinue;
       case "weekly":
         return hasWeekly;
       case "trending":
@@ -435,6 +453,33 @@ export default function Home() {
     entryDirection: "down",
   };
 
+  const getContinuePlayingNavigationOverrides = (
+    _game: unknown,
+    index: number,
+    games: readonly unknown[]
+  ): FocusOverrides => ({
+    ...(index === 0
+      ? {
+          left: getItemFocusTarget(BIG_PICTURE_SIDEBAR_ITEM_IDS.home),
+        }
+      : {}),
+    ...(index === games.length - 1
+      ? {
+          right: {
+            type: "block",
+          },
+        }
+      : {}),
+    up: {
+      ...getPreviousRegionAbove("continue"),
+    },
+    ...(getNextRegionBelow("continue")
+      ? {
+          down: getNextRegionBelow("continue"),
+        }
+      : {}),
+  });
+
   const getWeeklyGameNavigationOverrides = (
     _game: (typeof weeklyGames)[number],
     index: number,
@@ -453,9 +498,7 @@ export default function Home() {
         }
       : {}),
     up: {
-      type: "region",
-      regionId: HOME_HERO_ACTIONS_REGION_ID,
-      entryDirection: "right",
+      ...getPreviousRegionAbove("weekly"),
     },
     ...(getNextRegionBelow("weekly")
       ? {
@@ -504,6 +547,24 @@ export default function Home() {
           featuredGame={featuredGame}
           downNavigationTarget={heroDownNavigationTarget}
           upNavigationTarget={heroUpNavigationTarget}
+        />
+        <FocusCarousel
+          title="Continue playing"
+          cardMode="library"
+          cardVariant="vertical"
+          games={continuePlayingGames}
+          regionId={HOME_CONTINUE_PLAYING_CAROUSEL_REGION_ID}
+          getItemId={getHomeContinuePlayingItemId}
+          getItemNavigationOverrides={getContinuePlayingNavigationOverrides}
+          onCarouselItemOpenContextMenu={openCatalogMenu}
+          onItemActivate={(game) => {
+            const libraryGame = continuePlayingGames.find(
+              (entry) =>
+                entry.shop === game.shop && entry.objectId === game.objectId
+            );
+            if (libraryGame) void handleLaunchFromMenu(libraryGame);
+          }}
+          showRightFade
         />
         <FocusCarousel
           title="Popular on Nacho"

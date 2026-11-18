@@ -52,6 +52,7 @@ export const SYNCED_PREFERENCE_KEYS = [
   "showSensitiveScreenshots",
   "hideCommunityScreenshots",
   "retroAchievementsUsername",
+  "cloudSaveBackupIntervalMinutes",
 ] as const satisfies readonly (keyof UserPreferences)[];
 
 export type SyncedPreferenceKey = (typeof SYNCED_PREFERENCE_KEYS)[number];

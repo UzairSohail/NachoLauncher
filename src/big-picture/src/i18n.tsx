@@ -4,7 +4,11 @@ import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { useLocation } from "react-router-dom";
 
-import localeResources from "@locales";
+import {
+  bundledLocaleResources,
+  lazyLocaleBackend,
+  LOCALE_NAMESPACES,
+} from "@locales/lazy";
 
 import {
   exactTranslations,
@@ -126,8 +130,11 @@ export async function initializeBigPictureI18n() {
     await i18next
       .use(LanguageDetector)
       .use(initReactI18next)
+      .use(lazyLocaleBackend)
       .init({
-        resources: localeResources,
+        resources: bundledLocaleResources,
+        partialBundledLanguages: true,
+        ns: LOCALE_NAMESPACES,
         fallbackLng: "en",
         interpolation: {
           escapeValue: false,

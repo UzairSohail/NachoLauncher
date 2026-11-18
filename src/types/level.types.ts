@@ -268,6 +268,8 @@ export interface UserPreferences {
   torrentNetworkInterface?: string | null;
   /** Parallel connections per HTTP download (1-16). */
   downloadConnections?: number;
+  /** Minutes between cloud save backups while a game runs; 0 is off. */
+  cloudSaveBackupIntervalMinutes?: number;
   globalTrackers?: string[];
   appendGlobalTrackers?: boolean;
   globalTrackersUrl?: string;
