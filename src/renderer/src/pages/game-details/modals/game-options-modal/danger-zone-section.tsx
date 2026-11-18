@@ -6,7 +6,7 @@ import { MAX_MINUTES_TO_SHOW_IN_PLAYTIME } from "@renderer/constants";
 import { useFeature, useFormat } from "@renderer/hooks";
 import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 import type { RemoveFilesTarget } from "@shared";
-import type { LibraryGame, UserDetails } from "@types";
+import type { LibraryGame } from "@types";
 
 import { MyScreenshotsDangerZone } from "./my-screenshots-danger-zone";
 
@@ -17,7 +17,6 @@ interface DangerZoneSectionProps {
   hasAchievements: boolean;
   isGameDownloading: boolean;
   removeFilesTarget: RemoveFilesTarget | null;
-  userDetails: UserDetails | null;
   onOpenRemoveFromLibrary: () => void;
   onOpenResetAchievements: () => void;
   onOpenChangePlaytime: () => void;
@@ -61,7 +60,6 @@ export function DangerZoneSection({
   hasAchievements,
   isGameDownloading,
   removeFilesTarget,
-  userDetails,
   onOpenRemoveFromLibrary,
   onOpenResetAchievements,
   onOpenChangePlaytime,
@@ -79,12 +77,11 @@ export function DangerZoneSection({
       : t("amount_hours", { amount: numberFormatter.format(minutes / 60) });
 
   const getAchievementsDescription = () => {
-    if (!userDetails) return t("danger_achievements_sign_in");
     if (!hasAchievements) return t("danger_achievements_none");
     return t("danger_achievements_description");
   };
   const canResetAchievements =
-    !deleting && !isDeletingAchievements && hasAchievements && !!userDetails;
+    !deleting && !isDeletingAchievements && hasAchievements;
 
   const getFilesDescription = () => {
     if (isGameDownloading) return t("danger_files_downloading");

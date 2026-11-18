@@ -40,4 +40,16 @@ export class RetroAchievementsClient {
 
     return response.data;
   }
+
+  /** Throws when the username and Web API key don't match an account. */
+  static async getUserProfile(username: string, webApiKey: string) {
+    const response = await this.instance.get<{ User?: string }>(
+      "/API_GetUserProfile.php",
+      { params: { u: username, y: webApiKey }, timeout: 15_000 }
+    );
+    if (!response.data?.User) {
+      throw new Error("RetroAchievements did not return a profile");
+    }
+    return { username: response.data.User };
+  }
 }

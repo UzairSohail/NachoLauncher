@@ -1,26 +1,16 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { GameShop, LocalScreenshot } from "@types";
 
 import { logger } from "../logger";
 import { WindowManager } from "../window-manager";
-import {
-  isLocalScreenshotFileForGame,
-  isPublishedLocalScreenshot,
-} from "./local-screenshot-game";
-import {
-  filterLocalScreenshotsForSignedInOwner,
-  isLocalScreenshotVisibleToSignedInOwner,
-} from "./local-screenshot-owner";
+import { isLocalScreenshotFileForGame } from "./local-screenshot-game";
 import { LocalScreenshotStore } from "./local-screenshot-store";
 import { removeScreenshotPreview } from "./screenshot-preview";
 import {
   getScreenshotsRoot,
   readRootMarkerId,
 } from "./screenshots-root-marker";
-import { ScreenshotTelemetry } from "./screenshot-telemetry";
-import { screenshotUploadWorker } from "./screenshot-upload-worker";
 
 const isMissingFileError = (error: unknown) =>
   (error as NodeJS.ErrnoException | null)?.code === "ENOENT";
@@ -51,45 +41,22 @@ const isFileDeleted = async (screenshot: LocalScreenshot) => {
   }
 };
 
-const getTombstoneScreenshotId = (screenshot: LocalScreenshot) => {
-  if (isPublishedLocalScreenshot(screenshot)) return screenshot.screenshotId;
-  return screenshot.pendingCompleteScreenshotId ?? null;
-};
-
 const removeLocalScreenshot = async (
   clientId: string,
-  shouldDelete: (screenshot: LocalScreenshot) => boolean = () => true,
-  telemetryOutcome = "delete"
+  shouldDelete: (screenshot: LocalScreenshot) => boolean = () => true
 ) => {
   const screenshot = await LocalScreenshotStore.get(clientId);
   if (!screenshot || screenshot.state === "deleted") return false;
   if (!shouldDelete(screenshot)) return false;
 
-  screenshotUploadWorker.cancel(clientId);
   await fs.promises.rm(screenshot.path, { force: true });
   await removeScreenshotPreview(screenshot.previewPath);
-  const tombstoneScreenshotId = getTombstoneScreenshotId(screenshot);
-  if (tombstoneScreenshotId) {
-    await LocalScreenshotStore.update(clientId, {
-      state: "deleted",
-      screenshotId: tombstoneScreenshotId,
-      pendingCompleteScreenshotId: null,
-      uploadProgress: null,
-      previewPath: null,
-    });
-  } else {
-    await LocalScreenshotStore.delete(clientId);
-  }
-  screenshotUploadWorker.cancel(clientId);
-  ScreenshotTelemetry.record("review", telemetryOutcome);
+  await LocalScreenshotStore.delete(clientId);
   return true;
 };
 
 export const deleteLocalScreenshot = async (clientId: string) => {
-  await removeLocalScreenshot(
-    clientId,
-    isLocalScreenshotVisibleToSignedInOwner
-  );
+  await removeLocalScreenshot(clientId);
 };
 
 const isUnpublishedLocalFile = (screenshot: LocalScreenshot) =>
@@ -106,8 +73,7 @@ const removeMissingLocalScreenshot = async (clientId: string) => {
 
   const removal = removeLocalScreenshot(
     clientId,
-    isUnpublishedLocalFile,
-    "missing_file"
+    isUnpublishedLocalFile
   ).finally(() => pendingMissingRemovals.delete(clientId));
   pendingMissingRemovals.set(clientId, removal);
   return removal;
@@ -140,23 +106,11 @@ export const pruneMissingLocalScreenshots = async (
   return screenshots.filter((_, index) => isPresent[index]);
 };
 
-export const removeLocalScreenshotIfMissing = async (clientId: string) => {
-  const screenshot = await LocalScreenshotStore.get(clientId);
-  if (!screenshot || !isUnpublishedLocalFile(screenshot)) return false;
-  if (!(await isFileDeleted(screenshot))) return false;
-
-  const removed = await removeMissingLocalScreenshot(clientId);
-  if (removed) announceMissingLocalScreenshots(1);
-  return removed;
-};
-
 const listLocalScreenshotFilesForGame = async (
   shop: GameShop,
   objectId: string
 ) => {
-  const screenshots = filterLocalScreenshotsForSignedInOwner(
-    await LocalScreenshotStore.list()
-  );
+  const screenshots = await LocalScreenshotStore.list();
   const candidates = screenshots.filter((screenshot) =>
     isLocalScreenshotFileForGame(screenshot, shop, objectId)
   );
@@ -181,11 +135,8 @@ export const deleteLocalScreenshotsForGame = async (
   const screenshots = await listLocalScreenshotFilesForGame(shop, objectId);
   const results = await Promise.allSettled(
     screenshots.map((screenshot) =>
-      removeLocalScreenshot(
-        screenshot.clientId,
-        (current) =>
-          isLocalScreenshotVisibleToSignedInOwner(current) &&
-          isLocalScreenshotFileForGame(current, shop, objectId)
+      removeLocalScreenshot(screenshot.clientId, (current) =>
+        isLocalScreenshotFileForGame(current, shop, objectId)
       )
     )
   );
@@ -199,70 +150,4 @@ export const deleteLocalScreenshotsForGame = async (
     }
   }
   return deleted;
-};
-
-const UNPUBLISHED_FIELDS: Partial<LocalScreenshot> = {
-  state: "local",
-  screenshotId: null,
-  moderationStatus: null,
-  moderationReason: null,
-  uploadProgress: null,
-  uploadQuality: null,
-  uploadAttempts: 0,
-  uploadGameWaits: 0,
-  uploadModerationWaits: 0,
-  uploadCapacityWaits: 0,
-  uploadRateLimitWaits: 0,
-  nextUploadAttemptAt: null,
-  uploadedAt: null,
-  lastError: null,
-};
-
-const forgetPublishedScreenshot = async (screenshot: LocalScreenshot) => {
-  const keepsFile =
-    screenshot.state === "uploaded" && (await pathExists(screenshot.path));
-
-  if (!keepsFile) {
-    await removeScreenshotPreview(screenshot.previewPath);
-    await LocalScreenshotStore.delete(screenshot.clientId);
-    return true;
-  }
-
-  const updated = await LocalScreenshotStore.update(
-    screenshot.clientId,
-    (current) =>
-      current.state === "uploaded" &&
-      current.screenshotId === screenshot.screenshotId
-        ? { ...UNPUBLISHED_FIELDS, uploadClientId: randomUUID() }
-        : {}
-  );
-  return updated?.state === "local";
-};
-
-export const forgetPublishedScreenshots = async (screenshotIds: string[]) => {
-  const ids = new Set(screenshotIds);
-  if (!ids.size) return 0;
-
-  const screenshots = await LocalScreenshotStore.listIncludingDeleted();
-  const targets = screenshots.filter(
-    (screenshot) =>
-      screenshot.screenshotId !== null &&
-      ids.has(screenshot.screenshotId) &&
-      isLocalScreenshotVisibleToSignedInOwner(screenshot) &&
-      (screenshot.state === "uploaded" || screenshot.state === "deleted")
-  );
-
-  const results = await Promise.allSettled(
-    targets.map(forgetPublishedScreenshot)
-  );
-
-  let forgotten = 0;
-  for (const result of results) {
-    if (result.status === "fulfilled") {
-      if (result.value) forgotten += 1;
-    } else {
-      logger.error("Failed to forget a published screenshot", result.reason);
-    }
-  }
-  return forgotten;
 };

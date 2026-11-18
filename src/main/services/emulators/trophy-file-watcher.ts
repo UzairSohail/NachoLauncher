@@ -7,7 +7,6 @@ import { gamesSublevel } from "@main/level";
 import { AchievementMemoryStore } from "../achievements/achievement-memory-store";
 import { getGameAchievementData } from "../achievements/get-game-achievement-data";
 import { mergeAchievements } from "../achievements/merge-achievements";
-import { HydraApi } from "../hydra-api";
 import { achievementsLogger } from "../logger";
 
 const CATALOGUE_RETRY_INTERVAL_MS = 30_000;
@@ -38,7 +37,6 @@ export interface StartTrophyFileWatcherOptions {
   onFirstChange?: (game: Game) => void;
   /** Clears what `readUnlocks` keeps between reads, at the reset. */
   onForget?: (file: string | null) => Promise<void>;
-  skipSouvenirCapture?: boolean;
 }
 
 const loadTrophyCatalogue = async (game: Game): Promise<SteamAchievement[]> => {
@@ -56,7 +54,6 @@ export const startTrophyFileWatcher = ({
   completeUnlocks,
   onFirstChange,
   onForget,
-  skipSouvenirCapture = false,
 }: StartTrophyFileWatcherOptions): TrophyFileWatcher => {
   let trophyFile: string | null = null;
   let lastModifiedAt = -1;
@@ -69,7 +66,6 @@ export const startTrophyFileWatcher = ({
   let ignored = new Set<string>();
 
   const readTrophies = async (isFinalRead: boolean) => {
-    if (!HydraApi.isLoggedIn()) return;
     const startedAt = generation;
     const isStale = () => generation !== startedAt;
 
@@ -116,10 +112,7 @@ export const startTrophyFileWatcher = ({
           game,
           unlockedTrophies,
           hasImportedExistingUnlocks,
-          {
-            skipSouvenirCapture: skipSouvenirCapture || isFinalRead,
-            alwaysUpdateInterface: true,
-          }
+          { alwaysUpdateInterface: true }
         );
       }
     }
@@ -191,7 +184,7 @@ export const startTrophyFileWatcher = ({
       await inFlightRead;
       await runRead(true);
 
-      if (!trophyFile && HydraApi.isLoggedIn()) {
+      if (!trophyFile) {
         achievementsLogger.warn(
           `No ${label} trophy file for this session`,
           gameKey

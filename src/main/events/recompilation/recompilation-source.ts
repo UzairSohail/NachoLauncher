@@ -19,9 +19,7 @@ export const fetchRecompilationDetails = async (
   ref: RecompilationRef
 ): Promise<RecompilationDetails> => {
   if (!isCatalogSlug(ref.slug)) {
-    return HydraApi.get<RecompilationDetails>(apiPath(ref), undefined, {
-      needsAuth: false,
-    });
+    return HydraApi.get<RecompilationDetails>(apiPath(ref), undefined, {});
   }
   const details = await RecompCatalog.getDetails(ref.objectId, ref.slug);
   if (!details) throw new Error(`${ref.slug} is not in the recomp catalog`);
@@ -34,8 +32,7 @@ export const fetchRecompilationReleases = async (
   if (!isCatalogSlug(ref.slug)) {
     return HydraApi.get<RecompilationReleases>(
       `${apiPath(ref)}/releases`,
-      undefined,
-      { needsAuth: false }
+      undefined
     );
   }
   return { releases: await RecompCatalog.getReleases(ref.slug) };

@@ -31,7 +31,7 @@ export function useFeature() {
 
   useEffect(() => {
     globalThis.window.electron.hydraApi
-      .get<string[]>("/features", { needsAuth: false })
+      .get<string[]>("/features")
       .then((resolvedFeatures) => {
         const nextFeatures = resolvedFeatures ?? [];
         globalThis.window.localStorage.setItem(

@@ -1,5 +1,5 @@
 @use "../../../scss/globals.scss";
-@use "../../../components/screenshots/screenshot-motion.scss" as motion;
+@use "./screenshot-motion.scss" as motion;
 
 .game-screenshots-box {
   display: flex;

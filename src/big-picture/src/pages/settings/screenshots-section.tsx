@@ -12,7 +12,6 @@ import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
-  ProfileVisibility,
   ScreenshotGamepadButton,
   ScreenshotInputStatus,
   UserPreferences,
@@ -68,8 +67,6 @@ export const SCREENSHOT_SETTINGS_FOCUS_IDS = {
   gamepadReset: "screenshot-settings-gamepad-reset",
   captureSound: "screenshot-settings-capture-sound",
   toast: "screenshot-settings-toast",
-  defaultVisibility: "screenshot-settings-default-visibility",
-  hideCommunity: "screenshot-settings-hide-community",
   folder: "screenshot-settings-folder",
   folderReset: "screenshot-settings-folder-reset",
   folderOpen: "screenshot-settings-folder-open",
@@ -97,8 +94,6 @@ type ScreenshotPreferenceUpdate = Pick<
   | "screenshotGamepadCombo"
   | "screenshotCaptureSoundEnabled"
   | "screenshotToastEnabled"
-  | "screenshotDefaultVisibility"
-  | "hideCommunityScreenshots"
 >;
 
 function withoutPreferenceKeys(
@@ -360,7 +355,6 @@ function getInactiveFocusIds(
   if (options.settingsDisabled) {
     inactiveIds.add(ids.hotkey);
     inactiveIds.add(ids.hotkeyReset);
-    inactiveIds.add(ids.defaultVisibility);
   }
   if (options.isGamepadComboDisabled) {
     for (const focusId of comboIds) inactiveIds.add(focusId);
@@ -394,8 +388,6 @@ function buildScreenshotSettingsRows(options: ScreenshotSettingsRowsOptions) {
     comboActionsRow,
     [ids.captureSound],
     [ids.toast],
-    [ids.defaultVisibility],
-    [ids.hideCommunity],
     folderRow,
   ]
     .map((row) => row.filter((focusId) => !inactiveIds.has(focusId)))
@@ -544,15 +536,6 @@ export function ScreenshotSettingsSection({
         value: button,
         label: t(`screenshots_gamepad_button_${button}`),
       })),
-    [t]
-  );
-
-  const visibilityOptions = useMemo<DropdownSelectOption<ProfileVisibility>[]>(
-    () => [
-      { value: "PUBLIC", label: t("screenshots_visibility_public") },
-      { value: "FRIENDS", label: t("screenshots_visibility_friends") },
-      { value: "PRIVATE", label: t("screenshots_visibility_private") },
-    ],
     [t]
   );
 
@@ -807,28 +790,6 @@ export function ScreenshotSettingsSection({
             t("screenshots_settings_toast"),
             preferences.toastEnabled,
             (screenshotToastEnabled) => void update({ screenshotToastEnabled })
-          )}
-
-          <DropdownSelect
-            className="screenshot-settings__visibility"
-            label={t("screenshots_settings_default_visibility")}
-            value={preferences.defaultVisibility}
-            options={visibilityOptions}
-            disabled={settingsDisabled}
-            focusId={ids.defaultVisibility}
-            focusNavigationOverrides={navigation[ids.defaultVisibility]}
-            onValueChange={(screenshotDefaultVisibility) =>
-              void update({ screenshotDefaultVisibility })
-            }
-          />
-
-          {renderCheckbox(
-            ids.hideCommunity,
-            t("screenshots_settings_hide_community"),
-            preferences.hideCommunity,
-            (hideCommunityScreenshots) =>
-              void update({ hideCommunityScreenshots }),
-            false
           )}
 
           <div className="screenshot-settings__row">

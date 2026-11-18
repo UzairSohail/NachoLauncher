@@ -6,17 +6,13 @@ import {
   useAppDispatch,
   useAppSelector,
   useDownload,
-  useGamificationFeatureSync,
-  useGamificationProgressSync,
   useDragTextSelection,
   useLibrary,
   useToast,
-  useUserDetails,
 } from "@renderer/hooks";
 import { useDownloadOptionsListener } from "@renderer/hooks/use-download-options-listener";
 import i18n from "i18next";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { WorkWonders } from "workwonders-sdk";
 
 import {
   clearExtraction,
@@ -30,10 +26,6 @@ import {
   hydrateRetroArchScan,
   setExtractionProgress,
   setGameRunning,
-  setLibrarySyncingRemote,
-  setLibraryAwaitingAccount,
-  setProfileBackground,
-  setUserDetails,
   setUserPreferences,
   toggleDraggingDisabled,
   updateClassicsScanProgress,
@@ -48,7 +40,6 @@ import { RetroArchScanModal } from "./pages/settings/emulation/retroarch-scan-mo
 import { GoogleSignInPrompt } from "./components/google-sign-in-prompt";
 import { StartWithComputerPrompt } from "./components/start-with-computer-prompt";
 import { useMissingScreenshotsToast } from "./hooks/use-missing-screenshots-toast";
-import { useScreenshotUploadFailureToast } from "./hooks/use-screenshot-upload-failure-toast";
 import { usePersonalCloudSyncToasts } from "./pages/game-details/personal-cloud";
 
 import type { UserPreferences } from "@types";
@@ -64,13 +55,6 @@ import { levelDBService } from "./services/leveldb.service";
 export interface AppProps {
   children: React.ReactNode;
 }
-
-type WorkWondersWithKnowledge = WorkWonders & {
-  knowledge?: {
-    initKnowledgeWidget?: () => void;
-    showArticle?: (articleId: number) => void;
-  };
-};
 
 export function App() {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -98,19 +82,6 @@ export function App() {
 
   const { clearDownload, setLastPacket, lastPacket } = useDownload();
 
-  const workwondersRef = useRef<WorkWonders | null>(null);
-  const workwondersInitializingRef = useRef(false);
-
-  const {
-    hasActiveSubscription,
-    fetchUserDetails,
-    updateUserDetails,
-    clearUserDetails,
-  } = useUserDetails();
-
-  useGamificationFeatureSync();
-  useGamificationProgressSync();
-
   const dispatch = useAppDispatch();
 
   const navigate = useNavigate();
@@ -130,7 +101,6 @@ export function App() {
 
   const { showSuccessToast, showErrorToast, showWarningToast } = useToast();
   useMissingScreenshotsToast();
-  useScreenshotUploadFailureToast();
   usePersonalCloudSyncToasts();
 
   const [showArchiveDeletionModal, setShowArchiveDeletionModal] =
@@ -220,177 +190,6 @@ export function App() {
       clearDownload();
     }
   }, [clearDownload, lastPacket?.gameId, downloadLibrary]);
-
-  const setupWorkWonders = useCallback(
-    async (token?: string, locale?: string) => {
-      if (workwondersRef.current || workwondersInitializingRef.current) return;
-
-      workwondersInitializingRef.current = true;
-
-      const possibleLocales = ["en", "pt", "ru"];
-
-      const parsedLocale =
-        possibleLocales.find((l) => l === locale?.slice(0, 2)) ?? "en";
-
-      try {
-        const workwonders = new WorkWonders();
-
-        await workwonders.init({
-          organization: "hydra",
-          token,
-          locale: parsedLocale,
-        });
-
-        workwonders.changelog.initChangelogWidget();
-        const workWondersWithKnowledge =
-          workwonders as WorkWondersWithKnowledge;
-        workWondersWithKnowledge.knowledge?.initKnowledgeWidget?.();
-
-        if (token) {
-          workwonders.feedback.initFeedbackWidget();
-        }
-
-        workwondersRef.current = workwonders;
-      } catch (error) {
-        console.error("Failed to initialize Work Wonders SDK", error);
-      } finally {
-        workwondersInitializingRef.current = false;
-      }
-    },
-    [workwondersRef]
-  );
-
-  useEffect(() => {
-    const onClick = async (event: MouseEvent) => {
-      const userPreferences = await window.electron.getUserPreferences();
-      const language = userPreferences?.language ?? "en";
-
-      const articleMapping = {
-        pt: {
-          "cannot-write-directory": 1429,
-          seeding: 1442,
-          "peers-and-seeds": 1449,
-          "steam-achievements": 1412,
-          "install-duckstation": 6441,
-          "install-pcsx2": 6192,
-          "install-rpcs3": 6510,
-          "install-retroarch": 7108,
-          "install-ppsspp": 7315,
-          "install-dolphin": 7268,
-          "install-shadps4": 7859,
-          "wii-saves": 7384,
-          "retroachievements-emulators": 6629,
-          "downloading-metadata": 7719,
-        },
-        en: {
-          "cannot-write-directory": 4122,
-          seeding: 4116,
-          "peers-and-seeds": 4119,
-          "steam-achievements": 4140,
-          "install-duckstation": 6465,
-          "install-pcsx2": 6390,
-          "install-rpcs3": 6524,
-          "install-retroarch": 7120,
-          "install-ppsspp": 7328,
-          "install-dolphin": 7281,
-          "install-shadps4": 7871,
-          "wii-saves": 7406,
-          "retroachievements-emulators": 6692,
-          "downloading-metadata": 7773,
-        },
-        ru: {
-          "install-duckstation": 6479,
-          "install-pcsx2": 6429,
-          "install-rpcs3": 6541,
-          "install-retroarch": 7135,
-          "install-ppsspp": 7338,
-          "install-dolphin": 7292,
-          "install-shadps4": 7880,
-          "wii-saves": 7422,
-          "retroachievements-emulators": 6717,
-          "downloading-metadata": 7848,
-        },
-        es: {
-          "install-duckstation": 6492,
-          "install-pcsx2": 6410,
-          "install-rpcs3": 6552,
-          "install-retroarch": 7142,
-          "install-ppsspp": 7375,
-          "install-dolphin": 7303,
-          "install-shadps4": 7893,
-          "wii-saves": 7431,
-          "retroachievements-emulators": 6743,
-          "downloading-metadata": 7854,
-        },
-      };
-
-      const $helpCenterTarget = (event.target as HTMLElement).closest(
-        "[data-open-article]"
-      );
-
-      if ($helpCenterTarget) {
-        const article = $helpCenterTarget.getAttribute("data-open-article");
-        const articleId =
-          articleMapping[language.slice(0, 2)]?.[
-            article as keyof typeof articleMapping
-          ] ?? articleMapping["en"]?.[article as keyof typeof articleMapping];
-
-        if (articleId) {
-          const workWondersWithKnowledge =
-            workwondersRef.current as WorkWondersWithKnowledge | null;
-          workWondersWithKnowledge?.knowledge?.showArticle?.(articleId);
-        }
-      }
-    };
-
-    window.addEventListener("click", onClick);
-
-    return () => {
-      window.removeEventListener("click", onClick);
-    };
-  }, []);
-
-  const setupExternalResources = useCallback(async () => {
-    const cachedUserDetails = window.localStorage.getItem("userDetails");
-
-    if (cachedUserDetails) {
-      const { profileBackground, ...userDetails } =
-        JSON.parse(cachedUserDetails);
-
-      dispatch(setUserDetails(userDetails));
-      dispatch(setProfileBackground(profileBackground));
-    }
-
-    const userPreferences = await window.electron.getUserPreferences();
-    const userDetails = await fetchUserDetails().catch(() => null);
-
-    if (userDetails) {
-      updateUserDetails(userDetails);
-    }
-
-    setupWorkWonders(userDetails?.workwondersJwt, userPreferences?.language);
-
-    if (!document.getElementById("external-resources")) {
-      const $script = document.createElement("script");
-      $script.id = "external-resources";
-      $script.src = `${import.meta.env.RENDERER_VITE_EXTERNAL_RESOURCES_URL}/bundle.js?t=${Date.now()}`;
-      document.head.appendChild($script);
-    }
-  }, [fetchUserDetails, updateUserDetails, dispatch, setupWorkWonders]);
-
-  useEffect(() => {
-    setupExternalResources();
-  }, [setupExternalResources]);
-
-  const onSignIn = useCallback(() => {
-    dispatch(setLibraryAwaitingAccount(true));
-    fetchUserDetails().then((response) => {
-      if (response) {
-        updateUserDetails(response);
-        showSuccessToast(t("successfully_signed_in"));
-      }
-    });
-  }, [dispatch, fetchUserDetails, t, showSuccessToast, updateUserDetails]);
 
   useEffect(() => {
     const unsubscribe = window.electron.onGamesRunning((gamesRunning) => {
@@ -511,37 +310,13 @@ export function App() {
   }, [dispatch, updateLibrary]);
 
   useEffect(() => {
-    let hasReceivedSyncState = false;
-
-    void window.electron.getRemoteLibrarySyncState().then((syncing) => {
-      if (!hasReceivedSyncState) dispatch(setLibrarySyncingRemote(syncing));
-    });
-
-    return window.electron.onRemoteLibrarySyncStateChange((syncing) => {
-      hasReceivedSyncState = true;
-
-      if (syncing) {
-        dispatch(setLibrarySyncingRemote(true));
-        return;
-      }
-
-      void updateLibrary().finally(() => {
-        dispatch(setLibrarySyncingRemote(false));
-        dispatch(setLibraryAwaitingAccount(false));
-      });
-    });
-  }, [dispatch, updateLibrary]);
-
-  useEffect(() => {
     const listeners = [
-      window.electron.onSignIn(onSignIn),
       window.electron.onLibraryBatchComplete(() => {
         updateLibrary();
       }),
       window.electron.onDownloadsUpdated(() => {
         updateLibrary();
       }),
-      window.electron.onSignOut(() => clearUserDetails()),
       window.electron.onExtractionProgress((shop, objectId, progress) => {
         dispatch(setExtractionProgress({ shop, objectId, progress }));
       }),
@@ -639,9 +414,7 @@ export function App() {
       listeners.forEach((unsubscribe) => unsubscribe());
     };
   }, [
-    onSignIn,
     updateLibrary,
-    clearUserDetails,
     dispatch,
     showErrorToast,
     showSuccessToast,
@@ -650,11 +423,7 @@ export function App() {
   ]);
 
   useEffect(() => {
-    const asyncScrollAndNotify = async () => {
-      if (contentRef.current) contentRef.current.scrollTop = 0;
-      await workwondersRef.current?.notifyUrlChange?.();
-    };
-    asyncScrollAndNotify();
+    if (contentRef.current) contentRef.current.scrollTop = 0;
   }, [location.pathname, location.search]);
 
   useEffect(() => {
@@ -771,11 +540,7 @@ export function App() {
 
   return (
     <>
-      <AppTitleBar
-        hasActiveSubscription={hasActiveSubscription}
-        version={version}
-        isWindowMaximized={isWindowMaximized}
-      />
+      <AppTitleBar version={version} isWindowMaximized={isWindowMaximized} />
 
       <Toast
         visible={toast.visible}

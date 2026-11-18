@@ -7,7 +7,6 @@ const FEATURES_REQUEST_TIMEOUT_MS = 10_000;
 // Fails closed: without an answer from the API, the feature stays off.
 export const isMultipartHosterDownloadsEnabled = () =>
   HydraApi.get<string[]>("/features", null, {
-    needsAuth: false,
     timeout: FEATURES_REQUEST_TIMEOUT_MS,
   })
     .then(

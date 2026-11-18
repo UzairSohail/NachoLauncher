@@ -33,7 +33,7 @@ const PLATFORM_NAMES: Partial<Record<NodeJS.Platform, string>> = {
 };
 
 const getUserAgent = () =>
-  `Hydra/${appVersion} (${PLATFORM_NAMES[process.platform] ?? process.platform})`;
+  `Nacho/${appVersion} (${PLATFORM_NAMES[process.platform] ?? process.platform})`;
 
 export const requestRetroAchievementsConnectToken = async (
   username: string,

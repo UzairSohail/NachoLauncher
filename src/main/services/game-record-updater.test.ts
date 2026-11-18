@@ -7,10 +7,6 @@ import {
   AchievementMemoryStore,
   mergePersistedAchievementTotals,
 } from "./achievements/achievement-memory-store.js";
-import {
-  mergeImportedProfileGame,
-  type ImportedProfileGame,
-} from "./library-sync/merge-imported-profile-game.js";
 import { createGameRecordUpdater } from "./game-record-updater-core.js";
 
 const game: Game = {
@@ -51,48 +47,6 @@ describe("game record updater", () => {
     assert.equal(storedGame.playTimeInMilliseconds, 660_000);
     assert.equal(storedGame.unsyncedDeltaPlayTimeInMilliseconds, 180_000);
     assert.equal(storedGame.enableHydraPlaytimeTracking, true);
-  });
-
-  it("keeps process updates made while Steam exit sync waits for remote data", async () => {
-    let storedGame = { ...game };
-    const updateGame = createGameRecordUpdater({
-      get: async () => ({ ...storedGame }),
-      put: async (_key, value) => {
-        storedGame = { ...value };
-      },
-    });
-    let finishRemoteFetch!: (remoteGame: ImportedProfileGame) => void;
-    const remoteFetch = new Promise<ImportedProfileGame>((resolve) => {
-      finishRemoteFetch = resolve;
-    });
-    const exitSync = (async () => {
-      const remoteGame = await remoteFetch;
-      await updateGame("steam:620", (currentGame) =>
-        mergeImportedProfileGame(currentGame, remoteGame)
-      );
-    })();
-
-    await updateGame("steam:620", {
-      playTimeInMilliseconds: 780_000,
-      unsyncedDeltaPlayTimeInMilliseconds: 180_000,
-      executablePath: "/games/Portal 2/portal2",
-      enableHydraPlaytimeTracking: true,
-    });
-    finishRemoteFetch({
-      id: "remote-id",
-      objectId: "620",
-      shop: "steam",
-      runtimeByPlatform: { hydra: 660, steam: 3_600 },
-      hasActiveSteamImport: true,
-    });
-    await exitSync;
-
-    assert.equal(storedGame.playTimeInMilliseconds, 780_000);
-    assert.equal(storedGame.unsyncedDeltaPlayTimeInMilliseconds, 180_000);
-    assert.equal(storedGame.executablePath, "/games/Portal 2/portal2");
-    assert.equal(storedGame.enableHydraPlaytimeTracking, true);
-    assert.equal(storedGame.steamPlayTimeInMilliseconds, 3_600_000);
-    assert.equal(storedGame.hasActiveSteamImport, true);
   });
 
   it("keeps process state across a concurrent achievement-count update", async () => {

@@ -31,15 +31,10 @@ import {
   isMostlyBlackScreenshot,
   isNearlyUniformScreenshot,
 } from "./screenshot-frame-validation";
-import {
-  LocalSouvenirAssetStore,
-  PendingGroupedSouvenirStore,
-} from "./achievements/grouped-souvenir-store";
 
 const SCREENSHOT_QUALITY = 80;
 const HELD_WORKER_JPEG_QUALITY = 1;
 const CAPTURE_THUMBNAIL_SIZE = { width: 3840, height: 2160 };
-const MAX_STORED_SCREENSHOTS = 50;
 const WINDOWS_SOURCE_RESOLUTION_ATTEMPTS = 3;
 const WINDOWS_SOURCE_RETRY_DELAY_MS = 100;
 const X11_CAPTURE_ATTEMPTS = 3;
@@ -540,68 +535,5 @@ export class ScreenshotService {
 
   public static async deleteScreenshot(filePath: string) {
     await fs.promises.rm(filePath, { force: true });
-  }
-
-  public static async cleanupOldScreenshots() {
-    try {
-      const protectedPaths =
-        await PendingGroupedSouvenirStore.getProtectedScreenshotPaths();
-      const assets = await LocalSouvenirAssetStore.list();
-      const screenshots = (
-        await Promise.all(
-          assets.map(async (asset) => {
-            const stat = await fs.promises
-              .stat(asset.screenshotPath)
-              .catch(() => null);
-
-            if (!stat) return null;
-            return {
-              path: asset.screenshotPath,
-              modifiedAt: stat.mtimeMs,
-            };
-          })
-        )
-      ).filter((screenshot) => screenshot !== null);
-
-      const outdated = screenshots
-        .filter((screenshot) => !protectedPaths.has(screenshot.path))
-        .toSorted((a, b) => b.modifiedAt - a.modifiedAt)
-        .slice(MAX_STORED_SCREENSHOTS);
-
-      const cleanupResults = await Promise.allSettled(
-        outdated.map((screenshot) =>
-          fs.promises.rm(screenshot.path, { force: true })
-        )
-      );
-      const removedPaths = new Set(
-        outdated
-          .filter((_, index) => cleanupResults[index]?.status === "fulfilled")
-          .map((screenshot) => screenshot.path)
-      );
-      await LocalSouvenirAssetStore.deleteByScreenshotPaths(removedPaths);
-
-      for (const result of cleanupResults) {
-        if (result.status === "rejected") {
-          logger.error("Failed to delete an old screenshot", result.reason);
-        }
-      }
-
-      const affectedDirectories = new Set(
-        Array.from(removedPaths, (screenshotPath) =>
-          path.dirname(screenshotPath)
-        )
-      );
-
-      await Promise.all(
-        Array.from(affectedDirectories, async (directory) => {
-          const remaining = await fs.promises
-            .readdir(directory)
-            .catch(() => []);
-          if (!remaining.length) await fs.promises.rmdir(directory);
-        })
-      );
-    } catch (error) {
-      logger.error("Failed to cleanup old screenshots", error);
-    }
   }
 }

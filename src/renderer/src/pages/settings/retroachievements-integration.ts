@@ -1,13 +1,9 @@
-export const RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT =
-  "/profile/integrations/retroachievements";
-
 export type RetroAchievementsIntegration =
   | { connected: false }
   | {
       connected: true;
       username: string;
-      retroAchievementsUserId: string | null;
-      retroAchievementsAccountStatus: "active" | "invalid_credentials";
+      status: "active" | "invalid_credentials";
     };
 
 export type RetroAchievementsConnectErrorField =

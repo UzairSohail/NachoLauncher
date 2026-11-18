@@ -1,13 +1,9 @@
 import { app, BrowserWindow, desktopCapturer, nativeImage } from "electron";
 import type { UserPreferences } from "@types";
-import {
-  isAchievementSouvenirsEnabled,
-  resolveScreenshotPreferences,
-} from "@shared";
+import { resolveScreenshotPreferences } from "@shared";
 import capturePagePath from "@resources/linux-game-capture.html?asset";
 
 import { gamesSublevel } from "@main/level";
-import { HydraApi } from "./hydra-api";
 import { logger } from "./logger";
 import {
   BlankScreenshotFrameError,
@@ -43,7 +39,6 @@ interface CaptureSessionRegistration {
   failure: LinuxGameCaptureFailure | null;
   shareKey: string | null;
   window: BrowserWindow | null;
-  subscriptionTimer: ReturnType<typeof setInterval> | null;
   preparation: Promise<void>;
   reasons: Set<CaptureSessionReason>;
   activeCaptures: Set<Promise<unknown>>;
@@ -55,22 +50,13 @@ const CAPTURE_PREPARATION_WAIT_MS = 1_500;
 const UNCLASSIFIED_PREPARATION_FAILURE: LinuxGameCaptureFailure =
   "capture_error";
 
+// Only screenshots use the capture now: achievement souvenirs were removed.
 const isReasonEligible = (
   reason: CaptureSessionReason,
   userPreferences: UserPreferences | null
-) => {
-  if (reason === "screenshot") {
-    return resolveScreenshotPreferences(userPreferences).enabled;
-  }
-
-  return (
-    HydraApi.hasActiveSubscription() &&
-    isAchievementSouvenirsEnabled(
-      userPreferences?.enableAchievementSouvenirs,
-      process.platform
-    )
-  );
-};
+) =>
+  reason === "screenshot" &&
+  resolveScreenshotPreferences(userPreferences).enabled;
 
 export const isWaylandSession = () =>
   process.platform === "linux" &&
@@ -292,10 +278,9 @@ const releaseCaptureWindow = (shareKey: string, user: object) => {
 
 export const prepareLinuxGameCaptureSession = async (
   gameKey: string,
-  reason: CaptureSessionReason = "souvenir"
+  reason: CaptureSessionReason
 ) => {
   if (!isWaylandCaptureBackend()) return;
-  if (reason === "souvenir" && !HydraApi.hasActiveSubscription()) return;
 
   const failed = sessions.get(gameKey);
   const retriedReasons =
@@ -321,7 +306,6 @@ export const prepareLinuxGameCaptureSession = async (
     failure: null,
     shareKey: null,
     window: null,
-    subscriptionTimer: null,
     preparation: Promise.resolve(),
     reasons: addCaptureSessionReason(retriedReasons ?? new Set(), reason),
     activeCaptures: new Set(),
@@ -355,18 +339,8 @@ export const prepareLinuxGameCaptureSession = async (
     registration.window = captureWindow;
     registration.state = "ready";
     logger.info("Wayland game window capture was prepared", { gameKey });
-    registration.subscriptionTimer = setInterval(() => {
-      if (!HydraApi.hasActiveSubscription()) {
-        stopLinuxGameCaptureSession(gameKey, "souvenir");
-      }
-    }, 60_000);
-    registration.subscriptionTimer.unref?.();
     captureWindow.once("closed", () => {
       if (sessions.get(gameKey)?.token !== token) return;
-      if (registration.subscriptionTimer) {
-        clearInterval(registration.subscriptionTimer);
-        registration.subscriptionTimer = null;
-      }
       registration.window = null;
       registration.state = "failed";
       registration.failure = "share_cancelled";
@@ -550,9 +524,6 @@ export const stopLinuxGameCaptureSession = (
   }
 
   sessions.delete(gameKey);
-  if (registration.subscriptionTimer) {
-    clearInterval(registration.subscriptionTimer);
-  }
   void Promise.allSettled(registration.activeCaptures).finally(() => {
     if (registration.shareKey) {
       releaseCaptureWindow(registration.shareKey, registration.token);

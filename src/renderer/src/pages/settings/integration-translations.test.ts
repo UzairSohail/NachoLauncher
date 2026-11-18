@@ -14,13 +14,10 @@ const INTEGRATION_DISPLAY_KEYS = [
   "retroachievements_connect_title",
   "retroachievements_status_invalid_credentials",
   "retroachievements_invalid_credentials_description",
-  "steam_status_reconnect_required",
 ] as const;
 
 const INTEGRATION_SOURCE_FILES = [
   "src/renderer/src/pages/settings/settings-integration-card.tsx",
-  "src/renderer/src/pages/settings/settings-steam.tsx",
-  "src/renderer/src/pages/settings/settings-steam-state.ts",
   "src/renderer/src/pages/settings/settings-retroachievements.tsx",
   "src/renderer/src/pages/retroachievements-connection-window/retroachievements-connection-window.tsx",
 ] as const;

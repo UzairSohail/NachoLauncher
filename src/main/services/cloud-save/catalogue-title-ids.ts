@@ -113,11 +113,10 @@ export const fetchCatalogueTitleIds = async (
   game: Game
 ): Promise<Set<string>> => {
   const { HydraApi } = await import("../hydra-api.js");
-  const entries = await HydraApi.post<CatalogueEntry[]>(
-    "/games/shop-details",
-    { shop: "launchbox", objectIds: [game.objectId] },
-    { needsAuth: false }
-  );
+  const entries = await HydraApi.post<CatalogueEntry[]>("/games/shop-details", {
+    shop: "launchbox",
+    objectIds: [game.objectId],
+  });
   const ids = catalogueTitleIdsFromEntries(entries, game.objectId);
   if (ids.size) {
     rememberCatalogueTitleIds(game, ids);

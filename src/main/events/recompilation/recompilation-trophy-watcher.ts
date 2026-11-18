@@ -414,7 +414,6 @@ export const startRecompilationTrophyWatcher = (
   const watcher = startTrophyFileWatcher({
     gameKey,
     label: ref.slug,
-    skipSouvenirCapture: true,
     resolveFile: async () => {
       files ??= await resolveRecompilationTrophyFiles(ref);
       return files?.file ?? null;

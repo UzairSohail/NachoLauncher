@@ -65,9 +65,7 @@ export const getGameAssets = async (
   return HydraApi.get<ShopAssets | null>(
     `/games/${shop}/${objectId}/assets`,
     null,
-    {
-      needsAuth: false,
-    }
+    {}
   ).then(async (assets) => {
     if (!assets) return null;
     if (shop === "epic")

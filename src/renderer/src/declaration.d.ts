@@ -1,5 +1,4 @@
 import type {
-  AuthPage,
   Downloader,
   RecompCatalogItem,
   RomsFunSearchResult,
@@ -8,8 +7,6 @@ import type {
   GameRepack,
   LocalScreenshot,
   LocalScreenshotDraft,
-  LocalScreenshotUploadOptions,
-  ScreenshotUploadProgress,
   SystemPowerAction,
   AppUpdaterEvent,
   ManualUpdateCheckResult,
@@ -24,13 +21,7 @@ import type {
   RealDebridUser,
   PremiumizeUser,
   AllDebridUser,
-  UserProfile,
-  UpdateProfileRequest,
   GameStats,
-  UserDetails,
-  Notification,
-  NotificationSync,
-  GameArtifact,
   LudusaviBackup,
   UserAchievement,
   ComparedAchievements,
@@ -38,7 +29,6 @@ import type {
   GameRunning,
   TorBoxUser,
   Theme,
-  Auth,
   ShortcutLocation,
   Ps2MemcardScanInput,
   Ps2MemcardScanProgress,
@@ -111,10 +101,6 @@ import type {
   RetroArchLegacyBatteryCandidate,
   CloudSaveOverview,
   CloudSaveV2FileDetails,
-  AchievementSouvenirSyncCleanupResult,
-  AchievementSouvenirSyncDetails,
-  AchievementSouvenirSyncRetryResult,
-  AchievementSouvenirSyncStatus,
   CloudSaveSyncProgressPayload,
   SyncCloudSaveOnGamePageResult,
   SyncGameCloudSaveResult,
@@ -124,12 +110,6 @@ import type {
   SelectCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathRebindApprovalResult,
-  LegacySaveExportProgress,
-  LegacySaveExportResult,
-  SteamSyncState,
-  SteamSyncFinishedPayload,
-  SteamSyncRunStatus,
-  SteamConnectErrorCode,
   ExtractionFailure,
   PersonalCloudDeviceCode,
   PersonalCloudGameState,
@@ -142,7 +122,7 @@ import type {
   AchievementSyncStatus,
   CompanionLinkStatus,
 } from "@types";
-import type { AxiosProgressEvent } from "axios";
+import type { RetroAchievementsIntegration } from "@renderer/pages/settings/retroachievements-integration";
 
 export interface DriveInfo {
   root: string;
@@ -611,15 +591,6 @@ declare global {
     ) => Promise<string | null>;
     verifyExecutablePathInUse: (executablePath: string) => Promise<Game>;
     getLibrary: (includeConcealed?: boolean) => Promise<LibraryGame[]>;
-    getHiddenLibrary: () => Promise<LibraryGame[]>;
-    setGameVisibility: (
-      shop: GameShop,
-      objectId: string,
-      field: "isHiddenFromOthers" | "isConcealed",
-      value: boolean
-    ) => Promise<{ isHiddenFromOthers: boolean; isConcealed: boolean }>;
-    refreshLibraryAssets: () => Promise<void>;
-    getRemoteLibrarySyncState: () => Promise<boolean>;
     openGameInstaller: (shop: GameShop, objectId: string) => Promise<boolean>;
     hasGameInstaller: (shop: GameShop, objectId: string) => Promise<boolean>;
     hasDownloadFolder: (shop: GameShop, objectId: string) => Promise<boolean>;
@@ -703,12 +674,7 @@ declare global {
         >[]
       ) => void
     ) => () => Electron.IpcRenderer;
-    onGameSessionSynced: (cb: () => void) => () => Electron.IpcRenderer;
-    onGamePlaytimeSynced: (cb: () => void) => () => Electron.IpcRenderer;
     onLibraryBatchComplete: (cb: () => void) => () => Electron.IpcRenderer;
-    onRemoteLibrarySyncStateChange: (
-      cb: (syncing: boolean) => void
-    ) => () => Electron.IpcRenderer;
     onDownloadsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
     onClassicsImportStatus: (
       cb: (importing: boolean) => void
@@ -1249,26 +1215,6 @@ declare global {
     getNetworkInterfaces: () => Promise<NetworkInterface[]>;
 
     /* Cloud save */
-    uploadSaveGame: (
-      objectId: string,
-      shop: GameShop,
-      downloadOptionTitle: string | null
-    ) => Promise<void>;
-    downloadGameArtifact: (
-      objectId: string,
-      shop: GameShop,
-      gameArtifactId: string
-    ) => Promise<void>;
-    exportGameArtifact: (
-      gameArtifactId: string,
-      suggestedName: string,
-      onProgress?: (progress: LegacySaveExportProgress) => void
-    ) => Promise<LegacySaveExportResult>;
-    cancelGameArtifactExport: () => Promise<boolean>;
-    getGameArtifacts: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<GameArtifact[]>;
     getGameBackupPreview: (
       objectId: string,
       shop: GameShop
@@ -1278,21 +1224,6 @@ declare global {
       objectId: string,
       backupPath: string | null
     ) => Promise<void>;
-    onBackupDownloadComplete: (
-      objectId: string,
-      shop: GameShop,
-      cb: (success: boolean) => void
-    ) => () => Electron.IpcRenderer;
-    onUploadComplete: (
-      objectId: string,
-      shop: GameShop,
-      cb: () => void
-    ) => () => Electron.IpcRenderer;
-    onBackupDownloadProgress: (
-      objectId: string,
-      shop: GameShop,
-      cb: (progress: AxiosProgressEvent) => void
-    ) => () => Electron.IpcRenderer;
 
     /* Clipboard */
     clipboard: {
@@ -1322,15 +1253,6 @@ declare global {
       shop: GameShop,
       objectId: string
     ) => Promise<number>;
-    getPublishedScreenshotIdsForGame: (
-      shop: GameShop,
-      objectId: string
-    ) => Promise<string[]>;
-    forgetPublishedScreenshots: (screenshotIds: string[]) => Promise<number>;
-    uploadLocalScreenshot: (
-      clientId: string,
-      options: LocalScreenshotUploadOptions
-    ) => Promise<LocalScreenshot | null>;
     updateLocalScreenshotDraft: (
       clientId: string,
       draft: LocalScreenshotDraft
@@ -1341,22 +1263,6 @@ declare global {
       cb: (screenshots: LocalScreenshot[]) => void
     ) => () => Electron.IpcRenderer;
     onLocalScreenshotsMissing: (
-      cb: (count: number) => void
-    ) => () => Electron.IpcRenderer;
-    onScreenshotUploadProgress: (
-      cb: (progress: ScreenshotUploadProgress) => void
-    ) => () => Electron.IpcRenderer;
-    getAchievementSouvenirSyncStatus: () => Promise<AchievementSouvenirSyncStatus>;
-    getAchievementSouvenirSyncDetails: () => Promise<AchievementSouvenirSyncDetails>;
-    retryAchievementSouvenirSync: () => Promise<AchievementSouvenirSyncRetryResult>;
-    cleanupAchievementSouvenirSync: () => Promise<AchievementSouvenirSyncCleanupResult>;
-    onAchievementSouvenirSyncStatus: (
-      cb: (status: AchievementSouvenirSyncStatus) => void
-    ) => () => Electron.IpcRenderer;
-    onAchievementSouvenirSyncCompleted: (
-      cb: (syncedCount: number) => void
-    ) => () => Electron.IpcRenderer;
-    onAchievementSouvenirScreenshotsMissing: (
       cb: (count: number) => void
     ) => () => Electron.IpcRenderer;
     openFolder: (folderPath: string) => Promise<string>;
@@ -1379,8 +1285,6 @@ declare global {
         url: string,
         options?: {
           params?: unknown;
-          needsAuth?: boolean;
-          needsSubscription?: boolean;
           ifModifiedSince?: Date;
           timeout?: number;
         }
@@ -1389,7 +1293,6 @@ declare global {
         url: string,
         options?: {
           params?: unknown;
-          needsAuth?: boolean;
           acceptedStatuses?: number[];
         }
       ) => Promise<{ status: number; data: T }>;
@@ -1397,40 +1300,6 @@ declare global {
         url: string,
         options?: {
           data?: unknown;
-          needsAuth?: boolean;
-          needsSubscription?: boolean;
-        }
-      ) => Promise<T>;
-      postResponse: <T = unknown>(
-        url: string,
-        options?: {
-          data?: unknown;
-          needsAuth?: boolean;
-          needsSubscription?: boolean;
-          acceptedStatuses?: number[];
-        }
-      ) => Promise<{ status: number; data: T }>;
-      put: <T = unknown>(
-        url: string,
-        options?: {
-          data?: unknown;
-          needsAuth?: boolean;
-          needsSubscription?: boolean;
-        }
-      ) => Promise<T>;
-      patch: <T = unknown>(
-        url: string,
-        options?: {
-          data?: unknown;
-          needsAuth?: boolean;
-          needsSubscription?: boolean;
-        }
-      ) => Promise<T>;
-      delete: <T = unknown>(
-        url: string,
-        options?: {
-          needsAuth?: boolean;
-          needsSubscription?: boolean;
         }
       ) => Promise<T>;
     };
@@ -1480,18 +1349,6 @@ declare global {
     restartAndInstallUpdate: () => Promise<void>;
 
     /* Auth */
-    getAuth: () => Promise<Auth | null>;
-    signOut: () => Promise<void>;
-    openAuthWindow: (page: AuthPage) => Promise<void>;
-    minimizeAuthWindow: () => Promise<void>;
-    closeAuthWindow: () => Promise<void>;
-    onSignIn: (cb: () => void) => () => Electron.IpcRenderer;
-    onAccountUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    onSteamConnected: (cb: () => void) => () => Electron.IpcRenderer;
-    onSteamConnectError: (
-      cb: (code: SteamConnectErrorCode) => void
-    ) => () => Electron.IpcRenderer;
-    onSignOut: (cb: () => void) => () => Electron.IpcRenderer;
 
     /* User */
     getComparedUnlockedAchievements: (
@@ -1503,17 +1360,12 @@ declare global {
       objectId: string,
       shop: GameShop
     ) => Promise<UserAchievement[]>;
-    deleteAchievementSouvenir: (payload: {
-      souvenirId: string;
-    }) => Promise<void>;
     getRetroAchievementsAchievements: (
       objectId: string,
       shop: GameShop,
       raGameId?: number
     ) => Promise<UserAchievement[] | null>;
-    resetRetroAchievementsAchievements: (
-      pendingSouvenirsOnly?: boolean
-    ) => Promise<void>;
+    resetRetroAchievementsAchievements: () => Promise<void>;
     openRetroAchievementsConnectionWindow: () => Promise<void>;
     minimizeRetroAchievementsConnectionWindow: () => Promise<void>;
     closeRetroAchievementsConnectionWindow: () => Promise<void>;
@@ -1522,31 +1374,17 @@ declare global {
       username: string,
       password: string
     ) => Promise<boolean>;
+    connectRetroAchievements: (
+      username: string,
+      password: string,
+      webApiKey: string
+    ) => Promise<{ username: string }>;
+    getRetroAchievementsConnectionStatus: () => Promise<RetroAchievementsIntegration>;
     onRetroAchievementsConnected: (
       cb: () => void
     ) => () => Electron.IpcRenderer;
-    startSteamOAuth: (lng: string) => Promise<void>;
-    disconnectSteam: (deleteImportedData: boolean) => Promise<void>;
-    startSteamSync: () => Promise<SteamSyncState>;
-    cancelSteamSync: () => Promise<void>;
-    getSteamSyncState: () => Promise<SteamSyncState>;
-    syncSteamGameOnGamePage: (steamAppId: string) => Promise<boolean>;
-    reconcileSteamSyncRun: (
-      latestSyncRunStatus: SteamSyncRunStatus | null
-    ) => Promise<void>;
-    onSteamSyncProgress: (
-      cb: (state: SteamSyncState) => void
-    ) => () => Electron.IpcRenderer;
-    onSteamSyncFinished: (
-      cb: (payload: SteamSyncFinishedPayload) => void
-    ) => () => Electron.IpcRenderer;
 
     /* Profile */
-    getMe: () => Promise<UserDetails | null>;
-    updateProfile: (
-      updateProfile: UpdateProfileRequest
-    ) => Promise<UserProfile>;
-    updateProfile: (updateProfile: UpdateProfileProps) => Promise<UserProfile>;
     getProfileImageMetadata: (
       path: string
     ) => Promise<{ mimeType: string | null; isAnimated: boolean }>;
@@ -1565,12 +1403,6 @@ declare global {
         rotation?: number;
       }
     ) => Promise<{ imagePath: string }>;
-    onSyncNotificationCount: (
-      cb: (notification: NotificationSync) => void
-    ) => () => Electron.IpcRenderer;
-    onLeaderboardNotification: (
-      cb: (notification: Notification) => void
-    ) => () => Electron.IpcRenderer;
 
     /* Notifications */
     publishNewRepacksNotification: (newRepacksCount: number) => Promise<void>;
@@ -1666,7 +1498,6 @@ declare global {
       }) => void
     ) => () => void;
 
-    onProfileUpdated: (cb: () => void) => () => Electron.IpcRenderer;
     onNavigate: (cb: (path: string) => void) => () => Electron.IpcRenderer;
 
     /* Download Options */

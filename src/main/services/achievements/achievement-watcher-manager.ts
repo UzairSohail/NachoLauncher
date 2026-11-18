@@ -1,4 +1,3 @@
-import { achievementSyncWorker } from "./achievement-sync-worker";
 import { parseAchievementFile } from "./parse-achievement-file";
 import { mergeAchievements } from "./merge-achievements";
 import fs, { readdirSync } from "node:fs";
@@ -13,7 +12,6 @@ import type {
   UserPreferences,
 } from "@types";
 import { achievementsLogger } from "../logger";
-import { HydraApi } from "../hydra-api";
 import {
   hasTouchedAchievementBatchGames,
   setAchievementBatchActive,
@@ -27,7 +25,6 @@ import { setTimeout } from "node:timers/promises";
 import { Wine } from "../wine";
 import { AchievementMemoryStore } from "./achievement-memory-store";
 import { UnlockedAchievementsCache } from "./unlocked-achievements-cache";
-import { CombinedAchievementsRequests } from "./combined-achievements-requests";
 import { achievementNotificationPresenter } from "../achievement-notification-presenter-electron";
 import { readRpcs3TrophyUnlocks } from "../emulators/rpcs3-trophy-sources";
 import { gamesPlaytime } from "../game-running-state";
@@ -278,12 +275,9 @@ export class AchievementWatcherManager {
   public static readonly alreadySyncedGames: Map<string, boolean> = new Map();
 
   public static resetSessionState() {
-    achievementSyncWorker.stop();
-    void achievementSyncWorker.trigger();
     this.alreadySyncedGames.clear();
     AchievementMemoryStore.clear();
     UnlockedAchievementsCache.clear();
-    CombinedAchievementsRequests.clear();
   }
 
   public static forgetAchievementFiles(gameKey: string, filePaths: string[]) {
@@ -350,9 +344,8 @@ export class AchievementWatcherManager {
       throw error;
     }
 
-    if (!game.remoteId) {
-      this.alreadySyncedGames.delete(gameKey);
-    }
+    // Read the files again next time: there is no remote copy to lean on.
+    this.alreadySyncedGames.delete(gameKey);
 
     if (newAchievements > 0 && this.hasFinishedPreSearch) {
       if (this.batchDepth > 0) {
@@ -452,7 +445,7 @@ export class AchievementWatcherManager {
 
   private static async syncUnseenAchievementFiles() {
     const touchedGameKeys = takeTouchedAchievementBatchGames();
-    if (touchedGameKeys.size === 0 || !HydraApi.isLoggedIn()) return;
+    if (touchedGameKeys.size === 0) return;
 
     const pendingGames = (
       await this.getGameAchievementFiles(touchedGameKeys)
@@ -465,10 +458,6 @@ export class AchievementWatcherManager {
       pendingGames.map(({ game, achievementFiles }) =>
         this.preProcessGameAchievementFiles(game, achievementFiles)
       )
-    );
-
-    await this.uploadPreSearchAchievements(
-      pendingGames.filter((_, index) => results[index].isRemoteBehind)
     );
 
     let totalNewAchievements = 0;
@@ -525,7 +514,6 @@ export class AchievementWatcherManager {
   }
 
   public static watchAchievements() {
-    void achievementSyncWorker.trigger();
     if (!this.hasFinishedPreSearch || this.batchDepth > 0) return;
     const scope = this.getScanScope(Date.now());
     if (!scope) return;
@@ -574,7 +562,7 @@ export class AchievementWatcherManager {
     unlockedAchievements.push(...(await readEmulatorTrophyUnlocks(game)));
 
     if (!unlockedAchievements.length) {
-      return { newAchievements: 0, isRemoteBehind: false };
+      return { newAchievements: 0 };
     }
 
     await mergeAchievements(game, unlockedAchievements, false);
@@ -583,9 +571,8 @@ export class AchievementWatcherManager {
       AchievementMemoryStore.get(game.shop, game.objectId)?.unlockedAchievements
         .length ?? 0;
 
-    const remoteAchievementCount = game.unlockedAchievementCount ?? 0;
     const alreadyReportedCount = Math.max(
-      remoteAchievementCount,
+      game.unlockedAchievementCount ?? 0,
       game.reportedUnlockedAchievementCount ?? 0
     );
 
@@ -596,7 +583,6 @@ export class AchievementWatcherManager {
         0,
         mergedAchievementCount - alreadyReportedCount
       ),
-      isRemoteBehind: mergedAchievementCount > remoteAchievementCount,
     };
   }
 
@@ -716,12 +702,6 @@ export class AchievementWatcherManager {
 
       this._hasFinishedPreSearch = true;
 
-      await this.uploadPreSearchAchievements(
-        gameAchievementFiles.filter(
-          (_, index) => preProcessResults[index].isRemoteBehind
-        )
-      );
-
       if (totalNewAchievements > 0) {
         await setTimeout(4000);
         this.notifyCombinedAchievementsUnlocked(
@@ -734,22 +714,5 @@ export class AchievementWatcherManager {
     }
 
     this._hasFinishedPreSearch = true;
-  }
-
-  private static async uploadPreSearchAchievements(
-    gamesWithNewAchievements: { game: Game }[]
-  ) {
-    for (const { game } of gamesWithNewAchievements) {
-      if (!game.remoteId) continue;
-
-      await mergeAchievements(game, [], false).catch((err) =>
-        achievementsLogger.error(
-          "Failed to upload achievements found on startup",
-          game.objectId,
-          game.title,
-          err
-        )
-      );
-    }
   }
 }

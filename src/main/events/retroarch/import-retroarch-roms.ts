@@ -17,10 +17,7 @@ import {
   bandPercent,
   baseNameWithoutExt,
 } from "../emulators/import-progress-utils";
-import {
-  persistEntryLocally,
-  syncProfileBatch,
-} from "../emulators/import-launchbox-roms";
+import { persistEntryLocally } from "../emulators/import-launchbox-roms";
 import type { LaunchboxShopDetailsEntry } from "@main/services/emulators";
 import { WindowManager, logger, retroarch } from "@main/services";
 import { platformToRetroArchPlatform } from "@main/helpers";
@@ -636,7 +633,6 @@ async function runRetroArchImport(
   }
   await reconcileDeletedGames(folders);
   await recomputeRetroArchPlatformCounts();
-  await syncProfileBatch(Array.from(aggregated.matchedEntries.keys()));
 
   return {
     fileCount: totalFileCount,

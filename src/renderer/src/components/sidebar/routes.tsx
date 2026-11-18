@@ -4,6 +4,7 @@ import {
   HomeIcon,
   BookIcon,
   CpuIcon,
+  BellIcon,
 } from "@primer/octicons-react";
 
 import { SidebarDownloadIcon } from "./sidebar-download-icon";
@@ -33,6 +34,11 @@ export const routes = [
     path: "/downloads",
     nameKey: "downloads",
     render: () => <SidebarDownloadIcon />,
+  },
+  {
+    path: "/notifications",
+    nameKey: "notifications",
+    render: () => <BellIcon />,
   },
   {
     path: "/settings",

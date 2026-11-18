@@ -2,7 +2,7 @@ import { createContext, useCallback, useEffect, useState } from "react";
 
 import { setUserPreferences } from "@renderer/features";
 import { useAppDispatch } from "@renderer/hooks";
-import type { UserBlocks, UserPreferences } from "@types";
+import type { UserPreferences } from "@types";
 import { useSearchParams } from "react-router-dom";
 
 import { SETTINGS_CATEGORY_STORAGE_KEY } from "@renderer/session-state";
@@ -17,7 +17,6 @@ export type SettingsCategoryId =
   | "integrations"
   | "sync_status"
   | "compatibility"
-  | "account_privacy"
   | "big_picture"
   | "emulation";
 
@@ -27,7 +26,7 @@ const legacyTabMap: Record<number, SettingsCategoryId> = {
   2: "downloads",
   3: "general",
   4: "integrations",
-  5: "account_privacy",
+  5: "general",
 };
 
 const isSettingsCategoryId = (value: string): value is SettingsCategoryId => {
@@ -41,7 +40,6 @@ const isSettingsCategoryId = (value: string): value is SettingsCategoryId => {
     "integrations",
     "sync_status",
     "compatibility",
-    "account_privacy",
     "big_picture",
     "emulation",
   ].includes(value);
@@ -56,8 +54,6 @@ export interface SettingsContext {
   clearTheme: () => void;
   sourceUrl: string | null;
   currentCategoryId: SettingsCategoryId;
-  blockedUsers: UserBlocks["blocks"];
-  fetchBlockedUsers: () => Promise<void>;
   appearance: {
     theme: string | null;
     authorId: string | null;
@@ -72,8 +68,6 @@ export const settingsContext = createContext<SettingsContext>({
   clearTheme: () => {},
   sourceUrl: null,
   currentCategoryId: "general",
-  blockedUsers: [],
-  fetchBlockedUsers: async () => {},
   appearance: {
     theme: null,
     authorId: null,
@@ -107,7 +101,6 @@ export function SettingsContextProvider({
       const stored = localStorage.getItem(SETTINGS_CATEGORY_STORAGE_KEY);
       return stored && isSettingsCategoryId(stored) ? stored : "general";
     });
-  const [blockedUsers, setBlockedUsers] = useState<UserBlocks["blocks"]>([]);
 
   const [searchParams] = useSearchParams();
   const defaultSourceUrl = searchParams.get("urls");
@@ -174,21 +167,6 @@ export function SettingsContextProvider({
     });
   }, []);
 
-  const fetchBlockedUsers = useCallback(async () => {
-    const blockedUsers = await window.electron.hydraApi
-      .get<UserBlocks>("/profile/blocks", {
-        params: { take: 12, skip: 0 },
-      })
-      .catch(() => {
-        return { blocks: [] };
-      });
-    setBlockedUsers(blockedUsers.blocks);
-  }, []);
-
-  useEffect(() => {
-    fetchBlockedUsers();
-  }, [fetchBlockedUsers]);
-
   const clearSourceUrl = () => setSourceUrl(null);
 
   const updateUserPreferences = async (values: Partial<UserPreferences>) => {
@@ -205,11 +183,9 @@ export function SettingsContextProvider({
         updateUserPreferences,
         setCurrentCategoryId,
         clearSourceUrl,
-        fetchBlockedUsers,
         clearTheme,
         currentCategoryId,
         sourceUrl,
-        blockedUsers,
         appearance,
       }}
     >

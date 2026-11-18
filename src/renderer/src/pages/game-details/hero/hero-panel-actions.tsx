@@ -20,7 +20,6 @@ import {
   useFinishedDownloadStep,
   useLibrary,
   useToast,
-  useUserDetails,
 } from "@renderer/hooks";
 import { useCallback, useContext, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -46,7 +45,6 @@ export function HeroPanelActions() {
     useState(false);
 
   const { isGameDeleting } = useDownload();
-  const { userDetails } = useUserDetails();
 
   const {
     game,
@@ -584,7 +582,7 @@ export function HeroPanelActions() {
           )}
         </Button>
 
-        {userDetails && game.shop !== "custom" && (
+        {game.shop !== "custom" && (
           <Button
             onClick={toggleGamePinned}
             theme="outline"

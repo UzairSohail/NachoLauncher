@@ -2,16 +2,12 @@ import type { EmulationSavePlatform, GameShop } from "@types";
 
 import { getCloudSaveEmulatorProvider } from "./cloud-save-emulator-provider.js";
 
-export type CloudSaveAccessAction = "sign-in" | "paywall" | "open";
-
-export const getCloudSaveAccessAction = (
-  isAuthenticated: boolean,
-  hasActiveSubscription: boolean
-): CloudSaveAccessAction => {
-  if (!isAuthenticated) return "sign-in";
-  if (!hasActiveSubscription) return "paywall";
-  return "open";
-};
+/**
+ * "open" means the saves can sync now, "sign-in" means Google sign-in is
+ * needed first, and "unavailable" means this game's saves sync another way
+ * (PC games go through Cloud Save Manager).
+ */
+export type CloudSaveAccessAction = "sign-in" | "unavailable" | "open";
 
 export const platformToEmulationSavePlatform = (
   platform?: string | null
@@ -43,21 +39,12 @@ export const usesDriveCloudSaves = (
   (getCloudSaveEmulatorProvider(shop, platform) !== null ||
     platformToEmulationSavePlatform(platform) !== null);
 
-/** The cloud save access for a game, given both kinds of sign-in. */
+/** The cloud save access for a game, given the Google sign-in state. */
 export const resolveCloudSaveAccessAction = (
   shop: GameShop,
   platform: string | null | undefined,
-  access: {
-    isAuthenticated: boolean;
-    hasActiveSubscription: boolean;
-    driveSignedIn: boolean;
-  }
+  access: { driveSignedIn: boolean }
 ): CloudSaveAccessAction => {
-  if (usesDriveCloudSaves(shop, platform)) {
-    return access.driveSignedIn ? "open" : "sign-in";
-  }
-  return getCloudSaveAccessAction(
-    access.isAuthenticated,
-    access.hasActiveSubscription
-  );
+  if (!usesDriveCloudSaves(shop, platform)) return "unavailable";
+  return access.driveSignedIn ? "open" : "sign-in";
 };

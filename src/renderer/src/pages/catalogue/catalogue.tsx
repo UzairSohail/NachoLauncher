@@ -252,7 +252,6 @@ export default function Catalogue() {
           count: number;
         }>("/catalogue/search", {
           data: requestData,
-          needsAuth: false,
         });
 
         if (requestId !== requestSequenceRef.current) return;

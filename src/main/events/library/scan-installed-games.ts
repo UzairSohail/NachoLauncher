@@ -15,7 +15,6 @@ import { updateGameExecutablePath } from "@main/helpers/update-executable-path";
 import { WINDOWS_GAME_DIRECTORIES } from "@main/helpers/installer-target-directories";
 import { gamesSublevel, levelKeys } from "@main/level";
 import { AchievementWatcherManager } from "@main/services/achievements/achievement-watcher-manager";
-import { createGame } from "@main/services/library-sync";
 import {
   GameExecutables,
   LocalNotificationManager,
@@ -828,7 +827,6 @@ export const addGameOutsideLibrary = async (
   );
 
   await gamesSublevel.put(gameKey, game);
-  await createGame(game).catch(() => {});
 
   if (AchievementWatcherManager.isBatching) {
     AchievementWatcherManager.trackBatchGame(DISCOVERED_GAMES_SHOP, objectId);

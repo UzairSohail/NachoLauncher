@@ -153,7 +153,6 @@ describe("fetchSimilarGames", () => {
             take: 9,
             downloadSourceIds: ["source-b", "source-a"],
           },
-          needsAuth: false,
         },
       },
     ]);

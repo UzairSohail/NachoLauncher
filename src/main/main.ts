@@ -19,7 +19,6 @@ import {
   AllDebridClient,
   DownloadManager,
   HydraApi,
-  uploadGamesBatch,
   startMainLoop,
   Ludusavi,
   Lock,
@@ -31,7 +30,6 @@ import {
   ScreenshotInputService,
   logger,
   migrateCloudSaveAutomaticSyncDefaults,
-  groupedSouvenirWorker,
 } from "@main/services";
 import { migrateDownloadSources } from "./helpers/migrate-download-sources";
 import {
@@ -45,11 +43,9 @@ import { getDirSize } from "./services/download/helpers";
 import { isDebridPendingError } from "./services/download/debrid-files";
 import { GofileApi } from "./services/hosters";
 import { clearLegacyAchievementPersistence } from "./level/clear-legacy-achievements";
-import { startSteamSyncOnStartup } from "./services/steam-integration/steam-startup-sync";
 import { DriveChangeFeed } from "./services/personal-cloud/change-feed";
 import { migrateEmulatorCloudSaveDefaults } from "./services/cloud-save/automatic-sync-emulator-migration";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
-import { migrateGameVisibilityFields } from "./services/library-sync/game-visibility-migration";
 import { UmuUpdater } from "./services/umu-updater";
 import { initializeScreenshots } from "./services/screenshots";
 import { setTrackedGamesRunningListenerErrorReporter } from "./services/game-running-state";
@@ -81,7 +77,6 @@ export const loadState = async () => {
   await clearLegacyAchievementPersistence();
   await migrateCloudSaveAutomaticSyncDefaults();
   await migrateEmulatorCloudSaveDefaults();
-  await migrateGameVisibilityFields();
 
   await migratePreferenceSecrets();
   const userPreferences = await getUserPreferences();
@@ -137,16 +132,13 @@ export const loadState = async () => {
   void AchievementSync.start();
   CompanionLink.start();
 
-  // Hydra account set-up can wait on the network, so they run in the
-  // background instead of holding up download resume and the main window.
-  // setupApi creates its HTTP client before its first await, so anything
-  // that calls HydraApi from here on still finds it.
-  const apiStartup = HydraApi.setupApi().then(async () => {
-    void ScreenshotInputService.refreshFeatureFlag();
-    uploadGamesBatch();
+  // Hydra's public catalogue backs game details and download sources.
+  HydraApi.setupApi();
 
-    const { syncDownloadSourcesFromApi } = await import("./services/user");
-    void syncDownloadSourcesFromApi();
+  // These wait on the network, so they run in the background instead of
+  // holding up download resume and the main window.
+  const apiStartup = (async () => {
+    void ScreenshotInputService.refreshFeatureFlag();
 
     // Check for new download options on startup (if enabled)
     (async () => {
@@ -161,12 +153,7 @@ export const loadState = async () => {
     })();
 
     initializeScreenshots();
-
-    if (HydraApi.isLoggedIn()) {
-      void groupedSouvenirWorker.trigger();
-      void startSteamSyncOnStartup();
-    }
-  });
+  })();
   apiStartup.catch((error) => {
     logger.error("Background API set-up failed on startup", error);
   });

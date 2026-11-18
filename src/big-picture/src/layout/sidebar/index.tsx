@@ -37,7 +37,6 @@ import {
   useBigPictureRunningGames,
   useNavigationActions,
   useSearch,
-  useUserDetails,
   useBigPictureToast,
 } from "../../hooks";
 import {
@@ -768,7 +767,6 @@ function SidebarProfile({
 }: Readonly<SidebarProfileProps>) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { userDetails } = useUserDetails();
   const notificationsButtonRef = useRef<HTMLButtonElement>(null);
   const [notificationCount, setNotificationCount] = useState(0);
   const contentEntryTarget =
@@ -791,17 +789,12 @@ function SidebarProfile({
   const closeNotifications = useCallback(() => {
     onNotificationsOpenChange(false);
   }, [onNotificationsOpenChange]);
+  // There is no account profile, so the profile tile opens Settings, where
+  // Google sign-in lives.
   const handleProfileClick = useCallback(() => {
     const basePath = IS_DESKTOP ? "/big-picture" : "";
-    // Nacho Launcher has no Hydra account sign-in; the profile tile opens
-    // Settings instead, where Google sign-in lives.
-    if (!userDetails?.id) {
-      navigate(`${basePath}/settings`);
-      return;
-    }
-
-    navigate(`${basePath}/profile/${userDetails.id}`);
-  }, [navigate, userDetails?.id]);
+    navigate(`${basePath}/settings`);
+  }, [navigate]);
 
   const profileFocusNavigationOverrides: FocusOverrides = {
     up: {
@@ -827,10 +820,10 @@ function SidebarProfile({
     <>
       <div className="sidebar-profile">
         <UserProfile
-          image={userDetails?.profileImageUrl}
+          image={null}
           backgroundImageUrl={runningGameBackgroundImageUrl}
-          name={userDetails?.displayName ?? "Nacho Launcher"}
-          friendCode={userDetails?.id ?? ""}
+          name="Nacho Launcher"
+          friendCode=""
           profileFocusId={BIG_PICTURE_SIDEBAR_PROFILE_ID}
           notificationsFocusId={BIG_PICTURE_SIDEBAR_NOTIFICATIONS_ID}
           notificationsFocusable={notificationsFocusable}

@@ -5,13 +5,11 @@ import {
   librarySlice,
   userPreferencesSlice,
   toastSlice,
-  userDetailsSlice,
   gameRunningSlice,
   catalogueSearchSlice,
   collectionsSlice,
   classicsScanSlice,
   retroarchScanSlice,
-  gamificationSlice,
   ps4PkgJobSlice,
 } from "@renderer/features";
 
@@ -22,13 +20,11 @@ export const store = configureStore({
     userPreferences: userPreferencesSlice.reducer,
     download: downloadSlice.reducer,
     toast: toastSlice.reducer,
-    userDetails: userDetailsSlice.reducer,
     gameRunning: gameRunningSlice.reducer,
     catalogueSearch: catalogueSearchSlice.reducer,
     collections: collectionsSlice.reducer,
     classicsScan: classicsScanSlice.reducer,
     retroarchScan: retroarchScanSlice.reducer,
-    gamification: gamificationSlice.reducer,
     ps4PkgJob: ps4PkgJobSlice.reducer,
   },
 });

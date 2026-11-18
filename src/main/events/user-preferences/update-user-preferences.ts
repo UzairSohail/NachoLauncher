@@ -6,7 +6,6 @@ import type { Game, UserPreferences } from "@types";
 import i18next from "i18next";
 import { defaultDownloadsPath } from "@main/constants";
 import { db, gamesSublevel, levelKeys } from "@main/level";
-import { patchUserProfile } from "../profile/update-profile";
 import { DownloadManager, ScreenshotInputService, Wine } from "@main/services";
 import { WindowManager } from "@main/services/window-manager";
 import { getDownloadDirectoryPreferences } from "@shared";
@@ -18,7 +17,6 @@ import {
   isEmulatorAchievementTrackingActive,
   resolveEmulatorAchievementTracking,
 } from "@main/services/emulators/emulator-achievement-tracking";
-import { HydraApi } from "@main/services/hydra-api";
 import { SettingsSync } from "@main/services/settings-sync";
 import {
   getUserPreferences,
@@ -26,10 +24,6 @@ import {
 } from "@main/services/user-preferences";
 import { UnlockedAchievementsCache } from "@main/services/achievements/unlocked-achievements-cache";
 import { deleteRetroAchievementsEmulatorAccount } from "@main/services/retro-achievements/retro-achievements-emulator-account";
-import {
-  prepareLinuxGameCaptureSession,
-  stopAllLinuxGameCaptureSessions,
-} from "@main/services/linux-game-capture-session";
 
 const updateLanguagePreference = async (language: string | undefined) => {
   if (!language) return;
@@ -39,7 +33,6 @@ const updateLanguagePreference = async (language: string | undefined) => {
   });
 
   i18next.changeLanguage(language);
-  patchUserProfile({ language }).catch(() => {});
 };
 
 const pinGameWinePrefix = async (game: Game) => {
@@ -72,40 +65,12 @@ const pinExistingWinePrefixes = async (
   await Promise.all(games.map(pinGameWinePrefix));
 };
 
-const prepareRunningLinuxCaptureSessions = async () => {
-  if (process.platform !== "linux") return;
-
-  const [{ gamesPlaytime }, { emulatorSessions }] = await Promise.all([
-    import("@main/services/game-running-state"),
-    import("@main/services/emulators/emulator-session-tracker"),
-  ]);
-  const runningGameKeys = new Set(gamesPlaytime.keys());
-
-  for (const [gameKey, session] of emulatorSessions) {
-    if (session.system !== "ps3") {
-      runningGameKeys.add(gameKey);
-    }
-  }
-
-  for (const gameKey of runningGameKeys) {
-    const game = await gamesSublevel.get(gameKey).catch(() => null);
-    if (game?.remoteId)
-      void prepareLinuxGameCaptureSession(gameKey, "souvenir");
-  }
-};
-
-const enableAchievementSouvenirs = async () => {
-  await restoreRetroArchAchievementScreenshots();
-  await prepareRunningLinuxCaptureSessions();
-};
-
 const ACHIEVEMENT_VIEW_PREFERENCE_KEYS = [
   "language",
   "showHiddenAchievementsDescription",
 ] as const;
 
 const EMULATOR_ACHIEVEMENT_TRACKING_PREFERENCE_KEYS = [
-  "enableAchievementSouvenirs",
   "retroAchievementsWebApiKey",
   "retroAchievementsUsername",
 ] as const;
@@ -122,20 +87,7 @@ const updateEmulatorAchievementTracking = async (
     return;
   }
 
-  if (preferences.enableAchievementSouvenirs === true) {
-    await enableAchievementSouvenirs();
-    return;
-  }
-
-  if (Object.hasOwn(preferences, "enableAchievementSouvenirs")) {
-    stopAllLinuxGameCaptureSessions("souvenir");
-  }
-
-  const tracking = resolveEmulatorAchievementTracking(
-    updatedPreferences,
-    HydraApi.hasActiveSubscription(),
-    process.platform
-  );
+  const tracking = resolveEmulatorAchievementTracking(updatedPreferences);
   if (isEmulatorAchievementTrackingActive(tracking)) return;
 
   const { stopAllEmulatorSouvenirCaptureSessions } = await import(

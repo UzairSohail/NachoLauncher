@@ -5,22 +5,17 @@ import type {
   UserPreferences,
 } from "@types";
 import { achievementSyncCoordinator } from "./achievement-sync-coordinator";
-import { achievementSyncWorker } from "./achievement-sync-worker";
 import { WindowManager } from "../window-manager";
-import { HydraApi } from "../hydra-api";
 import { getUnlockedAchievements } from "@main/events/user/get-unlocked-achievements";
 import { achievementsLogger } from "../logger";
 import { db, levelKeys } from "@main/level";
 import { getGameAchievementData } from "./get-game-achievement-data";
-import { AchievementWatcherManager } from "./achievement-watcher-manager";
 import { AchievementMemoryStore } from "./achievement-memory-store";
 import { UnlockedAchievementsCache } from "./unlocked-achievements-cache";
 import { publishAchievementUnlockNotifications } from "./achievement-unlock-notifications";
-import { PendingAchievementSouvenirStore } from "./pending-achievement-souvenir-store";
 import { AchievementSync, SyncedUnlocksStore } from "../achievement-sync";
 
 interface MergeAchievementsOptions {
-  skipSouvenirCapture?: boolean;
   alwaysUpdateInterface?: boolean;
 }
 
@@ -67,8 +62,6 @@ const mergeAchievementsLocally = async (
   options: MergeAchievementsOptions,
   current: () => boolean
 ) => {
-  const gameKey = levelKeys.game(game.shop, game.objectId);
-
   let localGameAchievement = AchievementMemoryStore.get(
     game.shop,
     game.objectId
@@ -117,13 +110,7 @@ const mergeAchievementsLocally = async (
       };
     });
 
-  const pendingImageKeys = await PendingAchievementSouvenirStore.get(gameKey);
-  const mergedLocalAchievements = unlockedAchievements
-    .concat(newAchievements)
-    .map((achievement) => {
-      const imageKey = pendingImageKeys[achievement.name.toUpperCase()];
-      return imageKey ? { ...achievement, imageKey } : achievement;
-    });
+  const mergedLocalAchievements = unlockedAchievements.concat(newAchievements);
 
   if (!current()) throw new Error("achievement-sync-context-changed");
   if (publishNotification) {
@@ -150,9 +137,6 @@ const mergeAchievementsLocally = async (
 
   const achievementsToSync = mergedLocalAchievements;
 
-  const shouldSyncWithRemote =
-    Boolean(game.remoteId) && AchievementWatcherManager.hasFinishedPreSearch;
-
   await saveAchievementsInMemory(
     game.objectId,
     game.shop,
@@ -172,18 +156,6 @@ const mergeAchievementsLocally = async (
       error
     )
   );
-  if (shouldSyncWithRemote) {
-    const context = HydraApi.getAuthContext();
-    if (context)
-      await achievementSyncWorker.enqueue({
-        context,
-        gameKey,
-        remoteId: game.remoteId!,
-        shop: game.shop,
-        objectId: game.objectId,
-        achievements: achievementsToSync,
-      });
-  }
 
   return newAchievements.length;
 };
@@ -195,12 +167,7 @@ export const mergeAchievements = async (
   options: MergeAchievementsOptions = {}
 ) => {
   if (game.shop === "epic") return 0;
-  const context = HydraApi.getAuthContext();
-  const current = () =>
-    context
-      ? HydraApi.isAuthContextCurrent(context)
-      : HydraApi.getAuthContext() === null;
-  const result = await achievementSyncCoordinator.runMerge(
+  return achievementSyncCoordinator.runMerge(
     levelKeys.game(game.shop, game.objectId),
     (valid) =>
       mergeAchievementsLocally(
@@ -209,9 +176,6 @@ export const mergeAchievements = async (
         publishNotification,
         options,
         valid
-      ),
-    current
+      )
   );
-  void achievementSyncWorker.trigger();
-  return result;
 };

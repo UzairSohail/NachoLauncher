@@ -6,7 +6,7 @@ import { gameCollectionsSublevel, gamesSublevel } from "@main/level";
 import {
   libraryWriteQueue,
   markCollectionOrderChanged,
-} from "../library-sync/library-write-queue";
+} from "../library-queue/library-write-queue";
 import { WindowManager } from "../window-manager";
 import {
   collectionGameKey,

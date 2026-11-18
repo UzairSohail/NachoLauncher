@@ -1,4 +1,4 @@
-import { useAppSelector, useUserDetails } from "@renderer/hooks";
+import { useAppSelector } from "@renderer/hooks";
 import type { UserAchievement } from "@types";
 import { useTranslation } from "react-i18next";
 import "./achievements.scss";
@@ -14,7 +14,6 @@ import {
   TrophyIcon,
   UnlockIcon,
 } from "@primer/octicons-react";
-import HydraIcon from "@renderer/assets/icons/hydra.svg?react";
 import { Fragment, useCallback, useMemo, useState } from "react";
 import cn from "classnames";
 import { FullscreenMediaModal, TextField } from "@renderer/components";
@@ -49,7 +48,6 @@ interface AchievementListProps {
   achievements: UserAchievement[];
   scrollElement: HTMLElement | null;
   viewerUnlockedNames?: ReadonlySet<string>;
-  pointsSummary?: { earned: number; total: number };
 }
 
 const getEntryKey = (entry: AchievementListEntry<UserAchievement>) =>
@@ -61,11 +59,9 @@ export function AchievementList({
   achievements,
   scrollElement,
   viewerUnlockedNames,
-  pointsSummary,
 }: Readonly<AchievementListProps>) {
   const isOtherUser = viewerUnlockedNames !== undefined;
   const { t, i18n } = useTranslation("achievement");
-  const { hasActiveSubscription } = useUserDetails();
   const formatUnlockDateTime = (date: number) =>
     formatAchievementUnlockDateTime(date, i18n.language);
   const showHiddenAchievements = useAppSelector(
@@ -107,27 +103,6 @@ export function AchievementList({
         showHiddenAchievements
       ) && !revealedNames.has(getAchievementKey(achievement)),
     [isUnlockedByViewer, revealedNames, showHiddenAchievements]
-  );
-
-  const earnedPoints = useMemo(
-    () =>
-      pointsSummary?.earned ??
-      achievements.reduce(
-        (sum, achievement) =>
-          sum + (achievement.unlocked ? (achievement.points ?? 0) : 0),
-        0
-      ),
-    [achievements, pointsSummary?.earned]
-  );
-
-  const totalPoints = useMemo(
-    () =>
-      pointsSummary?.total ??
-      achievements.reduce(
-        (sum, achievement) => sum + (achievement.points ?? 0),
-        0
-      ),
-    [achievements, pointsSummary?.total]
   );
 
   const statusCounts = useMemo(
@@ -369,20 +344,6 @@ export function AchievementList({
                 </span>
               </span>
             )}
-
-            {hasActiveSubscription && achievement.points != null && (
-              <div
-                className="achievements__item-points"
-                title={t("achievement_earn_points", {
-                  points: achievement.points,
-                })}
-              >
-                <HydraIcon className="achievements__item-points-icon" />
-                <span className="achievements__item-points-value">
-                  {achievement.points}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </li>
@@ -421,18 +382,6 @@ export function AchievementList({
           {!isOtherUser && (
             <RetroAchievementsConnectBanner className="achievements__toolbar-retro-achievements" />
           )}
-
-          {hasActiveSubscription ? (
-            <div className="achievements__toolbar-points">
-              <span className="achievements__toolbar-points-label">
-                {t("earned_points")}
-              </span>
-              <HydraIcon className="achievements__toolbar-points-icon" />
-              <span>
-                {earnedPoints} / {totalPoints}
-              </span>
-            </div>
-          ) : null}
         </div>
       </div>
 

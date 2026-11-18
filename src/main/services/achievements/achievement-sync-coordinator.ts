@@ -1,4 +1,4 @@
-import { GameRequestQueue } from "../library-sync/game-request-queue.js";
+import { GameRequestQueue } from "../library-queue/game-request-queue.js";
 
 export const ACHIEVEMENT_SYNC_REQUEST_TIMEOUT_MS = 20_000;
 export const ACHIEVEMENT_SYNC_RETRY_DELAY_MS = 1_000;

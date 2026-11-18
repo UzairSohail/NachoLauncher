@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button, GuideLink, Modal, TextField } from "@renderer/components";
+import { Button, Modal, TextField } from "@renderer/components";
 import { useToast } from "@renderer/hooks";
 import type {
   EmulationCloudSave,
@@ -65,14 +65,7 @@ export function RestoreModal({
   const [busy, setBusy] = useState(false);
   const isMemoryCardPlatform = platform === "ps1" || platform === "ps2";
   const copyKeys = getRestoreModalCopyKeys(platform);
-  const description =
-    platform === "wii" ? (
-      <GuideLink article="wii-saves" title={t("wii_saves_guide")}>
-        {t(copyKeys.description)}
-      </GuideLink>
-    ) : (
-      t(copyKeys.description)
-    );
+  const description = t(copyKeys.description);
 
   useEffect(() => {
     if (!save) return;

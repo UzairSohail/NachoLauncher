@@ -12,7 +12,6 @@ async function getHotGames(downloadSourceIds: string[]) {
         skip: 0,
         downloadSourceIds,
       },
-      needsAuth: false,
     }
   );
 

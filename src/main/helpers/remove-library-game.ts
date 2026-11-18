@@ -1,4 +1,4 @@
-import { HydraApi, logger } from "@main/services";
+import { logger } from "@main/services";
 import {
   gamesSublevel,
   gamesShopAssetsSublevel,
@@ -12,7 +12,6 @@ import {
   type ClassicsEmulatorTarget,
 } from "@shared";
 import fs from "node:fs";
-import { groupedSouvenirWorker } from "@main/services/achievements/grouped-souvenir-worker";
 
 const collectAssetPathsToDelete = (game: Game): string[] => {
   const assetPathsToDelete: string[] = [];
@@ -97,22 +96,12 @@ export const removeLibraryGame = async (shop: GameShop, objectId: string) => {
   const assetPathsToDelete = collectAssetPathsToDelete(game);
 
   await updateGameAsDeleted(game, gameKey);
-  void groupedSouvenirWorker.trigger().catch((error) => {
-    logger.warn(
-      "Failed to stop souvenir synchronization for a removed game",
-      error
-    );
-  });
 
   if (game.shop !== "custom") {
     await resetShopAssets(gameKey);
   }
 
   await gamesArtworkSelectionSublevel.del(gameKey).catch(() => {});
-
-  if (game.remoteId) {
-    HydraApi.delete(`/profile/games/${game.remoteId}`).catch(() => {});
-  }
 
   await deleteAssetFiles(assetPathsToDelete);
 };

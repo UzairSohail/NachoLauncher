@@ -1,4 +1,4 @@
-import { libraryWriteQueue } from "../services/library-sync/library-write-queue";
+import { libraryWriteQueue } from "../services/library-queue/library-write-queue";
 import {
   downloadsSublevel,
   gamesShopAssetsSublevel,

@@ -1,20 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button, CheckboxField, GuideLink, Modal } from "@renderer/components";
-import { useAppSelector, useToast, useUserDetails } from "@renderer/hooks";
+import { Button, CheckboxField, Modal } from "@renderer/components";
+import { useAppSelector, useToast } from "@renderer/hooks";
 import { LinkExternalIcon, PersonIcon, SyncIcon } from "@primer/octicons-react";
-import { AuthPage } from "@shared";
 
 import retroAchievementsLogo from "@renderer/assets/icons/retroachievements.png";
 import {
   SettingsIntegrationCard,
   SettingsIntegrationLastSynced,
 } from "./settings-integration-card";
-import {
-  RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT,
-  type RetroAchievementsIntegration,
-} from "./retroachievements-integration";
+import type { RetroAchievementsIntegration } from "./retroachievements-integration";
 
 import "./settings-retroachievements.scss";
 
@@ -25,11 +21,10 @@ const STATUS_ICON_SIZE = 14;
 const AVATAR_FALLBACK_ICON_SIZE = 28;
 
 export function SettingsRetroAchievements() {
-  const { userDetails } = useUserDetails();
   const { showSuccessToast, showErrorToast } = useToast();
   const { t } = useTranslation("settings");
 
-  const [isLoading, setIsLoading] = useState(() => Boolean(userDetails));
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
@@ -49,8 +44,7 @@ export function SettingsRetroAchievements() {
 
   const connectedUsername = integration.connected ? integration.username : null;
   const isInvalid =
-    integration.connected &&
-    integration.retroAchievementsAccountStatus === "invalid_credentials";
+    integration.connected && integration.status === "invalid_credentials";
   const isMissingLocalKey =
     integration.connected && !isInvalid && !hasLocalApiKey;
 
@@ -60,20 +54,11 @@ export function SettingsRetroAchievements() {
 
   const refreshStatus = useCallback(
     async (options?: { silent?: boolean; toastOnConnect?: boolean }) => {
-      if (!userDetails) {
-        setIntegration({ connected: false });
-        setLastCheckedAt(null);
-        setIsLoading(false);
-        return;
-      }
-
       if (!options?.silent) setIsLoading(true);
 
       try {
         const status =
-          await globalThis.window.electron.hydraApi.get<RetroAchievementsIntegration>(
-            RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT
-          );
+          await globalThis.window.electron.getRetroAchievementsConnectionStatus();
 
         setIntegration(status);
         setLastCheckedAt(new Date().toISOString());
@@ -87,7 +72,7 @@ export function SettingsRetroAchievements() {
         setIsLoading(false);
       }
     },
-    [showSuccessToast, t, userDetails]
+    [showSuccessToast, t]
   );
 
   useEffect(() => {
@@ -123,29 +108,17 @@ export function SettingsRetroAchievements() {
 
     try {
       if (deleteAchievements) {
-        await globalThis.window.electron.resetRetroAchievementsAchievements(
-          true
-        );
-      }
-
-      await globalThis.window.electron.hydraApi.delete(
-        `${RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT}?deleteAchievements=${deleteAchievements}`
-      );
-
-      if (deleteAchievements) {
         await globalThis.window.electron.resetRetroAchievementsAchievements();
       }
+
+      await globalThis.window.electron.updateUserPreferences({
+        retroAchievementsWebApiKey: null,
+        retroAchievementsUsername: null,
+      });
 
       setIntegration({ connected: false });
       setLastCheckedAt(null);
       showSuccessToast(t("retroachievements_account_unlinked"));
-
-      await globalThis.window.electron
-        .updateUserPreferences({
-          retroAchievementsWebApiKey: null,
-          retroAchievementsUsername: null,
-        })
-        .catch(() => {});
     } catch {
       showErrorToast(t("retroachievements_connect_error"));
     } finally {
@@ -158,19 +131,11 @@ export function SettingsRetroAchievements() {
 
     try {
       const status =
-        await globalThis.window.electron.hydraApi.get<RetroAchievementsIntegration>(
-          RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT
-        );
+        await globalThis.window.electron.getRetroAchievementsConnectionStatus();
 
       setIntegration(status);
       setLastCheckedAt(new Date().toISOString());
       showSuccessToast(t("retroachievements_status_updated"));
-
-      await globalThis.window.electron
-        .updateUserPreferences({
-          retroAchievementsUsername: status.connected ? status.username : null,
-        })
-        .catch(() => {});
     } catch {
       showErrorToast(t("retroachievements_connect_error"));
     } finally {
@@ -184,12 +149,7 @@ export function SettingsRetroAchievements() {
 
   const emulatorNote = (
     <p className="settings-retroachievements__emulator-note">
-      <GuideLink
-        article="retroachievements-emulators"
-        title={t("retroachievements_view_guide")}
-      >
-        {t("retroachievements_emulator_note")}
-      </GuideLink>
+      {t("retroachievements_emulator_note")}
     </p>
   );
 
@@ -252,18 +212,6 @@ export function SettingsRetroAchievements() {
   };
 
   const renderActions = () => {
-    if (!userDetails) {
-      return (
-        <Button
-          onClick={() =>
-            globalThis.window.electron.openAuthWindow(AuthPage.SignIn)
-          }
-        >
-          {t("steam_sign_in")}
-        </Button>
-      );
-    }
-
     if (!integration.connected) {
       return (
         <Button onClick={openConnectionWindow} disabled={isSubmitting}>

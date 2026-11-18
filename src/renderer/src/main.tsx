@@ -45,7 +45,6 @@ const RecompilationPage = lazy(
   () => import("./pages/recompilation/recompilation-page")
 );
 const Settings = lazy(() => import("./pages/settings/settings"));
-const Profile = lazy(() => import("./pages/profile/profile"));
 const Achievements = lazy(() => import("./pages/achievements/achievements"));
 const ThemeEditor = lazy(() => import("./pages/theme-editor/theme-editor"));
 const Library = lazy(() => import("./pages/library/library"));
@@ -53,14 +52,12 @@ const RecompCatalog = lazy(
   () => import("./pages/recomp-catalog/recomp-catalog")
 );
 const Notifications = lazy(() => import("./pages/notifications/notifications"));
-const Shop = lazy(() => import("./pages/shop/shop"));
 const AchievementNotification = lazy(() =>
   import("./pages/achievements/notification/achievement-notification").then(
     (module) => ({ default: module.AchievementNotification })
   )
 );
 const GameLauncher = lazy(() => import("./pages/game-launcher/game-launcher"));
-const AuthWindow = lazy(() => import("./pages/auth-window/auth-window"));
 const RetroAchievementsConnectionWindow = lazy(
   () =>
     import(
@@ -92,9 +89,6 @@ const BigPictureGame = lazy(
 const BigPictureGameAchievements = lazy(
   () =>
     import("../../big-picture/src/pages/game-achievements/game-achievements")
-);
-const BigPictureProfile = lazy(
-  () => import("../../big-picture/src/pages/profile/profile")
 );
 
 console.log = logger.log;
@@ -199,10 +193,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                       element={<RecompilationPage />}
                     />
                     <Route path="/settings" element={<Settings />} />
-                    <Route path="/profile/:userId" element={<Profile />} />
                     <Route path="/achievements" element={<Achievements />} />
                     <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/shop" element={<Shop />} />
                   </Route>
 
                   <Route path="/theme-editor" element={<ThemeEditor />} />
@@ -211,7 +203,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                     element={<AchievementNotification />}
                   />
                   <Route path="/game-launcher" element={<GameLauncher />} />
-                  <Route path="/auth-window" element={<AuthWindow />} />
                   <Route
                     path="/retroachievements-connection"
                     element={<RetroAchievementsConnectionWindow />}
@@ -227,10 +218,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                     <Route path="downloads" element={<BigPictureDownloads />} />
                     <Route path="settings" element={<BigPictureSettings />} />
                     <Route path="library" element={<BigPictureLibrary />} />
-                    <Route
-                      path="profile/:userId?"
-                      element={<BigPictureProfile />}
-                    />
                     <Route
                       path="game/:shop/:objectId"
                       element={<BigPictureGame />}

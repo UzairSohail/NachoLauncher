@@ -51,26 +51,10 @@ export const GOOGLE_DRIVE_BROWSER_SIGN_IN_BUTTON_ID =
   "integrations-google-drive-browser-sign-in";
 export const GOOGLE_DRIVE_SYNC_CHECKBOX_ID = "integrations-google-drive-sync";
 export const GOOGLE_DRIVE_SYNC_BUTTON_ID = "integrations-google-drive-sync-now";
-export const ACCOUNT_PRIVACY_PRIVACY_SELECT_ID =
-  "account-privacy-profile-visibility";
-export const ACCOUNT_PRIVACY_CLOUD_GIFTS_CHECKBOX_ID =
-  "account-privacy-cloud-gifts";
-export const ACCOUNT_PRIVACY_SOUVENIRS_SELECT_ID =
-  "account-privacy-souvenirs-visibility";
-export const ACCOUNT_PRIVACY_SCREENSHOTS_SELECT_ID =
-  "account-privacy-screenshots-visibility";
-export const ACCOUNT_PRIVACY_SCREENSHOT_COMMENTS_SELECT_ID =
-  "account-privacy-screenshot-comments-policy";
 export const COMPATIBILITY_GAMEMODE_FOCUS_ID = "compatibility-gamemode";
 export const COMPATIBILITY_MANGOHUD_FOCUS_ID = "compatibility-mangohud";
 export const COMPATIBILITY_COMMON_REDIST_BUTTON_ID =
   "compatibility-common-redist";
-export const ACCOUNT_PRIVACY_UPDATE_EMAIL_BUTTON_ID =
-  "account-privacy-update-email";
-export const ACCOUNT_PRIVACY_UPDATE_PASSWORD_BUTTON_ID =
-  "account-privacy-update-password";
-export const ACCOUNT_PRIVACY_HYDRA_CLOUD_BUTTON_ID =
-  "account-privacy-hydra-cloud";
 export const EMULATION_OVERVIEW_REGION_ID = "emulation-overview-region";
 export const EMULATION_DETAIL_REGION_ID = "emulation-detail-region";
 export const EMULATION_DETAIL_EXECUTABLE_REGION_ID =
@@ -163,7 +147,6 @@ export const CONTENT_ITEM_FOCUS_IDS = {
   showHiddenAchievementsDescription:
     "content-show-hidden-achievements-description",
   enableSteamAchievements: "content-enable-steam-achievements",
-  enableAchievementSouvenirs: "content-enable-achievement-souvenirs",
   changeScreenshotsDirectory: "content-change-screenshots-directory",
   resetScreenshotsDirectory: "content-reset-screenshots-directory",
   openScreenshotsDirectory: "content-open-screenshots-directory",
@@ -237,10 +220,6 @@ export function getDownloadsSourceRemoveButtonFocusId(sourceId: string) {
 
 export function getCompatibilityProtonOptionFocusId(path: string) {
   return `compatibility-proton-option-${path.replaceAll(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
-}
-
-export function getAccountPrivacyBlockedUserButtonFocusId(userId: string) {
-  return `account-privacy-blocked-user-${userId}`;
 }
 
 export function getEmulationRomFolderToggleFocusId(folderId: string) {

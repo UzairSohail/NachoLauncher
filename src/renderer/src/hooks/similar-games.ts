@@ -38,7 +38,6 @@ interface SimilarGamesRequestOptions {
     take: number;
     downloadSourceIds: string[];
   };
-  needsAuth: false;
 }
 
 export type SimilarGamesGet = (
@@ -136,7 +135,6 @@ export const fetchSimilarGames = async (
     `/catalogue/${query.shop}/${encodeURIComponent(query.objectId)}/similar`,
     {
       params: { take: SIMILAR_GAMES_LIMIT, downloadSourceIds },
-      needsAuth: false,
     }
   );
 

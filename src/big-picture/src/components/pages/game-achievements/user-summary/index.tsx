@@ -1,6 +1,6 @@
 import { TrophyIcon, UserIcon } from "@phosphor-icons/react";
-import type { UserDetails } from "@types";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import { FocusItem } from "../../../common";
 import { animateNavigationScrollForElement } from "../../../../helpers";
@@ -9,7 +9,6 @@ import { useNavigationIsFocused } from "../../../../stores";
 import { GAME_ACHIEVEMENTS_SUMMARY_FOCUS_ID } from "../navigation";
 
 export interface UserAchievementsSummaryProps {
-  userDetails: UserDetails | null;
   unlockedCount: number;
   totalCount: number;
   navigationOverrides?: FocusOverrides;
@@ -17,12 +16,12 @@ export interface UserAchievementsSummaryProps {
 }
 
 export function UserAchievementsSummary({
-  userDetails,
   unlockedCount,
   totalCount,
   navigationOverrides,
   stealFocusOnAppear = false,
 }: Readonly<UserAchievementsSummaryProps>) {
+  const { t } = useTranslation("achievement");
   const summaryRef = useRef<HTMLDivElement | null>(null);
   const isFocused = useNavigationIsFocused(GAME_ACHIEVEMENTS_SUMMARY_FOCUS_ID);
 
@@ -52,22 +51,14 @@ export function UserAchievementsSummary({
         data-suppress-navigation-autoscroll="true"
       >
         <div className="game-achievements-page__summary-avatar">
-          {userDetails?.profileImageUrl ? (
-            <img
-              src={userDetails.profileImageUrl}
-              alt={userDetails.displayName}
-              draggable={false}
-            />
-          ) : (
-            <UserIcon size={32} />
-          )}
+          <UserIcon size={32} />
         </div>
 
         <div className="game-achievements-page__summary-content">
           <div className="game-achievements-page__summary-row">
             <div className="game-achievements-page__summary-info">
               <p className="game-achievements-page__summary-name">
-                {userDetails?.displayName ?? "Anonymous"}
+                {t("your_achievements")}
               </p>
               <div className="game-achievements-page__summary-count">
                 <TrophyIcon size={20} />

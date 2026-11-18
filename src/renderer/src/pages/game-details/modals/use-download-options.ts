@@ -6,12 +6,7 @@ import {
   pickDefaultDownloader,
 } from "@shared";
 
-import {
-  useAllDebridHosts,
-  useAppSelector,
-  useFeature,
-  useUserDetails,
-} from "@renderer/hooks";
+import { useAllDebridHosts, useAppSelector, useFeature } from "@renderer/hooks";
 import { Feature } from "@renderer/hooks/use-feature";
 
 interface DownloadOptionsContext {
@@ -25,17 +20,12 @@ interface DownloadOptionsContext {
       >
     | null
     | undefined;
-  hasActiveSubscription: boolean;
   isFeatureEnabled: (feature: Feature) => boolean;
 }
 
 export const getDownloadOptions = (
   repack: GameRepack | null,
-  {
-    userPreferences,
-    hasActiveSubscription,
-    isFeatureEnabled,
-  }: DownloadOptionsContext
+  { userPreferences, isFeatureEnabled }: DownloadOptionsContext
 ) => {
   const unavailableUrisSet = new Set(repack?.unavailableUris ?? []);
 
@@ -104,7 +94,7 @@ export const getDownloadOptions = (
       } else if (downloader === Downloader.TorBox) {
         isConfigured = !!userPreferences?.torBoxApiToken;
       } else if (downloader === Downloader.VikingFile) {
-        isConfigured = hasActiveSubscription;
+        isConfigured = !!userPreferences?.allDebridApiToken;
       }
       // } else if (downloader === Downloader.Hydra) {
       //   isConfigured = isFeatureEnabled(Feature.Nimbus);
@@ -128,7 +118,6 @@ export function useDownloadOptions(repack: GameRepack | null) {
     (state) => state.userPreferences.value
   );
   const { isFeatureEnabled } = useFeature();
-  const { hasActiveSubscription } = useUserDetails();
 
   const realDebridApiToken = userPreferences?.realDebridApiToken;
   const premiumizeApiToken = userPreferences?.premiumizeApiToken;
@@ -146,7 +135,6 @@ export function useDownloadOptions(repack: GameRepack | null) {
         allDebridApiToken,
         torBoxApiToken,
       },
-      hasActiveSubscription,
       isFeatureEnabled,
     });
   }, [
@@ -155,7 +143,6 @@ export function useDownloadOptions(repack: GameRepack | null) {
     premiumizeApiToken,
     allDebridApiToken,
     torBoxApiToken,
-    hasActiveSubscription,
     isFeatureEnabled,
     allDebridHostsVersion,
   ]);

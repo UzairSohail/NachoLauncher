@@ -11,9 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
-  AuthPage,
   resolveCloudSaveAccessAction,
-  usesDriveCloudSaves,
   discCloudSaveWrongGameErrorCode,
   getCloudSaveEmulatorProvider,
   getDiscCloudSaveEmulatorProvider,
@@ -23,11 +21,7 @@ import {
 } from "@shared";
 import { Button, ConfirmationModal, Modal } from "@renderer/components";
 import { gameDetailsContext } from "@renderer/context";
-import {
-  useGoogleDriveSignedIn,
-  useToast,
-  useUserDetails,
-} from "@renderer/hooks";
+import { useGoogleDriveSignedIn, useToast } from "@renderer/hooks";
 import type {
   CloudSaveConflictResolution,
   CloudSaveCustomPathApproval,
@@ -191,7 +185,6 @@ export function CloudSaveV2Provider({
   const { t } = useTranslation("game_details");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { userDetails, hasActiveSubscription } = useUserDetails();
   const { showErrorToast, showSuccessToast, showWarningToast } = useToast();
   const detailsContext = useContext(gameDetailsContext);
   const { setShowGameOptionsModal, setGameOptionsInitialCategory } =
@@ -202,21 +195,12 @@ export function CloudSaveV2Provider({
   const cloudSaveAccessAction = resolveCloudSaveAccessAction(
     shop,
     game?.platform,
-    {
-      isAuthenticated: Boolean(userDetails),
-      hasActiveSubscription,
-      driveSignedIn,
-    }
+    { driveSignedIn }
   );
-  const usesDrive = usesDriveCloudSaves(shop, game?.platform);
   // Emulator saves are kept in Google Drive, so "sign in" means Google.
   const openSignIn = useCallback(() => {
-    if (usesDrive) {
-      void window.electron.signInPersonalCloud();
-    } else {
-      window.electron.openAuthWindow(AuthPage.SignIn);
-    }
-  }, [usesDrive]);
+    void window.electron.signInPersonalCloud();
+  }, []);
   const canUseCloudSaves = cloudSaveAccessAction === "open";
   const isV2Eligible = isCloudSaveV2Eligible(shop, game?.platform, objectId);
   const isRetroArchGame =
@@ -492,7 +476,7 @@ export function CloudSaveV2Provider({
       openSignIn();
       return;
     }
-    if (cloudSaveAccessAction === "paywall") return;
+    if (cloudSaveAccessAction === "unavailable") return;
 
     setIsFileBrowserVisible(false);
     setWasOpenedFromLaunchConflict(true);
@@ -674,7 +658,7 @@ export function CloudSaveV2Provider({
       openSignIn();
       return;
     }
-    if (cloudSaveAccessAction === "paywall") return;
+    if (cloudSaveAccessAction === "unavailable") return;
     setWasOpenedFromLaunchConflict(false);
     setIsModalVisible(true);
   }, [cloudSaveAccessAction, openSignIn]);

@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { chunk } from "lodash-es";
 
 import { registerEvent } from "../register-event";
 import {
@@ -10,13 +9,7 @@ import {
 } from "./classics-import-state";
 import { isWithin } from "./rom-path-utils";
 import { bandPercent, baseNameWithoutExt } from "./import-progress-utils";
-import {
-  HydraApi,
-  WindowManager,
-  emulators,
-  logger,
-  mergeImportedProfileGames,
-} from "@main/services";
+import { WindowManager, emulators, logger } from "@main/services";
 import { clearFinishedDownload, platformToSystem } from "@main/helpers";
 import { mergeScannedDiscs } from "@main/helpers/classics-executable-disc";
 import {
@@ -44,8 +37,6 @@ interface FolderInput {
   path: string;
   scanSubfolders: boolean;
 }
-
-const PROFILE_BATCH_CHUNK_SIZE = 100;
 
 type CancelSignal = {
   cancelled: boolean;
@@ -254,35 +245,6 @@ export const persistEntryLocally = async (
   }
 
   AchievementWatcherManager.firstSyncWithRemoteIfNeeded(shop, objectId);
-};
-
-export const syncProfileBatch = async (
-  objectIds: string[],
-  signal?: AbortSignal
-) => {
-  if (objectIds.length === 0) return;
-
-  const chunks = chunk(objectIds, PROFILE_BATCH_CHUNK_SIZE);
-  const syncedObjectIds: string[] = [];
-
-  for (const objectIdChunk of chunks) {
-    if (signal?.aborted) break;
-    const payload = objectIdChunk.map((objectId) => ({
-      objectId,
-      shop: "launchbox",
-      playTimeInMilliseconds: 0,
-      lastTimePlayed: null,
-    }));
-    try {
-      await HydraApi.post("/profile/games/batch", payload, { signal });
-      syncedObjectIds.push(...objectIdChunk);
-    } catch (err) {
-      if (signal?.aborted) break;
-      logger.error("Failed to batch-sync launchbox games to profile", err);
-    }
-  }
-
-  await mergeImportedProfileGames("launchbox", syncedObjectIds);
 };
 
 const persistRomFolder = async (
@@ -1022,11 +984,6 @@ export async function runLaunchboxImport(
       unmatchedFiles
     );
   }
-
-  await syncProfileBatch(
-    Array.from(matchedEntries.keys()),
-    signal.abortController?.signal
-  );
 
   if (system === "ps3" && !signal.cancelled && ps3ExtractedForYml.size > 0) {
     await emulators

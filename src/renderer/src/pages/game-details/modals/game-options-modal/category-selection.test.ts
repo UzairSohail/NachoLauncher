@@ -10,6 +10,13 @@ const {
   shouldInitializeGameSettingsCategory,
 } = categorySelectionModule;
 
+const available = {
+  cloudSaveAccessAction: "open" as const,
+  showCloudSaveV2Settings: true,
+  showEmulatorSaves: true,
+  showDownloadSettings: true,
+};
+
 describe("game options category selection", () => {
   it("initializes when the modal opens", () => {
     assert.equal(
@@ -44,10 +51,8 @@ describe("game options category selection", () => {
   it("preserves a manually selected category when availability changes", () => {
     assert.equal(
       getAvailableGameSettingsCategory("assets", {
-        cloudSaveAccessAction: "open",
-        showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: false,
-        showDownloadSettings: true,
+        ...available,
+        showEmulatorSaves: false,
       }),
       "assets"
     );
@@ -56,31 +61,25 @@ describe("game options category selection", () => {
   it("falls back when the selected cloud category is unavailable", () => {
     assert.equal(
       getAvailableGameSettingsCategory("hydra_cloud", {
-        cloudSaveAccessAction: "open",
+        ...available,
         showCloudSaveV2Settings: false,
-        showLegacyCloudSaveSettings: true,
-        showDownloadSettings: true,
       }),
       "general"
     );
     assert.equal(
-      getAvailableGameSettingsCategory("hydra_cloud_legacy", {
-        cloudSaveAccessAction: "open",
-        showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: false,
-        showDownloadSettings: true,
+      getAvailableGameSettingsCategory("emulator_saves", {
+        ...available,
+        showEmulatorSaves: false,
       }),
       "general"
     );
   });
 
-  it("falls back when cloud access is lost", () => {
+  it("falls back when Google sign-in is lost", () => {
     assert.equal(
       getAvailableGameSettingsCategory("hydra_cloud", {
-        cloudSaveAccessAction: "paywall",
-        showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: true,
-        showDownloadSettings: true,
+        ...available,
+        cloudSaveAccessAction: "sign-in",
       }),
       "general"
     );
@@ -89,46 +88,23 @@ describe("game options category selection", () => {
   it("falls back when downloads are unavailable", () => {
     assert.equal(
       getAvailableGameSettingsCategory("downloads", {
-        cloudSaveAccessAction: "open",
-        showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: true,
+        ...available,
         showDownloadSettings: false,
       }),
       "general"
     );
   });
 
-  it("orders active Hydra Cloud before legacy archives", () => {
-    const availability = {
-      cloudSaveAccessAction: "open" as const,
-      showCloudSaveV2Settings: true,
-      showLegacyCloudSaveSettings: true,
-      showDownloadSettings: true,
-    };
-    assert.deepEqual(getCloudGameSettingsCategories(availability, "archive"), [
+  it("lists cloud categories only once they can be used", () => {
+    assert.deepEqual(getCloudGameSettingsCategories(available), [
       "hydra_cloud",
-      "hydra_cloud_legacy",
+      "emulator_saves",
     ]);
     assert.deepEqual(
-      getCloudGameSettingsCategories(
-        { ...availability, showCloudSaveV2Settings: false },
-        "active"
-      ),
-      ["hydra_cloud_legacy"]
-    );
-  });
-
-  it("hides Hydra Cloud categories behind the paywall", () => {
-    assert.deepEqual(
-      getCloudGameSettingsCategories(
-        {
-          cloudSaveAccessAction: "paywall",
-          showCloudSaveV2Settings: true,
-          showLegacyCloudSaveSettings: true,
-          showDownloadSettings: true,
-        },
-        "active"
-      ),
+      getCloudGameSettingsCategories({
+        ...available,
+        cloudSaveAccessAction: "sign-in",
+      }),
       []
     );
   });

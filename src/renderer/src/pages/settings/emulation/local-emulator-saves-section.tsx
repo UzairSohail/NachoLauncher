@@ -7,7 +7,7 @@ import {
   UploadIcon,
 } from "@primer/octicons-react";
 
-import { Button, GuideLink } from "@renderer/components";
+import { Button } from "@renderer/components";
 import { DropdownMenu } from "@renderer/components/dropdown-menu/dropdown-menu";
 import { getSkuRegion, getSkuRegionFlag } from "@renderer/helpers";
 import { useToast, useGoogleDriveSignedIn } from "@renderer/hooks";
@@ -104,19 +104,7 @@ export function LocalEmulatorSavesSection({
       <header className="emulator-detail__section-header">
         <div className="emulator-detail__section-text">
           <div className="emulator-detail__section-title-row">
-            <h3>
-              {config.system === "dolphin" ? (
-                <GuideLink
-                  article="wii-saves"
-                  iconSize={16}
-                  title={t("wii_saves_guide")}
-                >
-                  {t("local_emulator_saves_section_title")}
-                </GuideLink>
-              ) : (
-                t("local_emulator_saves_section_title")
-              )}
-            </h3>
+            <h3>{t("local_emulator_saves_section_title")}</h3>
           </div>
           <p>{t("local_emulator_saves_section_description")}</p>
         </div>

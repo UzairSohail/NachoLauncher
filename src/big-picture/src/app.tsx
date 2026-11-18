@@ -28,7 +28,6 @@ import {
   VerticalFocusGroup,
   BigPictureToastHost,
   MissingScreenshotsToast,
-  ScreenshotUploadFailureToast,
   VirtualKeyboardProvider,
 } from "./components";
 import { getItemFocusTarget } from "./helpers";
@@ -310,7 +309,6 @@ export default function App() {
           <NavigationDiagnostics />
           <BigPictureToastHost />
           <MissingScreenshotsToast />
-          <ScreenshotUploadFailureToast />
         </div>
       </NavigationInputProvider>
     </MotionConfig>

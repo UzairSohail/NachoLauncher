@@ -4,7 +4,6 @@ import type {
   UnlockedAchievement,
   UserAchievement,
 } from "@types";
-import { UserNotLoggedInError } from "@shared";
 
 import { db, gamesShopCacheSublevel, levelKeys } from "@main/level";
 import { HydraApi } from "../hydra-api";
@@ -17,8 +16,6 @@ import {
 } from "./retro-achievements-client";
 import { AchievementMemoryStore } from "../achievements/achievement-memory-store";
 import { UnlockedAchievementsCache } from "../achievements/unlocked-achievements-cache";
-import { AchievementSouvenirStore } from "../achievements/achievement-souvenir-store";
-import { getAchievementSouvenirs } from "../achievements/get-achievement-souvenirs";
 
 const toMillis = (date?: string) => {
   if (!date) return null;
@@ -37,8 +34,7 @@ const sortAchievements = (a: UserAchievement, b: UserAchievement) => {
 
 const buildRetroAchievement = (
   achievementData: SteamAchievement,
-  unlockedByName: Map<string, UnlockedAchievement>,
-  souvenirs: Map<string, string>
+  unlockedByName: Map<string, UnlockedAchievement>
 ): UserAchievement => {
   const unlocked = unlockedByName.get(achievementData.name.toUpperCase());
 
@@ -47,9 +43,7 @@ const buildRetroAchievement = (
     unlocked: Boolean(unlocked),
     unlockTime: unlocked?.unlockTime ?? null,
     hardcoreUnlockTime: unlocked?.hardcoreUnlockTime ?? null,
-    imageUrl: unlocked
-      ? (souvenirs.get(achievementData.name.toUpperCase()) ?? null)
-      : null,
+    imageUrl: null,
     source: "retroachievements" as const,
   };
 };
@@ -67,11 +61,9 @@ const buildAchievementsFromCache = async (
     unlockedByName.set(unlocked.name.toUpperCase(), unlocked);
   }
 
-  const souvenirs = await getAchievementSouvenirs(objectId, shop);
-
   return (cached.achievements ?? [])
     .map((achievementData) =>
-      buildRetroAchievement(achievementData, unlockedByName, souvenirs)
+      buildRetroAchievement(achievementData, unlockedByName)
     )
     .sort(sortAchievements);
 };
@@ -112,9 +104,7 @@ export const resolveRetroAchievementsGameId = async (
 
   const game = await HydraApi.get<{
     retroAchievementsGameId: number | null;
-  } | null>(`/games/${shop}/${objectId}`, null, { needsAuth: false }).catch(
-    () => null
-  );
+  } | null>(`/games/${shop}/${objectId}`, null).catch(() => null);
 
   return game?.retroAchievementsGameId ?? null;
 };
@@ -140,12 +130,11 @@ interface RetroAchievementsSyncResult {
 
 const buildRetroAchievementsView = (
   catalogue: SteamAchievement[],
-  unlockedByName: Map<string, UnlockedAchievement>,
-  souvenirs: Map<string, string>
+  unlockedByName: Map<string, UnlockedAchievement>
 ) => {
   return catalogue
     .map((achievementData) =>
-      buildRetroAchievement(achievementData, unlockedByName, souvenirs)
+      buildRetroAchievement(achievementData, unlockedByName)
     )
     .sort(sortAchievements);
 };
@@ -267,14 +256,7 @@ export const syncRetroAchievements = async ({
     }
   }
 
-  AchievementSouvenirStore.invalidate(shop, objectId);
-
-  const souvenirs = await getAchievementSouvenirs(objectId, shop);
-  const achievements = buildRetroAchievementsView(
-    catalogue,
-    unlockedByName,
-    souvenirs
-  );
+  const achievements = buildRetroAchievementsView(catalogue, unlockedByName);
 
   AchievementMemoryStore.set(shop, objectId, {
     achievements: catalogue,
@@ -291,16 +273,6 @@ export const syncRetroAchievements = async ({
     remoteCount: remoteAchievements.length,
     newUnlockCount,
   });
-
-  if (newUnlockCount > 0) {
-    HydraApi.post(
-      `/profile/games/${shop}/${objectId}/retroachievements/sync`
-    ).catch((err) => {
-      if (err instanceof UserNotLoggedInError) return;
-
-      logger.error("Failed to enqueue RetroAchievements sync", err);
-    });
-  }
 
   return {
     achievements,

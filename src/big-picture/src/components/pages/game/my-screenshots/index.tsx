@@ -5,16 +5,9 @@ import {
   ImageIcon,
   SquaresFourIcon,
 } from "@phosphor-icons/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { GameShop, LocalScreenshot, ProfileScreenshot } from "@types";
-import {
-  buildGameScreenshotsPath,
-  createScreenshotWriteBus,
-  resolveScreenshotPreferences,
-  type MyScreenshotItem,
-  type ScreenshotWriteBus,
-} from "@shared";
+import type { GameShop, LocalScreenshot } from "@types";
 
 import {
   Button,
@@ -22,19 +15,8 @@ import {
   Typography,
   VerticalFocusGroup,
 } from "../../../common";
-import {
-  ScreenshotLightbox,
-  useScreenshotFeed,
-  useScreenshotLightbox,
-  type ScreenshotViewerEntry,
-} from "../../screenshots";
 import { getItemFocusTarget } from "../../../../helpers";
-import {
-  Feature,
-  useFeature,
-  useUserDetails,
-  useUserPreferences,
-} from "../../../../hooks";
+import { Feature, useFeature } from "../../../../hooks";
 import {
   NavigationService,
   type FocusOverrides,
@@ -49,24 +31,15 @@ import {
 } from "../navigation";
 import { ScreenshotHotkeyHint } from "./hotkey-hint";
 import { LocalScreenshotTile } from "./local-screenshot-tile";
-import { MyScreenshotsPartialNotice } from "./partial-notice";
-import { PublishedScreenshotThumbnail } from "./published-thumbnail";
-import {
-  GameScreenshotsModal,
-  type GameScreenshotsTab,
-} from "./screenshots-modal";
+import { LocalScreenshotViewer } from "./local-screenshot-viewer";
+import { GameScreenshotsModal } from "./screenshots-modal";
 import {
   useLocalScreenshotActions,
   type LocalScreenshotActions,
 } from "./use-local-screenshot-actions";
-import {
-  useFocusFollowsPublishedLocal,
-  useMyGameScreenshots,
-} from "./use-my-game-screenshots";
-import { useMyScreenshotsViewer } from "./use-my-screenshots-viewer";
+import { useLocalGameScreenshots } from "./use-local-game-screenshots";
 
 const SIDEBAR_SCREENSHOT_COUNT = 4;
-const PUBLISHED_WAIT_TIMEOUT_MS = 1_500;
 const SIDEBAR_COLUMNS = 2;
 const BLOCK_TARGET: FocusOverrideTarget = { type: "block" };
 
@@ -74,7 +47,7 @@ const isFullWidthThumbnail = (index: number, count: number) =>
   count <= 2 || (count === 3 && index === 2);
 
 const getThumbnailNavigation = (
-  items: MyScreenshotItem[],
+  items: LocalScreenshot[],
   index: number,
   leftTarget: FocusOverrideTarget
 ): FocusOverrides => {
@@ -85,21 +58,16 @@ const getThumbnailNavigation = (
   return index % SIDEBAR_COLUMNS === 0
     ? { left: leftTarget }
     : {
-        left: getItemFocusTarget(
-          getGameMyScreenshotItemId(items[index - 1].id)
-        ),
+        left: getItemFocusTarget(getItemFocusId(items[index - 1])),
         right: BLOCK_TARGET,
       };
 };
 
 interface MyScreenshotsGridProps {
-  items: MyScreenshotItem[];
+  items: LocalScreenshot[];
   local: LocalScreenshotActions;
-  showCommentCount: boolean;
   leftTarget: FocusOverrideTarget;
-  onOpen: (screenshot: ProfileScreenshot) => void;
-  onOpenLocal?: (screenshot: LocalScreenshot) => void;
-  onRefreshImage: (screenshot: ProfileScreenshot) => Promise<void>;
+  onOpen: (screenshot: LocalScreenshot) => void;
 }
 
 const resolveFocusTargetNodeId = (target: FocusOverrideTarget) => {
@@ -115,33 +83,16 @@ const resolveFocusTargetNodeId = (target: FocusOverrideTarget) => {
   );
 };
 
-const getLocalItemFocusId = (clientId: string) =>
-  getGameMyScreenshotItemId(`local:${clientId}`);
+const getItemFocusId = (screenshot: LocalScreenshot) =>
+  getGameMyScreenshotItemId(screenshot.clientId);
 
 const getFocusAfterDeleteId = (
-  items: MyScreenshotItem[],
+  items: LocalScreenshot[],
   index: number,
   leftTarget: FocusOverrideTarget
 ) => {
   const neighbour = items[index + 1] ?? items[index - 1];
-  if (neighbour) return getGameMyScreenshotItemId(neighbour.id);
-
-  return resolveFocusTargetNodeId(leftTarget);
-};
-
-const getFocusAfterViewerLocalDeleteId = (
-  items: MyScreenshotItem[],
-  screenshot: LocalScreenshot,
-  leftTarget: FocusOverrideTarget
-) => {
-  const index = items.findIndex(
-    (item) =>
-      item.kind === "local" && item.screenshot.clientId === screenshot.clientId
-  );
-  if (index !== -1) return getFocusAfterDeleteId(items, index, leftTarget);
-
-  const lastVisible = items.at(-1);
-  if (lastVisible) return getGameMyScreenshotItemId(lastVisible.id);
+  if (neighbour) return getItemFocusId(neighbour);
 
   return resolveFocusTargetNodeId(leftTarget);
 };
@@ -149,11 +100,8 @@ const getFocusAfterViewerLocalDeleteId = (
 function MyScreenshotsGrid({
   items,
   local,
-  showCommentCount,
   leftTarget,
   onOpen,
-  onOpenLocal,
-  onRefreshImage,
 }: Readonly<MyScreenshotsGridProps>) {
   return (
     <GridFocusGroup
@@ -161,114 +109,26 @@ function MyScreenshotsGrid({
       className="game-my-screenshots__grid"
       navigationOrder={0}
     >
-      {items.map((item, index) => {
-        const focusId = getGameMyScreenshotItemId(item.id);
-        const navigationOverrides = getThumbnailNavigation(
-          items,
-          index,
-          leftTarget
-        );
-
-        return item.kind === "published" ? (
-          <PublishedScreenshotThumbnail
-            key={item.id}
-            screenshot={item.screenshot}
-            focusId={focusId}
-            showCommentCount={showCommentCount}
-            navigationOverrides={navigationOverrides}
-            onOpen={onOpen}
-            onRefreshImage={onRefreshImage}
-          />
-        ) : (
-          <LocalScreenshotTile
-            key={item.id}
-            screenshot={item.screenshot}
-            focusId={focusId}
-            alt={local.describe(item.screenshot)}
-            isBusy={local.busyIds.has(item.screenshot.clientId)}
-            variant="thumbnail"
-            navigationOverrides={navigationOverrides}
-            onOpen={(screenshot) => onOpenLocal?.(screenshot)}
-            onDelete={(screenshot) =>
-              local.requestDelete(
-                screenshot,
-                getFocusAfterDeleteId(items, index, leftTarget)
-              )
-            }
-          />
-        );
-      })}
+      {items.map((screenshot, index) => (
+        <LocalScreenshotTile
+          key={screenshot.clientId}
+          screenshot={screenshot}
+          focusId={getItemFocusId(screenshot)}
+          alt={local.describe(screenshot)}
+          isBusy={local.busyIds.has(screenshot.clientId)}
+          variant="thumbnail"
+          navigationOverrides={getThumbnailNavigation(items, index, leftTarget)}
+          onOpen={onOpen}
+          onDelete={(item) =>
+            local.requestDelete(
+              item,
+              getFocusAfterDeleteId(items, index, leftTarget)
+            )
+          }
+        />
+      ))}
     </GridFocusGroup>
   );
-}
-
-interface CommunityScreenshotsOptions {
-  enabled: boolean;
-  shop: GameShop;
-  objectId: string;
-  writeBus: ScreenshotWriteBus;
-}
-
-function useSidebarCommunityScreenshots({
-  enabled,
-  shop,
-  objectId,
-  writeBus,
-}: CommunityScreenshotsOptions) {
-  const { userDetails } = useUserDetails();
-  const isSignedIn = Boolean(userDetails);
-  const buildPath = useCallback(
-    (cursor: string | null) =>
-      buildGameScreenshotsPath({
-        shop,
-        objectId,
-        cursor,
-        sort: "top",
-        take: SIDEBAR_SCREENSHOT_COUNT,
-      }),
-    [objectId, shop]
-  );
-  const feed = useScreenshotFeed({
-    requestKey: enabled ? `${shop}:${objectId}:top:sidebar-community` : null,
-    buildPath,
-    needsAuth: isSignedIn,
-    writeBus,
-  });
-  const { lightboxProps, open } = useScreenshotLightbox({
-    items: feed.items,
-    needsAuth: isSignedIn,
-    updateItem: feed.updateItem,
-    removeItem: feed.removeItem,
-    getFetchedAt: feed.getFetchedAt,
-    imageRefresher: feed.imageRefresher,
-    subscribeRemoteWrites: feed.subscribeRemoteWrites,
-    hasMore: feed.hasMore,
-    loadMore: feed.loadMore,
-    hasLoadMoreError: feed.error === "page",
-    retryLoadMore: feed.retry,
-  });
-  const items = useMemo<MyScreenshotItem[]>(
-    () =>
-      feed.items.slice(0, SIDEBAR_SCREENSHOT_COUNT).map((screenshot) => ({
-        kind: "published",
-        id: `community:${screenshot.id}`,
-        screenshot,
-      })),
-    [feed.items]
-  );
-
-  return { feed, items, lightboxProps, open };
-}
-
-function useHasWaited(key: string, timeoutMs: number) {
-  const [expiredKey, setExpiredKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setExpiredKey(key), timeoutMs);
-    return () => clearTimeout(timeout);
-  }, [key, timeoutMs]);
-
-  return expiredKey === key;
 }
 
 interface MyScreenshotsMessageProps {
@@ -326,8 +186,6 @@ function MyScreenshotsMessage({
 export interface GameMyScreenshotsProps {
   shop: GameShop;
   objectId: string;
-  communityShop: GameShop;
-  communityObjectId: string;
   navigationOrder: number;
   leftTarget: FocusOverrideTarget;
 }
@@ -335,120 +193,30 @@ export interface GameMyScreenshotsProps {
 export function GameMyScreenshots({
   shop,
   objectId,
-  communityShop,
-  communityObjectId,
   navigationOrder,
   leftTarget,
 }: Readonly<GameMyScreenshotsProps>) {
   const { t } = useTranslation("big_picture");
   const { isFeatureEnabled } = useFeature();
-  const userPreferences = useUserPreferences();
-  const [modalTab, setModalTab] = useState<GameScreenshotsTab | null>(null);
-  const [writeBus] = useState(createScreenshotWriteBus);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewing, setViewing] = useState<LocalScreenshot | null>(null);
   const isEnabled = isFeatureEnabled(Feature.Screenshots);
-  const mine = useMyGameScreenshots({
-    shop,
-    objectId,
-    sort: "recent",
-    take: SIDEBAR_SCREENSHOT_COUNT,
-    isEnabled,
-    writeBus,
-    feedKeySuffix: "sidebar",
-  });
-  const { feed } = mine;
-  useFocusFollowsPublishedLocal(
-    mine.pendingLocal,
-    feed.items.map((item) => item.id),
-    getLocalItemFocusId,
-    getGameMyScreenshotItemId
-  );
+  const mine = useLocalGameScreenshots(shop, objectId, isEnabled);
   const local = useLocalScreenshotActions();
-  const { lightboxProps, open, close } = useScreenshotLightbox({
-    items: feed.items,
-    needsAuth: true,
-    updateItem: feed.updateItem,
-    removeItem: feed.removeItem,
-    getFetchedAt: feed.getFetchedAt,
-    imageRefresher: feed.imageRefresher,
-    subscribeRemoteWrites: feed.subscribeRemoteWrites,
-    hasMore: feed.hasMore,
-    loadMore: feed.loadMore,
-    hasLoadMoreError: feed.error === "page",
-    retryLoadMore: feed.retry,
-  });
-  const items = mine.items.slice(0, SIDEBAR_SCREENSHOT_COUNT);
-  const hasMoreUploaded = mine.canFetchPublished && feed.hasMore;
-  const oldestLoadedUpload = feed.items.at(-1)?.capturedAt ?? null;
-  const viewer = useMyScreenshotsViewer({
-    entries: mine.items
-      .filter(
-        (item) =>
-          item.kind !== "local" ||
-          !hasMoreUploaded ||
-          oldestLoadedUpload === null ||
-          item.screenshot.capturedAt >= oldestLoadedUpload
-      )
-      .map(
-        (item): ScreenshotViewerEntry =>
-          item.kind === "local"
-            ? { kind: "local", screenshot: item.screenshot }
-            : { kind: "uploaded", screenshot: item.screenshot }
-      ),
-    localScreenshots: mine.localScreenshots,
-    hasLocalLoaded: mine.hasLoadedLocal,
-    uploadedItems: feed.items,
-    canResolveUploaded: mine.canFetchPublished,
-    openUploaded: open,
-    closeUploaded: close,
-    getFocusAfterLocalDeleteId: (screenshot) =>
-      getFocusAfterViewerLocalDeleteId(items, screenshot, leftTarget),
-  });
-  const hasWaitedForPublished = useHasWaited(
-    `${shop}:${objectId}`,
-    PUBLISHED_WAIT_TIMEOUT_MS
+  const items = useMemo(
+    () => mine.screenshots.slice(0, SIDEBAR_SCREENSHOT_COUNT),
+    [mine.screenshots]
   );
-  const isSettled =
-    mine.hasLoaded ||
-    (hasWaitedForPublished && mine.hasLoadedLocal && !mine.hasLocalFailed);
-  const hasCommunity = communityShop !== "custom";
-  const isCommunityHidden =
-    resolveScreenshotPreferences(userPreferences).hideCommunity;
-  const hasNoScreenshotsOfMine =
-    mine.hasLoaded && !mine.hasFailed && !mine.isPartial && items.length === 0;
-  const fallsBackToCommunity =
-    hasCommunity && !isCommunityHidden && hasNoScreenshotsOfMine;
-  const community = useSidebarCommunityScreenshots({
-    enabled: isEnabled && fallsBackToCommunity,
-    shop: communityShop,
-    objectId: communityObjectId,
-    writeBus,
-  });
-  const showCommunity = fallsBackToCommunity && community.items.length > 0;
-  const title = t(
-    fallsBackToCommunity ? "community_screenshots_tab" : "my_screenshots",
-    { ns: "screenshots" }
-  );
-  const showGrid = isSettled && items.length > 0 && !mine.hasFailed;
-  const showMessage = !showGrid && !showCommunity && !mine.isPartial;
-  const isMessageLoading = !isSettled || community.feed.isLoading;
-  const getViewAllTab = (): GameScreenshotsTab | null => {
-    if (showCommunity) return "community";
-    if (showGrid) return "mine";
-    if (hasCommunity && mine.hasLoaded && !fallsBackToCommunity) {
-      return "mine";
-    }
-    return null;
-  };
-  const viewAllTab = getViewAllTab();
-  const closeModal = () => {
-    setModalTab(null);
-    if (viewAllTab) return;
+  const title = t("my_screenshots", { ns: "screenshots" });
+  const showGrid = mine.hasLoaded && !mine.hasFailed && items.length > 0;
 
-    const focusId = resolveFocusTargetNodeId(leftTarget);
-    if (focusId) {
-      NavigationService.getInstance().requestFocusWhenAvailable(focusId);
-    }
-  };
+  useEffect(() => {
+    if (!viewing) return;
+    const stillExists = mine.screenshots.some(
+      (screenshot) => screenshot.clientId === viewing.clientId
+    );
+    if (!stillExists) setViewing(null);
+  }, [mine.screenshots, viewing]);
 
   if (!isEnabled) return null;
 
@@ -470,43 +238,18 @@ export function GameMyScreenshots({
             <MyScreenshotsGrid
               items={items}
               local={local}
-              showCommentCount={isFeatureEnabled(Feature.ScreenshotComments)}
               leftTarget={leftTarget}
-              onOpen={(screenshot) =>
-                viewer.openEntry({ kind: "uploaded", screenshot })
-              }
-              onOpenLocal={(screenshot) =>
-                viewer.openEntry({ kind: "local", screenshot })
-              }
-              onRefreshImage={feed.refreshImage}
+              onOpen={setViewing}
             />
-          ) : null}
-          {showCommunity ? (
-            <MyScreenshotsGrid
-              items={community.items}
-              local={local}
-              showCommentCount={isFeatureEnabled(Feature.ScreenshotComments)}
-              leftTarget={leftTarget}
-              onOpen={community.open}
-              onRefreshImage={community.feed.refreshImage}
-            />
-          ) : null}
-          {showMessage ? (
+          ) : (
             <MyScreenshotsMessage
-              isLoading={isMessageLoading}
+              isLoading={!mine.hasLoaded}
               hasLoadError={mine.hasFailed}
               leftTarget={leftTarget}
-              onRetry={mine.retry}
+              onRetry={() => void mine.retry()}
             />
-          ) : null}
-          <MyScreenshotsPartialNotice
-            mine={mine}
-            focusId={GAME_MY_SCREENSHOTS_RETRY_ID}
-            className="game-my-screenshots__notice"
-            navigationOverrides={{ left: leftTarget, right: BLOCK_TARGET }}
-            navigationOrder={1}
-          />
-          {viewAllTab ? (
+          )}
+          {showGrid ? (
             <Button
               variant="secondary"
               size="small"
@@ -518,26 +261,25 @@ export function GameMyScreenshots({
                 right: BLOCK_TARGET,
               }}
               focusNavigationOrder={2}
-              onClick={() => setModalTab(viewAllTab)}
+              onClick={() => setIsModalOpen(true)}
             >
               {t("screenshots_view_all")}
             </Button>
           ) : null}
         </div>
 
-        <ScreenshotLightbox {...lightboxProps} localSlot={viewer.localSlot} />
-        <ScreenshotLightbox {...community.lightboxProps} />
         {local.elements}
         <GameScreenshotsModal
-          visible={modalTab !== null}
-          shop={shop}
-          objectId={objectId}
-          communityShop={communityShop}
-          communityObjectId={communityObjectId}
-          isCommunityHidden={isCommunityHidden}
-          writeBus={writeBus}
-          initialTab={modalTab ?? "mine"}
-          onClose={closeModal}
+          visible={isModalOpen}
+          screenshots={mine.screenshots}
+          local={local}
+          onOpen={setViewing}
+          onClose={() => setIsModalOpen(false)}
+        />
+        <LocalScreenshotViewer
+          screenshot={viewing}
+          alt={viewing ? local.describe(viewing) : ""}
+          onClose={() => setViewing(null)}
         />
       </section>
     </VerticalFocusGroup>

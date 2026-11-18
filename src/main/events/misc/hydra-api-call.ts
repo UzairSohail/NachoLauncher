@@ -2,26 +2,18 @@ import { registerEvent } from "../register-event";
 import { HydraApi } from "@main/services";
 
 interface HydraApiCallPayload {
-  method:
-    | "get"
-    | "getResponse"
-    | "post"
-    | "postResponse"
-    | "put"
-    | "patch"
-    | "delete";
+  method: "get" | "getResponse" | "post";
   url: string;
   data?: unknown;
   params?: unknown;
   options?: {
-    needsAuth?: boolean;
-    needsSubscription?: boolean;
     ifModifiedSince?: Date;
     acceptedStatuses?: number[];
     timeout?: number;
   };
 }
 
+/** The renderer's way to reach Hydra's public catalogue. */
 const hydraApiCall = async (
   _event: Electron.IpcMainInvokeEvent,
   payload: HydraApiCallPayload
@@ -30,9 +22,7 @@ const hydraApiCall = async (
   const hydraApiOptions = {
     ...options,
     validateStatus: options?.acceptedStatuses
-      ? (status: number) =>
-          status !== 401 &&
-          (options.acceptedStatuses?.includes(status) ?? false)
+      ? (status: number) => options.acceptedStatuses?.includes(status) ?? false
       : undefined,
   };
 
@@ -69,18 +59,6 @@ const hydraApiCall = async (
         break;
       case "post":
         request = HydraApi.post(url, data, hydraApiOptions);
-        break;
-      case "postResponse":
-        request = HydraApi.postResponse(url, data, hydraApiOptions);
-        break;
-      case "put":
-        request = HydraApi.put(url, data, hydraApiOptions);
-        break;
-      case "patch":
-        request = HydraApi.patch(url, data, hydraApiOptions);
-        break;
-      case "delete":
-        request = HydraApi.delete(url, hydraApiOptions);
         break;
       default:
         throw new Error(`Unsupported HTTP method: ${method}`);

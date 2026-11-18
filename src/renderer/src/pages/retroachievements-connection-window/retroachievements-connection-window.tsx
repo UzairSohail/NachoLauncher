@@ -5,11 +5,7 @@ import { LinkExternalIcon } from "@primer/octicons-react";
 
 import { Button, Link, TextField, WindowTitleBar } from "@renderer/components";
 import retroAchievementsLogo from "@renderer/assets/icons/retroachievements.png";
-import {
-  getRetroAchievementsConnectErrorField,
-  RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT,
-  type RetroAchievementsIntegration,
-} from "@renderer/pages/settings/retroachievements-integration";
+import { getRetroAchievementsConnectErrorField } from "@renderer/pages/settings/retroachievements-integration";
 
 import "./retroachievements-connection-window.scss";
 
@@ -40,23 +36,14 @@ export default function RetroAchievementsConnectionWindow() {
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      globalThis.window.electron.getUserPreferences(),
-      globalThis.window.electron.hydraApi
-        .get<RetroAchievementsIntegration>(
-          RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT
-        )
-        .catch(() => null),
-    ])
-      .then(([preferences, integration]) => {
+    globalThis.window.electron
+      .getUserPreferences()
+      .then((preferences) => {
         if (!active) return;
 
         setForm((current) => ({
           ...current,
-          username:
-            integration?.connected && integration.username
-              ? integration.username
-              : (preferences?.retroAchievementsUsername ?? ""),
+          username: preferences?.retroAchievementsUsername ?? "",
           webApiKey: preferences?.retroAchievementsWebApiKey ?? "",
         }));
       })
@@ -100,38 +87,26 @@ export default function RetroAchievementsConnectionWindow() {
     const webApiKey = form.webApiKey.trim();
 
     try {
-      const integration =
-        await globalThis.window.electron.hydraApi.post<RetroAchievementsIntegration>(
-          `${RETRO_ACHIEVEMENTS_INTEGRATION_ENDPOINT}/connect`,
-          {
-            data: {
-              username: form.username.trim(),
-              password: form.password,
-              webApiKey,
-              deleteAchievements: false,
-            },
-          }
+      const { username } =
+        await globalThis.window.electron.connectRetroAchievements(
+          form.username.trim(),
+          form.password,
+          webApiKey
         );
 
-      await globalThis.window.electron
-        .updateUserPreferences({
-          retroAchievementsWebApiKey: webApiKey,
-          retroAchievementsUsername: integration.connected
-            ? integration.username
-            : form.username.trim(),
-        })
-        .catch(() => {});
-
-      void globalThis.window.electron
-        .linkRetroAchievementsEmulatorAccount(
-          form.username.trim(),
-          form.password
-        )
-        .catch(() => false);
+      await globalThis.window.electron.updateUserPreferences({
+        retroAchievementsWebApiKey: webApiKey,
+        retroAchievementsUsername: username,
+      });
 
       await globalThis.window.electron.completeRetroAchievementsConnectionWindow();
     } catch (error) {
-      const message = error instanceof Error ? error.message : undefined;
+      // IPC wraps main-process errors, so pick the code out of the text.
+      const message =
+        error instanceof Error
+          ? (error.message.match(/profile\/retroachievements-[a-z-]+/)?.[0] ??
+            error.message)
+          : undefined;
       const field = getRetroAchievementsConnectErrorField(message);
       setErrors({ [field]: getErrorMessage(message) });
       setIsSubmitting(false);

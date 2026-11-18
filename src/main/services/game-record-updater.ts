@@ -2,7 +2,7 @@ import { gamesSublevel } from "@main/level";
 
 import { createGameRecordUpdater } from "./game-record-updater-core";
 
-import { libraryWriteQueue } from "./library-sync/library-write-queue";
+import { libraryWriteQueue } from "./library-queue/library-write-queue";
 const updater = createGameRecordUpdater(gamesSublevel);
 
 // Favourite and pin changes sync to the user's other devices through Drive.
