@@ -2333,6 +2333,23 @@ contextBridge.exposeInMainWorld("electron", {
   executeSystemPowerAction: (action: SystemPowerAction) =>
     ipcRenderer.invoke("executeSystemPowerAction", action),
 
+  /* Toasts sent from the main process, such as recompilation results */
+  onShowToast: (
+    cb: (toast: {
+      title: string;
+      message?: string;
+      type: "success" | "error" | "warning";
+      duration?: number;
+    }) => void
+  ) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      toast: Parameters<typeof cb>[0]
+    ) => cb(toast);
+    ipcRenderer.on("on-show-toast", listener);
+    return () => ipcRenderer.removeListener("on-show-toast", listener);
+  },
+
   onProfileUpdated: (cb: () => void) => {
     const listener = () => cb();
     ipcRenderer.on("on-profile-updated", listener);

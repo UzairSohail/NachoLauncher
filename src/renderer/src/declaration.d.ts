@@ -1657,6 +1657,14 @@ declare global {
     /* Big Picture Window */
     openBigPictureWindow: () => Promise<void>;
     executeSystemPowerAction: (action: SystemPowerAction) => Promise<void>;
+    onShowToast: (
+      cb: (toast: {
+        title: string;
+        message?: string;
+        type: "success" | "error" | "warning";
+        duration?: number;
+      }) => void
+    ) => () => void;
 
     onProfileUpdated: (cb: () => void) => () => Electron.IpcRenderer;
     onNavigate: (cb: (path: string) => void) => () => Electron.IpcRenderer;
