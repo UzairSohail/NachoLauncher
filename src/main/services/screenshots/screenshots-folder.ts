@@ -5,7 +5,7 @@ import { resolveAchievementScreenshotsDirectory } from "../achievement-screensho
 import { SystemPath } from "../system-path";
 import { readUserPreferences } from "./screenshot-user-preferences";
 
-const SCREENSHOTS_FOLDER_NAME = "Hydra";
+const SCREENSHOTS_FOLDER_NAME = "Nacho Launcher";
 
 const getPicturesDirectory = () => {
   try {
