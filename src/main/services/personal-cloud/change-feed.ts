@@ -1,7 +1,10 @@
+import { BatteryState } from "../battery-state";
 import { logger } from "../logger";
 import { PersonalCloud } from "./index";
 
 const POLL_MS = 60_000;
+// On battery, Drive is asked at most every 5 minutes, so Wi-Fi can rest.
+const MIN_GAP_ON_BATTERY_MS = 5 * 60_000;
 const FIRST_CHECK_DELAY_MS = 20_000;
 
 type Listener = () => void;
@@ -17,6 +20,7 @@ type Listener = () => void;
 export class DriveChangeFeed {
   private static token: string | null = null;
   private static timer: NodeJS.Timeout | null = null;
+  private static lastCheckAt = 0;
   private static checking: Promise<void> | null = null;
   private static readonly listeners = new Set<Listener>();
 
@@ -30,10 +34,19 @@ export class DriveChangeFeed {
   public static start() {
     if (this.timer) return;
     setTimeout(() => void this.check(), FIRST_CHECK_DELAY_MS);
-    this.timer = setInterval(() => void this.check(), POLL_MS);
+    this.timer = setInterval(() => {
+      if (
+        BatteryState.isOnBattery() &&
+        Date.now() - this.lastCheckAt < MIN_GAP_ON_BATTERY_MS
+      ) {
+        return;
+      }
+      void this.check();
+    }, POLL_MS);
   }
 
   public static check(): Promise<void> {
+    this.lastCheckAt = Date.now();
     this.checking ??= this.checkOnce()
       .catch((error) => {
         // A token Drive no longer accepts, or an outage. Start over, and let

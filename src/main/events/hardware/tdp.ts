@@ -1,6 +1,7 @@
 import type { GameShop } from "@types";
 import { levelKeys } from "@main/level";
 import { TdpController } from "@main/services/tdp";
+import { BatteryState } from "@main/services/battery-state";
 import { getUserPreferences } from "@main/services/user-preferences";
 import { applyUserPreferences } from "../user-preferences/update-user-preferences";
 import { registerEvent } from "../register-event";
@@ -20,6 +21,8 @@ registerEvent(
       shop && objectId ? levelKeys.game(shop, objectId) : null
     )
 );
+
+registerEvent("getOnBatteryPower", () => BatteryState.isOnBattery());
 
 registerEvent("prepareTdpControl", async () => {
   await TdpController.prepare();

@@ -1987,6 +1987,15 @@ contextBridge.exposeInMainWorld("electron", {
   getTdpStatus: (shop?: GameShop | null, objectId?: string | null) =>
     ipcRenderer.invoke("getTdpStatus", shop ?? null, objectId ?? null),
   prepareTdpControl: () => ipcRenderer.invoke("prepareTdpControl"),
+  getOnBatteryPower: (): Promise<boolean> =>
+    ipcRenderer.invoke("getOnBatteryPower"),
+  onBatteryPowerChanged: (cb: (onBattery: boolean) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, onBattery: boolean) =>
+      cb(onBattery);
+    ipcRenderer.on("on-battery-power-changed", listener);
+    return () =>
+      ipcRenderer.removeListener("on-battery-power-changed", listener);
+  },
   setGlobalTdpLimit: (watts: number | null) =>
     ipcRenderer.invoke("setGlobalTdpLimit", watts),
   setGameTdpLimit: (shop: GameShop, objectId: string, watts: number | null) =>

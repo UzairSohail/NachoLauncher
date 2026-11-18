@@ -77,6 +77,13 @@ type RepeatLaneCandidates = Map<RepeatLane, GamepadInputDescriptor[]>;
 type StickPosition = { x: number; y: number };
 type StickPositions = Record<GamepadStickSide, StickPosition>;
 
+/** Poll every frame for this long after the last gamepad input. */
+const GAMEPAD_ACTIVE_POLL_WINDOW_MS = 4_000;
+/** About 15 times a second while idle: the first press still feels instant. */
+const GAMEPAD_IDLE_POLL_MS = 66;
+/** While Big Picture is hidden, such as during a game. */
+const GAMEPAD_HIDDEN_POLL_MS = 500;
+
 export class GamepadService {
   private static instance: GamepadService;
 
@@ -92,6 +99,9 @@ export class GamepadService {
 
   private isPolling = false;
   private animationFrameId: number | null = null;
+  private idlePollTimer: number | null = null;
+  private lastGamepadActivityAt = 0;
+  private readonly lastGamepadTimestamps = new Map<number, number>();
   private activeGamepadIndex: number | null = null;
   private lastActiveGamepadSwitchTime = 0;
   private lastGamepadActivityTime = 0;
@@ -238,17 +248,49 @@ export class GamepadService {
   };
 
   private pollGamepads() {
+    this.animationFrameId = null;
+    this.idlePollTimer = null;
+    if (!this.isPolling) return;
+
     const gamepads = globalThis.navigator.getGamepads();
+    const now = globalThis.performance.now();
 
     for (const gamepad of gamepads) {
       if (!gamepad) continue;
+
+      // The timestamp moves whenever the pad's state changes.
+      if (this.lastGamepadTimestamps.get(gamepad.index) !== gamepad.timestamp) {
+        this.lastGamepadTimestamps.set(gamepad.index, gamepad.timestamp);
+        this.lastGamepadActivityAt = now;
+      }
 
       this.gamepads.set(gamepad.index, gamepad);
       this.updateGamepadState(gamepad.index, gamepad);
     }
 
-    this.animationFrameId = globalThis.requestAnimationFrame(() =>
-      this.pollGamepads()
+    this.scheduleNextPoll(now);
+  }
+
+  /**
+   * Every frame while the pad is in use. After a few idle seconds, a slower
+   * timer, so a built-in controller that is always connected doesn't keep
+   * the screen's frame loop and the CPU awake for nothing.
+   */
+  private scheduleNextPoll(now: number) {
+    const hidden = globalThis.document?.hidden === true;
+    const idle =
+      now - this.lastGamepadActivityAt > GAMEPAD_ACTIVE_POLL_WINDOW_MS;
+
+    if (!hidden && !idle) {
+      this.animationFrameId = globalThis.requestAnimationFrame(() =>
+        this.pollGamepads()
+      );
+      return;
+    }
+
+    this.idlePollTimer = globalThis.window.setTimeout(
+      () => this.pollGamepads(),
+      hidden ? GAMEPAD_HIDDEN_POLL_MS : GAMEPAD_IDLE_POLL_MS
     );
   }
 
@@ -265,6 +307,11 @@ export class GamepadService {
     if (this.animationFrameId !== null) {
       globalThis.cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
+    }
+
+    if (this.idlePollTimer !== null) {
+      globalThis.window.clearTimeout(this.idlePollTimer);
+      this.idlePollTimer = null;
     }
 
     this.isPolling = false;

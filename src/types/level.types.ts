@@ -261,6 +261,8 @@ export interface UserPreferences {
   bigPictureSoundsEnabled?: boolean;
   /** Per device: turns off blur and motion effects in Big Picture. */
   bigPictureReduceEffects?: boolean;
+  /** Per device: also reduce Big Picture effects on battery. Default on. */
+  bigPictureReduceEffectsOnBattery?: boolean;
   /**
    * Per device: TDP limit in watts applied through steamos-manager on SteamOS
    * Desktop mode. Null or missing leaves the system default.

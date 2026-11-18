@@ -15,7 +15,12 @@ import {
   Sidebar,
 } from "./layout";
 import { IS_DESKTOP } from "./constants";
-import { useBigPictureToast, useNavigation, useUserPreferences } from "./hooks";
+import {
+  useBigPictureToast,
+  useNavigation,
+  useReduceEffects,
+  useUserPreferences,
+} from "./hooks";
 import {
   HorizontalFocusGroup,
   InputModeProvider,
@@ -237,7 +242,7 @@ export default function App() {
     setFocusRegion,
   ]);
 
-  const reduceEffects = userPreferences?.bigPictureReduceEffects ?? false;
+  const reduceEffects = useReduceEffects();
 
   useEffect(() => {
     // On the root element so portalled modals and menus are covered too.

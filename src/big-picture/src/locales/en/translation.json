@@ -801,6 +801,7 @@
     "settings_performance_section_title": "Performance",
     "settings_performance_section_description": "Make Big Picture lighter on handhelds. This only changes this device.",
     "settings_reduce_effects": "Reduce effects (no blur, motion or animated artwork)",
+    "settings_reduce_effects_on_battery": "Also reduce effects while on battery",
     "settings_enable_diagnostics": "Enable diagnostics",
     "settings_diagnostics_position": "Diagnostics position",
     "settings_diagnostics_position_top_left": "Top Left",

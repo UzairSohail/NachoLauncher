@@ -29,6 +29,7 @@ interface BigPictureForm {
   bigPictureLaunchToLibraryPage: boolean;
   bigPictureSoundsEnabled: boolean;
   bigPictureReduceEffects: boolean;
+  bigPictureReduceEffectsOnBattery: boolean;
   bigPictureVirtualKeyboardEnabled: boolean;
   bigPictureDiagnosticsEnabled: boolean;
   bigPictureDiagnosticsPosition: BigPictureDiagnosticsPosition;
@@ -47,6 +48,7 @@ const DEFAULT_FORM: BigPictureForm = {
   bigPictureLaunchToLibraryPage: false,
   bigPictureSoundsEnabled: true,
   bigPictureReduceEffects: false,
+  bigPictureReduceEffectsOnBattery: true,
   bigPictureVirtualKeyboardEnabled: true,
   bigPictureDiagnosticsEnabled: false,
   bigPictureDiagnosticsPosition: "bottom-center",
@@ -62,6 +64,8 @@ const buildForm = (preferences: UserPreferences | null): BigPictureForm =>
           false,
         bigPictureSoundsEnabled: preferences.bigPictureSoundsEnabled ?? true,
         bigPictureReduceEffects: preferences.bigPictureReduceEffects ?? false,
+        bigPictureReduceEffectsOnBattery:
+          preferences.bigPictureReduceEffectsOnBattery ?? true,
         bigPictureVirtualKeyboardEnabled:
           preferences.bigPictureVirtualKeyboardEnabled ?? true,
         bigPictureDiagnosticsEnabled:
@@ -126,6 +130,13 @@ export function BigPictureSettingsSection({
   const handleReduceEffectsChange = useCallback(
     (checked: boolean) => {
       updateUserPreferences({ bigPictureReduceEffects: checked });
+    },
+    [updateUserPreferences]
+  );
+
+  const handleReduceEffectsOnBatteryChange = useCallback(
+    (checked: boolean) => {
+      updateUserPreferences({ bigPictureReduceEffectsOnBattery: checked });
     },
     [updateUserPreferences]
   );
@@ -208,8 +219,20 @@ export function BigPictureSettingsSection({
         checked: form.bigPictureReduceEffects,
         onChange: handleReduceEffectsChange,
       },
+      {
+        id: "reduce-effects-on-battery",
+        focusId: BIG_PICTURE_ITEM_FOCUS_IDS.reduceEffectsOnBattery,
+        label: t("settings_reduce_effects_on_battery"),
+        checked: form.bigPictureReduceEffectsOnBattery,
+        onChange: handleReduceEffectsOnBatteryChange,
+      },
     ];
-  }, [form.bigPictureReduceEffects, handleReduceEffectsChange]);
+  }, [
+    form.bigPictureReduceEffects,
+    form.bigPictureReduceEffectsOnBattery,
+    handleReduceEffectsChange,
+    handleReduceEffectsOnBatteryChange,
+  ]);
 
   const diagnosticsItems = useMemo<BigPictureItem[]>(() => {
     return [
@@ -246,7 +269,7 @@ export function BigPictureSettingsSection({
   >(() => {
     const previousFallback: FocusOverrideTarget = {
       type: "item",
-      itemId: BIG_PICTURE_ITEM_FOCUS_IDS.reduceEffects,
+      itemId: BIG_PICTURE_ITEM_FOCUS_IDS.reduceEffectsOnBattery,
     };
 
     return Object.fromEntries(

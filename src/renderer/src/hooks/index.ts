@@ -34,3 +34,4 @@ export * from "./use-phone-sign-in";
 export * from "./use-all-debrid-hosts";
 export * from "./use-google-drive-signed-in";
 export * from "./use-tdp-status";
+export * from "./use-on-battery-power";

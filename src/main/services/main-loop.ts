@@ -7,6 +7,7 @@ import { INTERVALS } from "@main/constants";
 import { PowerSaveBlockerManager } from "./power-save-blocker";
 import { logger } from "./logger";
 import { DownloadOrchestrator } from "./download-orchestrator";
+import { BatteryState } from "./battery-state";
 
 const wrapInLoop = (fn: () => unknown, interval: number | (() => number)) => {
   const loop = async () => {
@@ -32,7 +33,10 @@ export const startMainLoop = async () => {
     () =>
       gamesPlaytime.size > 0
         ? INTERVALS.processWatcherWhilePlaying
-        : INTERVALS.processWatcher
+        : BatteryState.pick(
+            INTERVALS.processWatcher,
+            INTERVALS.processWatcherOnBattery
+          )
   );
   wrapInLoop(() => DownloadManager.watchDownloads(), INTERVALS.downloadWatcher);
   wrapInLoop(

@@ -45,6 +45,7 @@ import { GofileApi } from "./services/hosters";
 import { clearLegacyAchievementPersistence } from "./level/clear-legacy-achievements";
 import { DriveChangeFeed } from "./services/personal-cloud/change-feed";
 import { TdpController } from "./services/tdp";
+import { BatteryState } from "./services/battery-state";
 import { migrateEmulatorCloudSaveDefaults } from "./services/cloud-save/automatic-sync-emulator-migration";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
 import { UmuUpdater } from "./services/umu-updater";
@@ -75,6 +76,8 @@ const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
 
 export const loadState = async () => {
   await Lock.acquireLock();
+  // Background timers stretch while the device runs on battery.
+  BatteryState.start();
   await clearLegacyAchievementPersistence();
   await migrateCloudSaveAutomaticSyncDefaults();
   await migrateEmulatorCloudSaveDefaults();

@@ -1497,6 +1497,8 @@ declare global {
       objectId?: string | null
     ) => Promise<TdpStatus>;
     prepareTdpControl: () => Promise<void>;
+    getOnBatteryPower: () => Promise<boolean>;
+    onBatteryPowerChanged: (cb: (onBattery: boolean) => void) => () => void;
     setGlobalTdpLimit: (watts: number | null) => Promise<void>;
     setGameTdpLimit: (
       shop: GameShop,
