@@ -28,8 +28,11 @@ import { UnlockedAchievementsCache } from "./unlocked-achievements-cache";
 import { achievementNotificationPresenter } from "../achievement-notification-presenter-electron";
 import { readRpcs3TrophyUnlocks } from "../emulators/rpcs3-trophy-sources";
 import { gamesPlaytime } from "../game-running-state";
+import { BatteryState } from "../battery-state";
 
 const IDLE_SCAN_INTERVAL_MS = 60_000;
+// On battery, the full scan of every game's achievement files runs less often.
+const IDLE_SCAN_INTERVAL_ON_BATTERY_MS = 3 * 60_000;
 const RECENTLY_PLAYING_WINDOW_MS = 30_000;
 
 const readEmulatorTrophyUnlocks = (game: Game) =>
@@ -503,7 +506,10 @@ export class AchievementWatcherManager {
       }
     }
 
-    if (now - this.lastScanAt >= IDLE_SCAN_INTERVAL_MS) {
+    if (
+      now - this.lastScanAt >=
+      BatteryState.pick(IDLE_SCAN_INTERVAL_MS, IDLE_SCAN_INTERVAL_ON_BATTERY_MS)
+    ) {
       this.lastScanAt = now;
       return { kind: "all" };
     }

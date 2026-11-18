@@ -10,7 +10,8 @@ import { FileIcon } from "@phosphor-icons/react";
 import { getClassicsDiscLabel, platformToSystem } from "@shared";
 import { useFileIcons } from "@renderer/hooks/use-file-icons";
 import { Disc3, FolderOpen, Monitor, Trash } from "lucide-react";
-import { useCallback, type ReactNode, useState } from "react";
+import { useCallback, useMemo, type ReactNode, useState } from "react";
+import { useTdpStatus } from "@renderer/hooks/use-tdp-status";
 import { Trans, useTranslation } from "react-i18next";
 import {
   Button,
@@ -25,6 +26,7 @@ import {
 } from "../../../common";
 import { ConfirmationModal } from "../../../modals";
 import { SettingsSection } from "../../../../pages/settings/settings-section";
+import { TdpSelect } from "../../../tdp";
 
 import "./launch-tab.scss";
 
@@ -53,6 +55,7 @@ const GAME_LAUNCH_SETTINGS_EXEC_PATH_SELECT_ID =
   "game-launch-settings-exec-path-select";
 const GAME_LAUNCH_SETTINGS_EXEC_PATH_CLEAR_ID =
   "game-launch-settings-exec-path-clear";
+const GAME_LAUNCH_SETTINGS_TDP_ID = "game-launch-settings-tdp";
 const GAME_LAUNCH_SETTINGS_HYDRA_PLAYTIME_ID =
   "game-launch-settings-hydra-playtime";
 
@@ -602,6 +605,34 @@ function LaunchOptionsSection({
   );
 }
 
+function GameTdpSection({ game }: Readonly<{ game: LibraryGame }>) {
+  const { t } = useTranslation("tdp");
+  const tdpGame = useMemo(
+    () => ({ shop: game.shop, objectId: game.objectId }),
+    [game.shop, game.objectId]
+  );
+  const { status } = useTdpStatus(tdpGame);
+
+  // Only SteamOS handhelds in Desktop mode can set a TDP limit.
+  if (!status?.available || !status.range) return null;
+
+  return (
+    <SettingsSection
+      className="game-launch-settings-tab__section"
+      title={t("game_title")}
+      description={t("game_description")}
+    >
+      <div className="game-launch-settings-tab__section-content">
+        <TdpSelect
+          game={tdpGame}
+          focusId={GAME_LAUNCH_SETTINGS_TDP_ID}
+          label={t("title")}
+        />
+      </div>
+    </SettingsSection>
+  );
+}
+
 export function GameLaunchSettingsTab({
   game,
   launchOptions,
@@ -747,6 +778,8 @@ export function GameLaunchSettingsTab({
           onBlurLaunchOptions={onBlurLaunchOptions}
           onClearLaunchOptions={onClearLaunchOptions}
         />
+
+        <GameTdpSection game={game} />
       </VerticalFocusGroup>
 
       <FileExplorerModal

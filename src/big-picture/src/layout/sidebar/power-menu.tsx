@@ -9,6 +9,7 @@ import {
 import type { SystemPowerAction } from "@types";
 import { FocusItem, Modal, VerticalFocusGroup } from "../../components/common";
 import { ConfirmationModal } from "../../components/modals";
+import { TdpSelect } from "../../components/tdp";
 import { IS_DESKTOP } from "../../constants";
 import { useBigPictureToast } from "../../hooks";
 import "./power-menu.scss";
@@ -111,6 +112,11 @@ export function PowerMenu({
           className="power-menu__options"
           style={{ gap: 4 }}
         >
+          {/* Only on SteamOS handhelds in Desktop mode. */}
+          <TdpSelect
+            focusId="big-picture-power-tdp"
+            className="power-menu__tdp"
+          />
           <PowerMenuOption
             focusId="big-picture-power-exit"
             label="Exit Big Picture"

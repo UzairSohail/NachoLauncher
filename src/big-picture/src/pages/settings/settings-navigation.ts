@@ -161,6 +161,7 @@ export const BIG_PICTURE_ITEM_FOCUS_IDS = {
   launchToLibraryPage: "big-picture-launch-to-library-page",
   enableSounds: "big-picture-enable-sounds",
   reduceEffects: "big-picture-reduce-effects",
+  reduceEffectsOnBattery: "big-picture-reduce-effects-on-battery",
   enableVirtualKeyboard: "big-picture-enable-virtual-keyboard",
   enableDiagnostics: "big-picture-enable-diagnostics",
 } as const;

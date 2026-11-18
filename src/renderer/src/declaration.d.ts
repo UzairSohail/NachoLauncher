@@ -8,6 +8,7 @@ import type {
   LocalScreenshot,
   LocalScreenshotDraft,
   SystemPowerAction,
+  TdpStatus,
   AppUpdaterEvent,
   ManualUpdateCheckResult,
   GameShop,
@@ -1489,6 +1490,21 @@ declare global {
     /* Big Picture Window */
     openBigPictureWindow: () => Promise<void>;
     executeSystemPowerAction: (action: SystemPowerAction) => Promise<void>;
+
+    /* TDP limit (SteamOS Desktop mode, through steamos-manager) */
+    getTdpStatus: (
+      shop?: GameShop | null,
+      objectId?: string | null
+    ) => Promise<TdpStatus>;
+    prepareTdpControl: () => Promise<void>;
+    getOnBatteryPower: () => Promise<boolean>;
+    onBatteryPowerChanged: (cb: (onBattery: boolean) => void) => () => void;
+    setGlobalTdpLimit: (watts: number | null) => Promise<void>;
+    setGameTdpLimit: (
+      shop: GameShop,
+      objectId: string,
+      watts: number | null
+    ) => Promise<void>;
     onShowToast: (
       cb: (toast: {
         title: string;

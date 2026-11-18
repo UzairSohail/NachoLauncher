@@ -9,6 +9,7 @@ import { SETTINGS_CATEGORY_STORAGE_KEY } from "@renderer/session-state";
 
 export type SettingsCategoryId =
   | "general"
+  | "power"
   | "downloads"
   | "download_sources"
   | "notifications"
@@ -32,6 +33,7 @@ const legacyTabMap: Record<number, SettingsCategoryId> = {
 const isSettingsCategoryId = (value: string): value is SettingsCategoryId => {
   return [
     "general",
+    "power",
     "downloads",
     "download_sources",
     "notifications",

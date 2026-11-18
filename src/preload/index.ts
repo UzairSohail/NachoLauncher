@@ -1983,6 +1983,24 @@ contextBridge.exposeInMainWorld("electron", {
   executeSystemPowerAction: (action: SystemPowerAction) =>
     ipcRenderer.invoke("executeSystemPowerAction", action),
 
+  /* TDP limit (SteamOS Desktop mode, through steamos-manager) */
+  getTdpStatus: (shop?: GameShop | null, objectId?: string | null) =>
+    ipcRenderer.invoke("getTdpStatus", shop ?? null, objectId ?? null),
+  prepareTdpControl: () => ipcRenderer.invoke("prepareTdpControl"),
+  getOnBatteryPower: (): Promise<boolean> =>
+    ipcRenderer.invoke("getOnBatteryPower"),
+  onBatteryPowerChanged: (cb: (onBattery: boolean) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, onBattery: boolean) =>
+      cb(onBattery);
+    ipcRenderer.on("on-battery-power-changed", listener);
+    return () =>
+      ipcRenderer.removeListener("on-battery-power-changed", listener);
+  },
+  setGlobalTdpLimit: (watts: number | null) =>
+    ipcRenderer.invoke("setGlobalTdpLimit", watts),
+  setGameTdpLimit: (shop: GameShop, objectId: string, watts: number | null) =>
+    ipcRenderer.invoke("setGameTdpLimit", shop, objectId, watts),
+
   /* Toasts sent from the main process, such as recompilation results */
   onShowToast: (
     cb: (toast: {

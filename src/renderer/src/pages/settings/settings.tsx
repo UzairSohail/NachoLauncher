@@ -3,7 +3,7 @@ import {
   SettingsContextConsumer,
   SettingsContextProvider,
 } from "@renderer/context";
-import { useFeature } from "@renderer/hooks";
+import { useFeature, useTdpStatus } from "@renderer/hooks";
 import { Fragment, useMemo } from "react";
 import "./settings.scss";
 import {
@@ -15,7 +15,7 @@ import {
   PlayIcon,
   VideoIcon,
 } from "@primer/octicons-react";
-import { Camera, Gamepad2, RefreshCw, Wrench } from "lucide-react";
+import { Camera, Gamepad2, Gauge, RefreshCw, Wrench } from "lucide-react";
 import { SettingsContextGeneral } from "./settings-context-general";
 import { SettingsContextDownloads } from "./settings-context-downloads";
 import { SettingsContextDownloadSources } from "./settings-context-download-sources";
@@ -27,12 +27,16 @@ import { SettingsContextSyncStatus } from "./settings-context-sync-status";
 import { SettingsContextCompatibility } from "./settings-context-compatibility";
 import { SettingsContextBigPicture } from "./settings-context-big-picture";
 import { SettingsContextEmulation } from "./emulation/settings-context-emulation";
+import { SettingsContextPower } from "./settings-context-power";
 
 export default function Settings() {
   const { t } = useTranslation("settings");
 
   const { isFeatureEnabled, Feature } = useFeature();
   const isScreenshotsEnabled = isFeatureEnabled(Feature.Screenshots);
+  // Only SteamOS handhelds in Desktop mode can set a TDP limit.
+  const { status: tdpStatus } = useTdpStatus();
+  const isTdpAvailable = tdpStatus?.available === true;
 
   const categories = useMemo(
     () => [
@@ -41,6 +45,15 @@ export default function Settings() {
         label: t("general"),
         icon: <GearIcon size={16} />,
       },
+      ...(isTdpAvailable
+        ? [
+            {
+              id: "power" as const,
+              label: t("category", { ns: "tdp" }),
+              icon: <Gauge size={16} />,
+            },
+          ]
+        : []),
       {
         id: "downloads" as const,
         label: t("downloads"),
@@ -97,7 +110,7 @@ export default function Settings() {
         group: "classics" as const,
       },
     ],
-    [t, isScreenshotsEnabled]
+    [t, isScreenshotsEnabled, isTdpAvailable]
   );
 
   return (
@@ -112,6 +125,10 @@ export default function Settings() {
           const renderCategory = () => {
             if (selectedCategoryId === "general") {
               return <SettingsContextGeneral />;
+            }
+
+            if (selectedCategoryId === "power") {
+              return <SettingsContextPower />;
             }
 
             if (selectedCategoryId === "downloads") {

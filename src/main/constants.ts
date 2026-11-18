@@ -56,6 +56,8 @@ export const INTERVALS = {
   // While a game runs we only need to notice it closing, and a full process
   // scan steals CPU from the game on handhelds.
   processWatcherWhilePlaying: 5_000,
+  // Idle on battery: noticing a game opened outside Nacho can wait longer.
+  processWatcherOnBattery: 6_000,
   downloadWatcher: 2_000,
   debridReadinessWatcher: 5_000,
   achievementWatcher: 2_000,

@@ -20,6 +20,7 @@ import {
 import {
   useDominantColor,
   useFormat,
+  useReduceEffects,
   useUserPreferences,
 } from "../../../hooks";
 
@@ -29,7 +30,7 @@ export function useFocusAnimatedCover(
 ): string {
   const userPreferences = useUserPreferences();
   const autoplay = userPreferences?.autoplayAnimatedArtwork ?? false;
-  const reduceEffects = userPreferences?.bigPictureReduceEffects ?? false;
+  const reduceEffects = useReduceEffects();
 
   const isAnimated = isAnimatedCoverCandidate(coverUrl);
   const poster = useCoverPoster(coverUrl, isAnimated);

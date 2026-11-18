@@ -1200,4 +1200,9 @@ export type ExtractionFailure =
   | { reason: "unsupported-format"; format: string }
   | { reason: "file-not-found" }
   | { reason: "pkg-keys-unavailable" };
-export type { SystemPowerAction } from "./system-power";
+export type {
+  SystemPowerAction,
+  TdpRange,
+  TdpStatus,
+  TdpUnavailableReason,
+} from "./system-power";
