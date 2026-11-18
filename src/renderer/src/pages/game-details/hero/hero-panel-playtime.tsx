@@ -63,6 +63,7 @@ export function HeroPanelPlaytime() {
     return t("amount_hours", { amount: numberFormatter.format(hours) });
   }, [
     game?.playTimeInMilliseconds,
+    game?.otherDevicesPlayTimeInMilliseconds,
     game?.steamPlayTimeInMilliseconds,
     game?.epicPlayTimeInMilliseconds,
     numberFormatter,
