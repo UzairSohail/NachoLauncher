@@ -3,9 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SidebarModal, type SidebarModalTab } from "../../../common";
 import { resolvePreferredGameAssets } from "../../../../helpers";
-import { useUserDetails } from "../../../../hooks/use-user-details.hook";
 import { useGoogleDriveSignedIn } from "../../../../hooks/use-google-drive-signed-in.hook";
-import { platformToEmulationSavePlatform } from "@renderer/helpers";
 import { usesDriveCloudSaves } from "@shared";
 
 import "./styles.scss";
@@ -46,7 +44,7 @@ import {
 } from "./compatibility-tab";
 import {
   shouldShowCloudSaveV2Tab,
-  shouldShowLegacyCloudSaveTab,
+  shouldShowEmulatorSavesTab,
 } from "./cloud-tab-visibility";
 
 type GameSettingsTabId =
@@ -91,7 +89,6 @@ export function GameSettingsModal({
 }: Readonly<GameSettingsModalProps>) {
   const { t } = useTranslation(["game_details", "header", "personal_cloud"]);
   const [activeTabId, setActiveTabId] = useState<GameSettingsTabId>("launch");
-  const { userDetails, hasActiveSubscription } = useUserDetails();
   const preferredAssets = useMemo(
     () => resolvePreferredGameAssets(game, null),
     [game]
@@ -150,19 +147,12 @@ export function GameSettingsModal({
     [game]
   );
 
-  const isSignedIn = userDetails !== null;
   // Emulator saves are backed up to the user's Google Drive, so their tabs
-  // only need Google sign-in, not a Hydra account.
+  // only need Google sign-in.
   const driveSignedIn = useGoogleDriveSignedIn();
-  const isEmulatorSaveGame =
-    game.shop === "launchbox" &&
-    platformToEmulationSavePlatform(game.platform) !== null;
   const shouldShowCloudV2Tab = shouldShowCloudSaveV2Tab(
     game.shop,
-    isSignedIn ||
-      (driveSignedIn && usesDriveCloudSaves(game.shop, game.platform)),
-    hasActiveSubscription ||
-      (driveSignedIn && usesDriveCloudSaves(game.shop, game.platform)),
+    driveSignedIn,
     game.platform
   );
   // PC games back up to Google Drive through Cloud Save Manager. Emulator
@@ -185,14 +175,11 @@ export function GameSettingsModal({
       handleSelectExecutableFromCloudV2,
     ]
   );
-  const shouldShowLegacyCloudTab =
-    (isEmulatorSaveGame && driveSignedIn) ||
-    shouldShowLegacyCloudSaveTab(
-      game.shop,
-      isSignedIn,
-      hasActiveSubscription,
-      game.platform
-    );
+  const shouldShowLegacyCloudTab = shouldShowEmulatorSavesTab(
+    game.shop,
+    driveSignedIn,
+    game.platform
+  );
 
   useEffect(() => {
     const isUnavailableTab =
@@ -246,11 +233,7 @@ export function GameSettingsModal({
         ? [
             {
               id: "hydra_cloud_legacy",
-              label: t(
-                shouldShowCloudV2Tab
-                  ? "settings_category_legacy_saves"
-                  : "settings_category_hydra_cloud"
-              ),
+              label: t("settings_category_emulator_saves"),
               content: cloudContent,
             } satisfies SidebarModalTab<GameSettingsTabId>,
           ]

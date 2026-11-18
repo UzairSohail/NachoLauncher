@@ -12,6 +12,8 @@ const DOWNLOADER_PREFERENCE_KEYS: Partial<
   [Downloader.Premiumize]: "premiumizeApiToken",
   [Downloader.AllDebrid]: "allDebridApiToken",
   [Downloader.TorBox]: "torBoxApiToken",
+  // VikingFile links resolve through AllDebrid now that Hydra Cloud is gone.
+  [Downloader.VikingFile]: "allDebridApiToken",
 };
 
 const DOWNLOADER_FEATURE_FLAGS: Partial<Record<Downloader, string>> = {
@@ -39,17 +41,6 @@ function isConfiguredDownloader(
   }
 
   return Boolean(preferences?.[preferenceKey]);
-}
-
-function isSubscriptionSatisfiedForDownloader(
-  downloader: Downloader,
-  hasActiveSubscription?: boolean
-) {
-  if (downloader !== Downloader.VikingFile) {
-    return true;
-  }
-
-  return Boolean(hasActiveSubscription);
 }
 
 function isFeatureEnabledForDownloader(
@@ -104,8 +95,7 @@ export function sortAvailableDownloaders(
 export function getDownloaderAvailabilityOptions(
   repack: Pick<GameRepack, "uris" | "unavailableUris">,
   preferences?: UserPreferences | null,
-  enabledFeatures?: string[] | null,
-  hasActiveSubscription?: boolean
+  enabledFeatures?: string[] | null
 ) {
   const unavailableUrisSet = new Set(repack.unavailableUris ?? []);
   const downloaderMap = new Map<
@@ -160,9 +150,7 @@ export function getDownloaderAvailabilityOptions(
       const status = downloaderMap.get(downloader);
       const canHandle = status !== undefined;
       const hasAvailableUri = status?.hasAvailable ?? false;
-      const isConfigured =
-        isConfiguredDownloader(downloader, preferences) &&
-        isSubscriptionSatisfiedForDownloader(downloader, hasActiveSubscription);
+      const isConfigured = isConfiguredDownloader(downloader, preferences);
       const isAvailable = canHandle && hasAvailableUri && isConfigured;
 
       return {

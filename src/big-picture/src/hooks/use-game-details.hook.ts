@@ -367,38 +367,6 @@ export function useGameDetails(
     globalThis.window.electron.closeGame(game.shop, game.objectId);
   }, [game]);
 
-  const syncTargets = JSON.stringify(
-    (presentationGame?.members ?? (game ? [game] : []))
-      .filter((member) => member.hasActiveSteamImport)
-      .map((member) => ({ shop: member.shop, objectId: member.objectId }))
-  );
-  useEffect(() => {
-    if (!IS_DESKTOP) return;
-    let current = true;
-    const targets = JSON.parse(syncTargets) as {
-      shop: GameShop;
-      objectId: string;
-    }[];
-    void Promise.all(
-      targets.map(async (target) => {
-        const bridge = globalThis.window.electron;
-        if (
-          target.shop === "steam" &&
-          typeof bridge.syncSteamGameOnGamePage === "function"
-        )
-          return bridge
-            .syncSteamGameOnGamePage(target.objectId)
-            .catch(() => false);
-        return false;
-      })
-    ).then((changed) => {
-      if (current && changed.some(Boolean)) void updateGame().catch(() => {});
-    });
-    return () => {
-      current = false;
-    };
-  }, [syncTargets, updateGame]);
-
   const toggleFavorite = useCallback(async () => {
     if (!game) return;
 

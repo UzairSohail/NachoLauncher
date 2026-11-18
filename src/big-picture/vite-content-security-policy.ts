@@ -1,14 +1,12 @@
 import type { Plugin } from "vite";
 import { MONACO_VS_URL } from "../shared/monaco";
 
-export const contentSecurityPolicy = (
-  externalResourcesUrl: string | undefined
-): Plugin => ({
+// Scripts only load from the app itself and the Monaco editor CDN.
+export const contentSecurityPolicy = (): Plugin => ({
   name: "hydra:content-security-policy",
   transformIndexHtml: (_html, context) => {
     const scriptSources = [
       "'self'",
-      ...(externalResourcesUrl ? [new URL(externalResourcesUrl).origin] : []),
       `${MONACO_VS_URL}/`,
       // React Refresh injects an inline preamble that only exists on the dev server.
       ...(context.server ? ["'unsafe-inline'"] : []),

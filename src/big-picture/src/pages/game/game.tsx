@@ -42,7 +42,6 @@ import {
 import {
   AchievementsBox,
   ControllerSupportBox,
-  GameReviews,
   GameSettingsModal,
   Hero,
   HowLongToBeatBox,
@@ -66,7 +65,6 @@ import {
   BIG_PICTURE_SIDEBAR_REGION_ID,
 } from "../../layout";
 import {
-  GAME_COMMENTS_ACTION_ROWS_REGION_ID,
   GAME_DESCRIPTION_BOTTOM_ENTRY_ID,
   GAME_DESCRIPTION_BODY_ID,
   GAME_DESCRIPTION_REGION_ID,
@@ -515,7 +513,6 @@ export default function Game() {
     discPath?: string;
   } | null>(null);
   const [isAddingToLibrary, setIsAddingToLibrary] = useState(false);
-  const [hasNavigableComments, setHasNavigableComments] = useState(false);
   const [activeMediaItemId, setActiveMediaItemId] = useState<string | null>(
     null
   );
@@ -693,18 +690,6 @@ export default function Game() {
         : undefined,
     [hasDescription]
   );
-  const commentsEntryTarget = useMemo(() => {
-    if (!hasNavigableComments) {
-      return undefined;
-    }
-
-    return {
-      type: "region" as const,
-      regionId: GAME_COMMENTS_ACTION_ROWS_REGION_ID,
-      entryDirection: "down" as const,
-      preferRememberedFocus: true,
-    };
-  }, [hasNavigableComments]);
   const similarGamesEntryTarget = useMemo(() => {
     if (!hasSimilarGames) return undefined;
 
@@ -758,12 +743,9 @@ export default function Game() {
       };
     }
 
-    return (
-      descriptionEntryTarget ?? similarGamesEntryTarget ?? commentsEntryTarget
-    );
+    return descriptionEntryTarget ?? similarGamesEntryTarget;
   }, [
     activeMediaItemId,
-    commentsEntryTarget,
     descriptionEntryTarget,
     hasMedia,
     similarGamesEntryTarget,
@@ -781,31 +763,6 @@ export default function Game() {
     }),
     []
   );
-  const commentsTopNavigationTarget = useMemo(() => {
-    if (similarGamesEntryTarget) {
-      return {
-        ...similarGamesEntryTarget,
-        entryDirection: "up" as const,
-      };
-    }
-
-    if (descriptionBottomEntryTarget) {
-      return descriptionBottomEntryTarget;
-    }
-
-    if (hasMedia) {
-      return contentBelowHeroTarget ?? heroActionsLeftNavigationTarget;
-    }
-
-    return heroActionsLeftNavigationTarget;
-  }, [
-    contentBelowHeroTarget,
-    descriptionBottomEntryTarget,
-    hasMedia,
-    heroActionsLeftNavigationTarget,
-    similarGamesEntryTarget,
-  ]);
-
   const similarGamesTopNavigationTarget = useMemo<FocusOverrideTarget>(() => {
     if (descriptionBottomEntryTarget) return descriptionBottomEntryTarget;
     if (activeMediaItemId) return getItemFocusTarget(activeMediaItemId);
@@ -830,7 +787,7 @@ export default function Game() {
   const getSimilarGameNavigationOverrides = useCallback(
     (_similarGame: ShopAssets, index: number, games: ShopAssets[]) => ({
       up: similarGamesTopNavigationTarget,
-      down: commentsEntryTarget ?? ({ type: "block" } as const),
+      down: { type: "block" } as const,
       ...(index === 0
         ? { left: getItemFocusTarget(BIG_PICTURE_SIDEBAR_ITEM_IDS.home) }
         : {}),
@@ -838,7 +795,7 @@ export default function Game() {
         ? { right: { type: "block" as const } }
         : {}),
     }),
-    [commentsEntryTarget, similarGamesTopNavigationTarget]
+    [similarGamesTopNavigationTarget]
   );
   const getSimilarGameItemId = useCallback(
     (similarGame: ShopAssets) =>
@@ -1278,9 +1235,7 @@ export default function Game() {
                 return;
               }
 
-              focusNavigationTarget(
-                similarGamesEntryTarget ?? commentsEntryTarget
-              );
+              focusNavigationTarget(similarGamesEntryTarget);
             },
             left: () => {
               navigation.setFocus(BIG_PICTURE_SIDEBAR_ITEM_IDS.home);
@@ -1351,10 +1306,6 @@ export default function Game() {
     const previousRegionId = previousFocusId
       ? (navigationNodesById.get(previousFocusId)?.regionId ?? null)
       : null;
-    const enteredFromComments = isRegionWithinTree(
-      previousRegionId,
-      GAME_COMMENTS_ACTION_ROWS_REGION_ID
-    );
     const enteredFromSimilarGames = isRegionWithinTree(
       previousRegionId,
       GAME_SIMILAR_GAMES_REGION_ID
@@ -1373,7 +1324,7 @@ export default function Game() {
     }
 
     const targetScrollTop =
-      enteredFromComments || enteredFromSimilarGames
+      enteredFromSimilarGames
         ? bounds.descriptionBottom -
           bounds.pageClientHeight +
           DESCRIPTION_FOCUS_ENTRY_MARGIN
@@ -1558,9 +1509,7 @@ export default function Game() {
                 screenshots={shopDetails.screenshots ?? []}
                 onActiveItemChange={setActiveMediaItemId}
                 nextContentEntryTarget={
-                  descriptionEntryTarget ??
-                  similarGamesEntryTarget ??
-                  commentsEntryTarget
+                  descriptionEntryTarget ?? similarGamesEntryTarget
                 }
                 sidebarEntryTarget={sidebarStatsEntryTarget}
               />
@@ -1657,18 +1606,6 @@ export default function Game() {
                 </>
               ) : null}
 
-              {!isCustomGame && (
-                <>
-                  <Divider />
-
-                  <GameReviews
-                    shop={game?.shop ?? shop!}
-                    objectId={game?.objectId ?? objectId!}
-                    topNavigationTarget={commentsTopNavigationTarget}
-                    onHasNavigableActionsChange={setHasNavigableComments}
-                  />
-                </>
-              )}
             </div>
 
             <VerticalFocusGroup regionId={GAME_SIDEBAR_REGION_ID} asChild>
@@ -1729,8 +1666,6 @@ export default function Game() {
                 <GameMyScreenshots
                   shop={game?.shop ?? shop!}
                   objectId={game?.objectId ?? objectId!}
-                  communityShop={shop!}
-                  communityObjectId={objectId!}
                   navigationOrder={0.5}
                   leftTarget={
                     descriptionEntryTarget ??

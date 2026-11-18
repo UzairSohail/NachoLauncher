@@ -3,7 +3,6 @@ import {
   LockIcon,
   LockOpenIcon,
   MagnifyingGlassIcon,
-  MedalIcon,
   SortAscendingIcon,
   SortDescendingIcon,
   TrophyIcon,
@@ -47,7 +46,6 @@ export interface GameAchievementsToolbarProps {
   onStatusChange: (status: AchievementStatusFilter) => void;
   statusCounts: Record<AchievementStatusFilter, number>;
   firstAchievementRowId: string | null;
-  points: { earned: number; total: number } | null;
 }
 
 export function GameAchievementsToolbar({
@@ -59,10 +57,8 @@ export function GameAchievementsToolbar({
   onStatusChange,
   statusCounts,
   firstAchievementRowId,
-  points,
 }: Readonly<GameAchievementsToolbarProps>) {
-  const { t, i18n } = useTranslation("achievement");
-  const numberFormatter = new Intl.NumberFormat(i18n.language);
+  const { t } = useTranslation("achievement");
 
   const sortOptions = useMemo(
     () =>
@@ -151,22 +147,6 @@ export function GameAchievementsToolbar({
           onValueChange={onSortChange}
         />
 
-        <div className="game-achievements-page__toolbar-points">
-          <span className="game-achievements-page__toolbar-points-label">
-            {t("earned_points")}
-          </span>
-          <MedalIcon size={18} weight="fill" />
-          {points ? (
-            <span>
-              {numberFormatter.format(points.earned)} /{" "}
-              {numberFormatter.format(points.total)}
-            </span>
-          ) : (
-            <span className="game-achievements-page__toolbar-points-locked">
-              ??? / ???
-            </span>
-          )}
-        </div>
       </HorizontalFocusGroup>
     </div>
   );

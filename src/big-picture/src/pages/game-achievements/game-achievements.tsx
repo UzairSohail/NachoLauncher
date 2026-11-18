@@ -39,7 +39,6 @@ import {
   useHeaderTitle,
   useNavigationActions,
   useNavigationScreenActions,
-  useUserDetails,
   useUserPreferences,
 } from "../../hooks";
 import "./styles.scss";
@@ -63,7 +62,6 @@ export default function GameAchievements() {
     true
   );
   const { t } = useTranslation("achievement");
-  const { userDetails, hasActiveSubscription } = useUserDetails();
   const userPreferences = useUserPreferences();
   const showHiddenAchievements =
     userPreferences?.showHiddenAchievementsDescription ?? false;
@@ -114,11 +112,6 @@ export default function GameAchievements() {
     [achievements]
   );
 
-  const totalPoints = useMemo(
-    () => achievements.reduce((sum, a) => sum + (a.points ?? 0), 0),
-    [achievements]
-  );
-
   const setGroups = useMemo(
     () => groupAchievementsBySet(achievements),
     [achievements]
@@ -153,15 +146,6 @@ export default function GameAchievements() {
     gap: ROW_GAP,
     overscan: OVERSCAN,
   });
-
-  const earnedPoints = useMemo(
-    () =>
-      achievements.reduce(
-        (sum, a) => sum + (a.unlocked ? (a.points ?? 0) : 0),
-        0
-      ),
-    [achievements]
-  );
 
   useHeaderTitle(shopDetails?.assets?.title);
 
@@ -224,7 +208,6 @@ export default function GameAchievements() {
 
         <div className="game-achievements-page__content">
           <UserAchievementsSummary
-            userDetails={userDetails}
             unlockedCount={unlockedCount}
             totalCount={achievements.length}
             stealFocusOnAppear
@@ -243,11 +226,6 @@ export default function GameAchievements() {
             onStatusChange={setStatus}
             statusCounts={statusCounts}
             firstAchievementRowId={firstAchievementRowId}
-            points={
-              hasActiveSubscription
-                ? { earned: earnedPoints, total: totalPoints }
-                : null
-            }
           />
 
           <section className="game-achievements-page__list-section">
@@ -314,7 +292,6 @@ export default function GameAchievements() {
                       revealed={
                         getAchievementKey(achievement) === lastRevealedName
                       }
-                      showPoints={hasActiveSubscription}
                       navigationOrder={item.index}
                       navigationOverrides={navigationOverrides}
                       virtualRow={virtualRow}

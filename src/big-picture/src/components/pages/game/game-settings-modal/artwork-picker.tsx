@@ -8,7 +8,7 @@ import {
 } from "@renderer/hooks/use-game-artwork-grid";
 
 import { FocusItem, GridFocusGroup } from "../../../common";
-import { useBigPictureToast, useUserDetails } from "../../../../hooks";
+import { useBigPictureToast } from "../../../../hooks";
 import { useArtworkGridNavigation } from "./use-artwork-grid-navigation";
 
 import "./artwork-picker.scss";
@@ -42,7 +42,6 @@ export function GameArtworkPicker({
 }: Readonly<GameArtworkPickerProps>) {
   const { t } = useTranslation("big_picture");
   const { showErrorToast, showSuccessToast } = useBigPictureToast();
-  const { userDetails } = useUserDetails();
 
   const onError = useCallback(() => {
     showErrorToast(t("steamgriddb_fetch_failed"));
@@ -65,7 +64,7 @@ export function GameArtworkPicker({
     shop: game.shop,
     objectId: game.objectId,
     assetType,
-    enabled: Boolean(userDetails),
+    enabled: true,
     onChanged,
     onError,
     onPicked,
@@ -109,14 +108,6 @@ export function GameArtworkPicker({
     tileFocusIds,
     ARTWORK_PREVIEW_FOCUS_ID
   );
-
-  if (!userDetails) {
-    return (
-      <p className="game-artwork-picker__hint">
-        {t("steamgriddb_sign_in_required")}
-      </p>
-    );
-  }
 
   const skeletonCount = items.length
     ? MORE_SKELETON_COUNT

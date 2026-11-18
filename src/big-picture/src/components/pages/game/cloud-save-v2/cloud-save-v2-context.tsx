@@ -42,11 +42,7 @@ import type {
   EmulatorDiscIdentityStatus,
 } from "@types";
 
-import {
-  useBigPictureToast,
-  useGoogleDriveSignedIn,
-  useUserDetails,
-} from "../../../../hooks";
+import { useBigPictureToast, useGoogleDriveSignedIn } from "../../../../hooks";
 import { BigPictureCloudSaveConflictModal } from "./cloud-save-conflict-modal";
 import { BigPictureCloudSaveCustomPathModal } from "./cloud-save-custom-path-modal";
 import { BigPictureRetroArchBatteryModal } from "./cloud-save-retroarch-battery-modal";
@@ -177,16 +173,11 @@ export function BigPictureCloudSaveProvider({
   const { t } = useTranslation("game_details");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { userDetails, hasActiveSubscription } = useUserDetails();
   const { showErrorToast, showSuccessToast, showWarningToast } =
     useBigPictureToast();
   const driveSignedIn = useGoogleDriveSignedIn();
   const canUseCloudSaves =
-    resolveCloudSaveAccessAction(shop, platform, {
-      isAuthenticated: Boolean(userDetails),
-      hasActiveSubscription,
-      driveSignedIn,
-    }) === "open";
+    resolveCloudSaveAccessAction(shop, platform, { driveSignedIn }) === "open";
   const eligible = isCloudSaveV2Eligible(shop, platform);
   const canCheckEmulator = eligible && canUseCloudSaves;
   const canCheckCloudSaves = canCheckEmulator && hasExecutablePath;
@@ -921,20 +912,9 @@ export function BigPictureCloudSaveProvider({
     panelProps,
     openManager: () => {
       if (!canUseCloudSaves) {
-        showErrorToast(
-          t(
-            userDetails
-              ? "cloud_save_v2_subscription_required_title"
-              : "cloud_save_v2_sign_in_required_title"
-          ),
-          {
-            message: t(
-              userDetails
-                ? "cloud_save_v2_subscription_required_description"
-                : "cloud_save_v2_sign_in_required_description"
-            ),
-          }
-        );
+        showErrorToast(t("cloud_save_v2_sign_in_required_title"), {
+          message: t("cloud_save_v2_sign_in_required_description"),
+        });
         return;
       }
       setWasOpenedFromLaunchConflict(false);

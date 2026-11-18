@@ -1,13 +1,10 @@
 import "./notifications-dropdown.scss";
 
 import {
-  ChatCircleIcon,
   CheckCircleIcon,
   DotsThreeVerticalIcon,
   DownloadSimpleIcon,
-  HeartIcon,
   MinusCircleIcon,
-  ThumbsUpIcon,
   TrashIcon,
   TrophyIcon,
   XIcon,
@@ -24,7 +21,6 @@ import {
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import {
   ContextMenu,
   FocusItem,
@@ -36,30 +32,15 @@ import {
 import { FocusRegionContext } from "../../components/context";
 import { IS_DESKTOP } from "../../constants";
 import {
-  Feature,
   useDate,
-  useFeature,
   useLibrary,
   useNavigationActions,
   useNavigationScreenActions,
 } from "../../hooks";
 import { getPreferredGameAssets } from "../../helpers";
-import type {
-  LibraryGame,
-  LocalNotification,
-  MergedNotification,
-  Notification,
-  NotificationCountResponse,
-  NotificationsResponse,
-} from "@types";
-import {
-  buildScreenshotNotificationTarget,
-  buildSouvenirNotificationTarget,
-  isScreenshotNotificationType,
-  CLOUD_GIFT_RECEIVED_NOTIFICATION,
-  NOTIFICATIONS_FETCH_FILTER,
-  NOTIFICATIONS_FETCH_TAKE,
-} from "@shared";
+import type { LibraryGame, LocalNotification } from "@types";
+
+type MergedNotification = LocalNotification & { source: "local" };
 
 const hydraIconUrl = new URL("../../assets/hydra-icon.svg", import.meta.url)
   .href;
@@ -91,184 +72,20 @@ function SidebarNotificationsBackAction({
   return null;
 }
 
-function parseApiNotificationPath(notificationUrl: string) {
-  const url = new URL(notificationUrl, "http://localhost");
-  const userId = url.searchParams.get("userId");
-  const gameTitle = url.searchParams.get("title");
-  const showReviews = url.searchParams.get("reviews");
-
-  if (url.pathname === "/profile" && userId) {
-    return `/profile/${userId}`;
-  }
-
-  if (url.pathname.startsWith("/game/")) {
-    const params = new URLSearchParams();
-    if (gameTitle) params.set("title", gameTitle);
-    if (showReviews) params.set("reviews", showReviews);
-    const queryString = params.toString();
-    return queryString ? `${url.pathname}?${queryString}` : url.pathname;
-  }
-
-  return notificationUrl;
-}
-
-const SCREENSHOT_NOTIFICATION_ICONS: Partial<
-  Record<Notification["type"], typeof HeartIcon>
-> = {
-  SCREENSHOT_LIKE: HeartIcon,
-  SCREENSHOT_COMMENT: ChatCircleIcon,
-  SCREENSHOT_COMMENT_UPVOTE: ThumbsUpIcon,
-};
-
 function resolveBigPicturePath(path: string) {
   if (/^(?:[a-z][a-z\d+.-]*:)?\/\//i.test(path)) return path;
   if (path.startsWith("/big-picture")) return path;
   return `/big-picture${path}`;
 }
 
-const GENERIC_NOTIFICATION_CONTENT = {
-  title: "Notification",
-  description: "",
-};
-
-function getApiNotificationContent(
-  notification: Notification,
-  t: (key: string, options?: Record<string, unknown>) => string
-) {
-  switch (notification.type) {
-    case "FRIEND_REQUEST_RECEIVED":
-      return {
-        title: "New friend request",
-        description: `${notification.variables.senderDisplayName ?? "Someone"} has sent you a friend request!`,
-      };
-    case "FRIEND_REQUEST_ACCEPTED":
-      return {
-        title: "Friend request accepted",
-        description: `${notification.variables.accepterDisplayName ?? "Someone"} accepted your friend request.`,
-      };
-    case "BADGE_RECEIVED":
-      return {
-        title: "New badge received",
-        description: notification.variables.badgeName ?? "",
-      };
-    case "REVIEW_UPVOTE":
-      return {
-        title: `${notification.variables.gameTitle ?? "Your review"} got an upvote`,
-        description: `${notification.variables.upvoteCount ?? "1"} upvotes on your review.`,
-      };
-    case "REVIEW_ANSWER":
-      return {
-        title: `New reply to your review for ${notification.variables.gameTitle ?? "your review"}`,
-        description: `${notification.variables.answerAuthorDisplayName ?? "Someone"} replied to your review.`,
-      };
-    case "REVIEW_ANSWER_UPVOTE":
-      return {
-        title: `Your reply for ${notification.variables.gameTitle ?? "a review"} got an upvote`,
-        description: `${notification.variables.upvoteCount ?? "1"} upvotes on your reply.`,
-      };
-    case CLOUD_GIFT_RECEIVED_NOTIFICATION: {
-      const durationMonths = Number(notification.variables.durationMonths);
-
-      return {
-        title: Number.isFinite(durationMonths)
-          ? t("cloud_gift_received_title", { count: durationMonths })
-          : t("cloud_gift_received_title"),
-        description: t("cloud_gift_received_description", {
-          displayName: notification.variables.buyerDisplayName,
-        }),
-      };
-    }
-    case "SOUVENIR_LIKE": {
-      const likeCount = Number(notification.variables.likeCount ?? 1);
-      return {
-        title: `Your souvenir from ${notification.variables.gameTitle ?? "your game"} got a like!`,
-        description: `Your souvenir received ${likeCount} new ${likeCount === 1 ? "like" : "likes"}`,
-      };
-    }
-    case "SCREENSHOT_LIKE":
-    case "SCREENSHOT_COMMENT":
-    case "SCREENSHOT_COMMENT_UPVOTE":
-      return getScreenshotNotificationContent(notification, t);
-    default:
-      return GENERIC_NOTIFICATION_CONTENT;
-  }
-}
-
-function getScreenshotNotificationKeyPrefix(type: Notification["type"]) {
-  if (type === "SCREENSHOT_COMMENT") return "screenshots_notification_comment";
-  if (type === "SCREENSHOT_COMMENT_UPVOTE")
-    return "screenshots_notification_comment_upvote";
-
-  return "screenshots_notification_like";
-}
-
-function getScreenshotNotificationCount(notification: Notification) {
-  if (notification.type === "SCREENSHOT_COMMENT") {
-    return notification.variables.commentCount;
-  }
-  if (notification.type === "SCREENSHOT_COMMENT_UPVOTE") {
-    return notification.variables.upvoteCount;
-  }
-  return notification.variables.likeCount;
-}
-
-function getScreenshotNotificationContent(
-  notification: Notification,
-  t: (key: string, options?: Record<string, unknown>) => string
-) {
-  const game =
-    notification.variables.gameTitle ||
-    notification.variables.customGameTitle ||
-    t("screenshots_notification_fallback_game", { ns: "big_picture" });
-  const count = Number(getScreenshotNotificationCount(notification) ?? 1);
-  const prefix = getScreenshotNotificationKeyPrefix(notification.type);
-
+function getNotificationContent(notification: MergedNotification) {
   return {
-    title: t(`${prefix}_title`, { ns: "big_picture", game }),
-    description: t(`${prefix}_description`, {
-      ns: "big_picture",
-      game,
-      count: Number.isFinite(count) ? count : 1,
-    }),
+    title: notification.title,
+    description: notification.description,
   };
 }
 
-function getNotificationContent(
-  notification: MergedNotification,
-  t: (key: string, options?: Record<string, unknown>) => string,
-  isContentEnabled: boolean
-) {
-  if (!isContentEnabled) return GENERIC_NOTIFICATION_CONTENT;
-  if (notification.source === "local") {
-    return {
-      title: notification.title,
-      description: notification.description,
-    };
-  }
-
-  return getApiNotificationContent(notification, t);
-}
-
-interface ScreenshotFeatureFlags {
-  screenshots: boolean;
-  screenshotComments: boolean;
-}
-
-function isNotificationContentEnabled(
-  notification: MergedNotification,
-  flags: ScreenshotFeatureFlags
-) {
-  if (
-    notification.source !== "api" ||
-    !isScreenshotNotificationType(notification.type)
-  ) {
-    return true;
-  }
-  if (!flags.screenshots) return false;
-  return notification.type === "SCREENSHOT_LIKE" || flags.screenshotComments;
-}
-
-function isHydraNotification(notification: MergedNotification) {
+function isAppNotification(notification: MergedNotification) {
   return (
     notification.source === "local" &&
     (notification.type === "UPDATE_AVAILABLE" ||
@@ -284,33 +101,7 @@ function isAchievementNotification(notification: MergedNotification) {
 }
 
 function getNotificationUrl(notification: MergedNotification) {
-  if (
-    notification.source === "api" &&
-    isScreenshotNotificationType(notification.type)
-  ) {
-    const ownerId = notification.variables.ownerId;
-    const baseUrl =
-      notification.url ||
-      (ownerId ? `/profile/${encodeURIComponent(ownerId)}` : null);
-    if (!baseUrl) return null;
-
-    return buildScreenshotNotificationTarget(
-      parseApiNotificationPath(baseUrl),
-      notification.variables
-    );
-  }
-
-  if (!notification.url) return null;
-  const target =
-    notification.source === "api"
-      ? parseApiNotificationPath(notification.url)
-      : notification.url;
-
-  if (notification.source !== "api" || notification.type !== "SOUVENIR_LIKE") {
-    return target;
-  }
-
-  return buildSouvenirNotificationTarget(target, notification.variables);
+  return notification.url ?? null;
 }
 
 function getNotificationGameRoute(notification: MergedNotification) {
@@ -347,15 +138,6 @@ function getGameImageUrlFromLibrary(
   return getPreferredGameAssets(game, null).iconUrl;
 }
 
-function getApiNotificationIsServerRead(
-  notifications: Notification[],
-  notificationId: string
-) {
-  return notifications.find(
-    (notification) => notification.id === notificationId
-  )?.isRead;
-}
-
 function getNotificationFocusKey(notification: MergedNotification) {
   return `${notification.source}:${notification.id}`;
 }
@@ -377,23 +159,12 @@ export function SidebarNotificationsDropdown({
   restoreFocusId,
 }: Readonly<SidebarNotificationsDropdownProps>) {
   const navigate = useNavigate();
-  const { t } = useTranslation("notifications_page");
   const { formatDistance } = useDate();
   const { library } = useLibrary();
   const { setFocus } = useNavigationActions();
-  const { isFeatureEnabled } = useFeature();
-  const screenshotFeatureFlags: ScreenshotFeatureFlags = {
-    screenshots: isFeatureEnabled(Feature.Screenshots),
-    screenshotComments: isFeatureEnabled(Feature.ScreenshotComments),
-  };
-  const [apiNotifications, setApiNotifications] = useState<Notification[]>([]);
   const [localNotifications, setLocalNotifications] = useState<
     LocalNotification[]
   >([]);
-  const [apiUnreadCount, setApiUnreadCount] = useState(0);
-  const [apiUnreadOverrides, setApiUnreadOverrides] = useState<Set<string>>(
-    () => new Set()
-  );
   const [menuNotification, setMenuNotification] =
     useState<MergedNotification | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -410,42 +181,11 @@ export function SidebarNotificationsDropdown({
     setLocalNotifications(notifications);
   }, []);
 
-  const fetchApiNotifications = useCallback(async () => {
-    if (!IS_DESKTOP) return;
-
-    try {
-      const [notificationsResponse, countResponse] = await Promise.all([
-        globalThis.window.electron.hydraApi.get<NotificationsResponse>(
-          "/profile/notifications",
-          {
-            params: {
-              filter: NOTIFICATIONS_FETCH_FILTER,
-              take: NOTIFICATIONS_FETCH_TAKE,
-              skip: 0,
-            },
-            needsAuth: true,
-          }
-        ),
-        globalThis.window.electron.hydraApi.get<NotificationCountResponse>(
-          "/profile/notifications/count",
-          { needsAuth: true }
-        ),
-      ]);
-
-      setApiNotifications(notificationsResponse.notifications);
-      setApiUnreadCount(countResponse.count);
-    } catch {
-      setApiNotifications([]);
-      setApiUnreadCount(0);
-    }
-  }, []);
-
   const refreshNotifications = useCallback(() => {
     if (!IS_DESKTOP) return;
 
     void fetchLocalNotifications();
-    void fetchApiNotifications();
-  }, [fetchApiNotifications, fetchLocalNotifications]);
+  }, [fetchLocalNotifications]);
 
   useEffect(() => {
     refreshNotifications();
@@ -463,12 +203,6 @@ export function SidebarNotificationsDropdown({
       globalThis.window.electron.onLocalNotificationCreated((notification) => {
         setLocalNotifications((current) => [notification, ...current]);
       });
-    const unsubscribeSync = globalThis.window.electron.onSyncNotificationCount(
-      (notification) => {
-        setApiUnreadCount(notification.notificationCount);
-        void fetchApiNotifications();
-      }
-    );
     const handleNotificationsChanged = () => {
       refreshNotifications();
     };
@@ -480,54 +214,29 @@ export function SidebarNotificationsDropdown({
 
     return () => {
       unsubscribeLocal();
-      unsubscribeSync();
       globalThis.window.removeEventListener(
         "notificationsChanged",
         handleNotificationsChanged
       );
     };
-  }, [fetchApiNotifications, refreshNotifications]);
+  }, [refreshNotifications]);
 
-  const mergedNotifications = useMemo<MergedNotification[]>(() => {
-    const apiWithSource = apiNotifications
-      .filter(
-        (notification) =>
-          !notification.type.startsWith("FRIEND_REQUEST_") &&
-          notification.type !== CLOUD_GIFT_RECEIVED_NOTIFICATION
-      )
-      .map((notification) => ({
-        ...notification,
-        isRead: apiUnreadOverrides.has(notification.id)
-          ? false
-          : notification.isRead,
-        source: "api" as const,
-      }));
-    const localWithSource = localNotifications.map((notification) => ({
-      ...notification,
-      source: "local" as const,
-    }));
+  const mergedNotifications = useMemo<MergedNotification[]>(
+    () =>
+      localNotifications
+        .map((notification) => ({ ...notification, source: "local" as const }))
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
+    [localNotifications]
+  );
 
-    const sortByDate = (a: MergedNotification, b: MergedNotification) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-
-    const highPriority: MergedNotification[] = apiWithSource.filter(
-      (notification) => notification.priority === 1
-    );
-
-    const lowPriority: MergedNotification[] = [
-      ...apiWithSource.filter((notification) => notification.priority !== 1),
-      ...localWithSource,
-    ].sort(sortByDate);
-
-    return [...highPriority, ...lowPriority];
-  }, [apiNotifications, apiUnreadOverrides, localNotifications]);
-
-  const unreadCount = useMemo(() => {
-    const localUnreadCount = localNotifications.filter(
-      (notification) => !notification.isRead
-    ).length;
-    return apiUnreadCount + localUnreadCount + apiUnreadOverrides.size;
-  }, [apiUnreadCount, apiUnreadOverrides.size, localNotifications]);
+  const unreadCount = useMemo(
+    () =>
+      localNotifications.filter((notification) => !notification.isRead).length,
+    [localNotifications]
+  );
 
   useEffect(() => {
     onUnreadCountChange(unreadCount);
@@ -595,96 +304,32 @@ export function SidebarNotificationsDropdown({
   }, [anchorRef, closeAndRestoreFocus, visible]);
 
   const markAsRead = async (notification: MergedNotification) => {
-    if (notification.source === "local") {
-      await globalThis.window.electron.markLocalNotificationRead(
-        notification.id
-      );
-      setLocalNotifications((current) =>
-        current.map((item) =>
-          item.id === notification.id ? { ...item, isRead: true } : item
-        )
-      );
-    } else {
-      const wasUnreadOverride = apiUnreadOverrides.has(notification.id);
-      const serverIsRead =
-        getApiNotificationIsServerRead(apiNotifications, notification.id) ??
-        notification.isRead;
-
-      setApiUnreadOverrides((current) => {
-        const next = new Set(current);
-        next.delete(notification.id);
-        return next;
-      });
-      await globalThis.window.electron.hydraApi.patch(
-        `/profile/notifications/${notification.id}/read`,
-        {
-          data: { id: notification.id },
-          needsAuth: true,
-        }
-      );
-      setApiNotifications((current) =>
-        current.map((item) =>
-          item.id === notification.id ? { ...item, isRead: true } : item
-        )
-      );
-      if (!wasUnreadOverride && !serverIsRead) {
-        setApiUnreadCount((current) => Math.max(0, current - 1));
-      }
-    }
-
+    await globalThis.window.electron.markLocalNotificationRead(notification.id);
+    setLocalNotifications((current) =>
+      current.map((item) =>
+        item.id === notification.id ? { ...item, isRead: true } : item
+      )
+    );
     notifyCountChange();
   };
 
   const markAsUnread = async (notification: MergedNotification) => {
-    if (notification.source === "local") {
-      await globalThis.window.electron.markLocalNotificationUnread(
-        notification.id
-      );
-      setLocalNotifications((current) =>
-        current.map((item) =>
-          item.id === notification.id ? { ...item, isRead: false } : item
-        )
-      );
-    } else {
-      setApiUnreadOverrides((current) => {
-        const next = new Set(current);
-        next.add(notification.id);
-        return next;
-      });
-    }
-
+    await globalThis.window.electron.markLocalNotificationUnread(
+      notification.id
+    );
+    setLocalNotifications((current) =>
+      current.map((item) =>
+        item.id === notification.id ? { ...item, isRead: false } : item
+      )
+    );
     notifyCountChange();
   };
 
   const dismissNotification = async (notification: MergedNotification) => {
-    if (notification.source === "local") {
-      await globalThis.window.electron.deleteLocalNotification(notification.id);
-      setLocalNotifications((current) =>
-        current.filter((item) => item.id !== notification.id)
-      );
-    } else {
-      const wasUnreadOverride = apiUnreadOverrides.has(notification.id);
-      const serverIsRead =
-        getApiNotificationIsServerRead(apiNotifications, notification.id) ??
-        notification.isRead;
-
-      await globalThis.window.electron.hydraApi.delete(
-        `/profile/notifications/${notification.id}`,
-        { needsAuth: true }
-      );
-      setApiNotifications((current) =>
-        current.filter((item) => item.id !== notification.id)
-      );
-      setApiUnreadOverrides((current) => {
-        const next = new Set(current);
-        next.delete(notification.id);
-        return next;
-      });
-      if (!wasUnreadOverride && !serverIsRead) {
-        setApiUnreadCount((current) => Math.max(0, current - 1));
-      }
-    }
-
+    await globalThis.window.electron.deleteLocalNotification(notification.id);
+    setLocalNotifications((current) =>
+      current.filter((item) => item.id !== notification.id)
+    );
     notifyCountChange();
   };
 
@@ -693,12 +338,7 @@ export function SidebarNotificationsDropdown({
       await markAsRead(notification);
     }
 
-    const url = isNotificationContentEnabled(
-      notification,
-      screenshotFeatureFlags
-    )
-      ? getNotificationUrl(notification)
-      : null;
+    const url = getNotificationUrl(notification);
     if (url) {
       navigate(resolveBigPicturePath(url));
       closeAndRestoreFocus();
@@ -804,25 +444,7 @@ export function SidebarNotificationsDropdown({
       );
     }
 
-    if (
-      notification.source === "api" &&
-      isNotificationContentEnabled(notification, screenshotFeatureFlags)
-    ) {
-      const ScreenshotIcon = SCREENSHOT_NOTIFICATION_ICONS[notification.type];
-      if (ScreenshotIcon) {
-        return (
-          <div className="sidebar-notifications-dropdown__fallback-icon">
-            <ScreenshotIcon
-              size={24}
-              weight="fill"
-              className="sidebar-notifications-dropdown__fallback-symbol"
-            />
-          </div>
-        );
-      }
-    }
-
-    if (isHydraNotification(notification)) {
+    if (isAppNotification(notification)) {
       return (
         <div className="sidebar-notifications-dropdown__fallback-icon">
           <img
@@ -897,14 +519,7 @@ export function SidebarNotificationsDropdown({
                   </div>
                 ) : (
                   mergedNotifications.map((notification, index) => {
-                    const content = getNotificationContent(
-                      notification,
-                      t,
-                      isNotificationContentEnabled(
-                        notification,
-                        screenshotFeatureFlags
-                      )
-                    );
+                    const content = getNotificationContent(notification);
                     const createdAt = new Date(notification.createdAt);
                     const itemFocusId =
                       getNotificationItemFocusId(notification);

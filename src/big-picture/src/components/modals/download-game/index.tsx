@@ -47,7 +47,6 @@ import {
   useNavigationScreenActions,
   useBigPictureToast,
   useUserPreferences,
-  useUserDetails,
 } from "../../../hooks";
 import { useNavigationStore, useVirtualKeyboardStore } from "../../../stores";
 
@@ -1433,7 +1432,6 @@ function DownloadGameOptions({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { features } = useFeature();
   const userPreferences = useUserPreferences();
-  const { hasActiveSubscription } = useUserDetails();
   const isOptionsInteractionLocked = isSubmitting;
 
   // Recompute when AllDebrid's supported hosts change.
@@ -1445,14 +1443,12 @@ function DownloadGameOptions({
     return getDownloaderAvailabilityOptions(
       option,
       userPreferences,
-      features,
-      hasActiveSubscription
+      features
     );
   }, [
     features,
     option,
     userPreferences,
-    hasActiveSubscription,
     allDebridHostsVersion,
   ]);
   const availableDownloaderOptions = useMemo(
