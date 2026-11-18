@@ -261,16 +261,6 @@ export function SettingsContextGeneral() {
             })
           }
         />
-
-        <CheckboxField
-          label={t("open_friends_window_on_startup")}
-          checked={form.openFriendsWindowOnStartup}
-          onChange={() =>
-            handleChange({
-              openFriendsWindowOnStartup: !form.openFriendsWindowOnStartup,
-            })
-          }
-        />
       </div>
 
       {window.electron.platform === "linux" && (

@@ -26,7 +26,6 @@ import {
   DeckyPlugin,
   DownloadSourcesChecker,
   DownloadOrchestrator,
-  SSEClient,
   Wine,
   WindowManager,
   ScreenshotInputService,
@@ -164,7 +163,6 @@ export const loadState = async () => {
     initializeScreenshots();
 
     if (HydraApi.isLoggedIn()) {
-      SSEClient.connect();
       void groupedSouvenirWorker.trigger();
       void startSteamSyncOnStartup();
     }

@@ -53,7 +53,6 @@ import {
 } from "./screenshots-folder";
 import { startWaylandFocusWatch, stopWaylandFocusWatch } from "./wayland-focus";
 import { ScreenshotTelemetry } from "./screenshot-telemetry";
-import { ScreenshotUploadNotifier } from "./screenshot-upload-notifier";
 import { screenshotUploadWorker } from "./screenshot-upload-worker";
 import { readUserPreferences } from "./screenshot-user-preferences";
 
@@ -102,8 +101,6 @@ export const initializeScreenshots = () => {
   void backfillLocalScreenshotGameIds().catch((error) => {
     logger.error("Failed to back-fill local screenshot game ids", error);
   });
-
-  screenshotUploadWorker.start();
 };
 
 const releaseRunningGameResources = () => {
@@ -239,18 +236,12 @@ export const flushScreenshotTelemetry = (timeoutMs: number) =>
     }),
   ]);
 
+/** Screenshots stay on this device; Nacho doesn't upload them to Hydra. */
 export const uploadLocalScreenshot = async (
-  clientId: string,
-  options: LocalScreenshotUploadOptions
-) => {
-  const screenshot = await LocalScreenshotStore.get(clientId);
-  if (screenshot && (await removeLocalScreenshotIfMissing(clientId))) {
-    return { ...screenshot, state: "deleted" as const };
-  }
-
-  ScreenshotUploadNotifier.markUserUpload(clientId);
-
-  return screenshotUploadWorker.enqueue(clientId, options);
+  _clientId: string,
+  _options: LocalScreenshotUploadOptions
+): Promise<never> => {
+  throw new Error("Screenshot uploads are turned off");
 };
 
 export {

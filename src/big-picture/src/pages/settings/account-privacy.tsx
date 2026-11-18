@@ -3,7 +3,6 @@ import "./account-privacy.scss";
 import type {
   ProfileVisibility,
   ScreenshotCommentsPolicy,
-  Subscription,
   UserBlocks,
   UserFriend,
 } from "@types";
@@ -12,22 +11,18 @@ import { useTranslation } from "react-i18next";
 
 import {
   Button,
-  Checkbox,
   DropdownSelect,
   type DropdownSelectOption,
 } from "../../components";
 import {
   Feature,
   useBigPictureToast,
-  useDate,
   useFeature,
   useNavigation,
   useUserDetails,
 } from "../../hooks";
 import type { FocusOverrides } from "../../services";
 import {
-  ACCOUNT_PRIVACY_HYDRA_CLOUD_BUTTON_ID,
-  ACCOUNT_PRIVACY_CLOUD_GIFTS_CHECKBOX_ID,
   ACCOUNT_PRIVACY_PRIVACY_SELECT_ID,
   ACCOUNT_PRIVACY_SCREENSHOT_COMMENTS_SELECT_ID,
   ACCOUNT_PRIVACY_SCREENSHOTS_SELECT_ID,
@@ -59,60 +54,13 @@ function getProfileVisibilityLabel(
   }
 }
 
-function getHydraCloudSectionContent(
-  hasActiveSubscription: boolean,
-  subscription: Subscription | null,
-  formatDate: (date: string | Date | number) => string,
-  t: (key: string, options?: Record<string, unknown>) => string
-) {
-  const hasSubscribedBefore = Boolean(subscription?.expiresAt);
-  const isRenewalActive = subscription?.status === "active";
-
-  if (!hasSubscribedBefore) {
-    return {
-      description: [t("no_subscription")],
-      callToAction: t("become_subscriber"),
-    };
-  }
-
-  if (hasActiveSubscription) {
-    return {
-      description: isRenewalActive
-        ? [
-            t("subscription_renews_on", {
-              date: formatDate(subscription!.expiresAt!),
-            }),
-            t("bill_sent_until"),
-          ]
-        : [
-            t("subscription_renew_cancelled"),
-            t("subscription_active_until", {
-              date: formatDate(subscription!.expiresAt!),
-            }),
-          ],
-      callToAction: t("manage_subscription"),
-    };
-  }
-
-  return {
-    description: [
-      t("subscription_expired_at", {
-        date: formatDate(subscription!.expiresAt!),
-      }),
-    ],
-    callToAction: t("renew_subscription"),
-  };
-}
-
 export function AccountPrivacySettingsSection({
   className,
 }: Readonly<SettingsSectionProps>) {
-  const { formatDate } = useDate();
   const { t } = useTranslation("settings");
   const { showSuccessToast, showErrorToast } = useBigPictureToast();
   const { setFocus } = useNavigation();
-  const { userDetails, hasActiveSubscription, patchUser, unblockUser } =
-    useUserDetails();
+  const { userDetails, patchUser, unblockUser } = useUserDetails();
   const [profileVisibility, setProfileVisibility] =
     useState<ProfileVisibility>("PUBLIC");
   const [souvenirsVisibility, setSouvenirsVisibility] =
@@ -131,7 +79,6 @@ export function AccountPrivacySettingsSection({
     screenshotCommentsPolicy !== null;
   const [blockedUsers, setBlockedUsers] = useState<UserFriend[]>([]);
   const [isSavingVisibility, setIsSavingVisibility] = useState(false);
-  const [isSavingCloudGifts, setIsSavingCloudGifts] = useState(false);
   const [unblockingUserId, setUnblockingUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -211,15 +158,6 @@ export function AccountPrivacySettingsSection({
     ],
     [t]
   );
-
-  const hydraCloudContent = useMemo(() => {
-    return getHydraCloudSectionContent(
-      hasActiveSubscription,
-      userDetails?.subscription ?? null,
-      formatDate,
-      t
-    );
-  }, [formatDate, hasActiveSubscription, t, userDetails?.subscription]);
 
   const blockedUserFocusIds = useMemo(
     () =>
@@ -387,11 +325,11 @@ export function AccountPrivacySettingsSection({
         showScreenshotCommentsPolicy
           ? ACCOUNT_PRIVACY_SCREENSHOT_COMMENTS_SELECT_ID
           : null,
-        ACCOUNT_PRIVACY_CLOUD_GIFTS_CHECKBOX_ID,
-        ACCOUNT_PRIVACY_HYDRA_CLOUD_BUTTON_ID,
       ].filter((focusId): focusId is string => Boolean(focusId)),
     [showScreenshotCommentsPolicy, showScreenshotsVisibility]
   );
+
+  const lastPrivacyFocusId = privacyFocusChain[privacyFocusChain.length - 1];
 
   const getPrivacyNavigationOverrides = useCallback(
     (focusId: string): FocusOverrides => {
@@ -405,10 +343,12 @@ export function AccountPrivacySettingsSection({
           : SETTINGS_HEADER_RETURN_TARGET,
         down: nextFocusId
           ? { type: "item", itemId: nextFocusId }
-          : { type: "block" },
+          : blockedUserFocusIds[0]
+            ? { type: "item", itemId: blockedUserFocusIds[0].focusId }
+            : { type: "block" },
       };
     },
-    [privacyFocusChain]
+    [blockedUserFocusIds, privacyFocusChain]
   );
 
   const handleUnblock = useCallback(
@@ -420,7 +360,7 @@ export function AccountPrivacySettingsSection({
         ? getAccountPrivacyBlockedUserButtonFocusId(nextUser.id)
         : previousUser
           ? getAccountPrivacyBlockedUserButtonFocusId(previousUser.id)
-          : ACCOUNT_PRIVACY_HYDRA_CLOUD_BUTTON_ID;
+          : lastPrivacyFocusId;
 
       setUnblockingUserId(userId);
 
@@ -434,45 +374,7 @@ export function AccountPrivacySettingsSection({
         setUnblockingUserId(null);
       }
     },
-    [blockedUsers, fetchBlockedUsers, setFocus, unblockUser]
-  );
-
-  const handleAllowCloudGiftsChange = useCallback(
-    async (allowCloudGifts: boolean) => {
-      if (!userDetails || isSavingCloudGifts) return;
-
-      setIsSavingCloudGifts(true);
-
-      try {
-        await patchUser({ allowCloudGifts });
-        showSuccessToast(t("changes_saved"), SETTINGS_TOAST_OPTIONS);
-      } catch {
-        showErrorToast(t("try_again"), SETTINGS_TOAST_OPTIONS);
-      } finally {
-        setIsSavingCloudGifts(false);
-      }
-    },
-    [
-      isSavingCloudGifts,
-      patchUser,
-      showErrorToast,
-      showSuccessToast,
-      t,
-      userDetails,
-    ]
-  );
-
-  const hydraCloudButtonOverrides = useMemo<FocusOverrides>(
-    () => ({
-      ...getPrivacyNavigationOverrides(ACCOUNT_PRIVACY_HYDRA_CLOUD_BUTTON_ID),
-      down: blockedUserFocusIds[0]
-        ? {
-            type: "item",
-            itemId: blockedUserFocusIds[0].focusId,
-          }
-        : { type: "block" },
-    }),
-    [blockedUserFocusIds, getPrivacyNavigationOverrides]
+    [blockedUsers, fetchBlockedUsers, lastPrivacyFocusId, setFocus, unblockUser]
   );
 
   const blockedUserNavigationOverrides = useMemo<
@@ -488,10 +390,7 @@ export function AccountPrivacySettingsSection({
           {
             up: previousItem
               ? { type: "item", itemId: previousItem.focusId }
-              : {
-                  type: "item",
-                  itemId: ACCOUNT_PRIVACY_HYDRA_CLOUD_BUTTON_ID,
-                },
+              : { type: "item", itemId: lastPrivacyFocusId },
             down: nextItem
               ? { type: "item", itemId: nextItem.focusId }
               : { type: "block" },
@@ -499,7 +398,7 @@ export function AccountPrivacySettingsSection({
         ];
       })
     );
-  }, [blockedUserFocusIds]);
+  }, [blockedUserFocusIds, lastPrivacyFocusId]);
 
   if (!userDetails) return null;
 
@@ -581,21 +480,6 @@ export function AccountPrivacySettingsSection({
               }}
             />
           ) : null}
-
-          <Checkbox
-            block
-            checked={userDetails.allowCloudGifts}
-            disabled={isSavingCloudGifts}
-            focusId={ACCOUNT_PRIVACY_CLOUD_GIFTS_CHECKBOX_ID}
-            navigationOverrides={getPrivacyNavigationOverrides(
-              ACCOUNT_PRIVACY_CLOUD_GIFTS_CHECKBOX_ID
-            )}
-            label={t("allow_cloud_gifts")}
-            secondaryText={t("allow_cloud_gifts_description")}
-            onChange={(checked) => {
-              void handleAllowCloudGiftsChange(checked);
-            }}
-          />
         </div>
       </SettingsSection>
 
@@ -658,35 +542,6 @@ export function AccountPrivacySettingsSection({
           </HorizontalFocusGroup>
         </div>
       </SettingsSection> */}
-
-      <SettingsSection
-        title="Nacho Cloud"
-        description="Check your subscription status and manage your Nacho Cloud plan."
-      >
-        <div className="account-privacy-settings-section__section-content">
-          <div className="account-privacy-settings-section__subscription-copy">
-            {hydraCloudContent.description.map((line) => (
-              <p
-                key={line}
-                className="account-privacy-settings-section__subscription-line"
-              >
-                {line}
-              </p>
-            ))}
-          </div>
-
-          <Button
-            className="account-privacy-settings-section__cloud-button"
-            focusId={ACCOUNT_PRIVACY_HYDRA_CLOUD_BUTTON_ID}
-            focusNavigationOverrides={hydraCloudButtonOverrides}
-            onClick={() => {
-              void globalThis.window.electron.openCheckout();
-            }}
-          >
-            {hydraCloudContent.callToAction}
-          </Button>
-        </div>
-      </SettingsSection>
 
       <SettingsSection
         title="Blocked Users"

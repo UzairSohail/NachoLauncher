@@ -4,6 +4,7 @@ import type {
   Theme,
   UserPreferences,
 } from "@types";
+import type { SyncedArtwork } from "../game-artwork-cloud";
 import type { PreferenceSecrets } from "../user-preferences/preference-secrets";
 import { openJson, sealJson, type SealedBox } from "./secret-box.js";
 import {
@@ -21,6 +22,19 @@ export type SyncedTheme = Pick<
   "id" | "name" | "author" | "authorName" | "isActive" | "code"
 >;
 
+/** A game's favourite and pin state; the latest change wins. */
+export interface SyncedGameFlags {
+  favorite: boolean;
+  isPinned: boolean;
+  pinnedDate: string | null;
+}
+
+/** One device's own time in one game. Only that device writes it. */
+export interface SyncedDevicePlaytime {
+  playTimeInMilliseconds: number;
+  lastTimePlayed: string | null;
+}
+
 /** A library collection, with its member games in custom order. */
 export type SyncedGameCollection = Omit<LocalGameCollection, "id">;
 
@@ -34,6 +48,12 @@ export interface SettingsSyncState {
   themes: SyncEntries<SyncedTheme>;
   /** Keyed by collection ID. */
   gameCollections: SyncEntries<SyncedGameCollection>;
+  /** Keyed by game key (shop:objectId). */
+  gameFlags: SyncEntries<SyncedGameFlags>;
+  /** Keyed by `<deviceId>/<game key>`. */
+  playtime: SyncEntries<SyncedDevicePlaytime>;
+  /** Keyed by `<game key>/<artwork type>`. */
+  gameArtwork: SyncEntries<SyncedArtwork>;
 }
 
 /** `hydra/settings.json` in Drive. */
@@ -47,6 +67,9 @@ export interface SettingsSyncDocument {
   themes: SyncEntries<SyncedTheme>;
   /** Added after version 1 shipped; older documents don't have it. */
   gameCollections?: SyncEntries<SyncedGameCollection>;
+  gameFlags?: SyncEntries<SyncedGameFlags>;
+  playtime?: SyncEntries<SyncedDevicePlaytime>;
+  gameArtwork?: SyncEntries<SyncedArtwork>;
 }
 
 export const emptySettingsSyncState = (): SettingsSyncState => ({
@@ -55,6 +78,9 @@ export const emptySettingsSyncState = (): SettingsSyncState => ({
   downloadSources: {},
   themes: {},
   gameCollections: {},
+  gameFlags: {},
+  playtime: {},
+  gameArtwork: {},
 });
 
 export const pickSyncedPreferences = (
@@ -93,6 +119,9 @@ export const toSettingsDocument = (
   downloadSources: state.downloadSources,
   themes: state.themes,
   gameCollections: state.gameCollections,
+  gameFlags: state.gameFlags,
+  playtime: state.playtime,
+  gameArtwork: state.gameArtwork,
 });
 
 export const fromSettingsDocument = (
@@ -111,6 +140,9 @@ export const fromSettingsDocument = (
     downloadSources: document.downloadSources ?? {},
     themes: document.themes ?? {},
     gameCollections: document.gameCollections ?? {},
+    gameFlags: document.gameFlags ?? {},
+    playtime: document.playtime ?? {},
+    gameArtwork: document.gameArtwork ?? {},
   };
 };
 
@@ -128,6 +160,9 @@ const SECTIONS = [
   "downloadSources",
   "themes",
   "gameCollections",
+  "gameFlags",
+  "playtime",
+  "gameArtwork",
 ] as const satisfies readonly (keyof SettingsSyncState)[];
 
 export const mergeSettingsState = (

@@ -13,6 +13,14 @@ Once signed in, it is on by default; turn it off per device under
 - Themes, including which one is active
 - Language, notification, achievement, library, download display, extraction,
   tracker and screenshot preferences
+- Library collections
+- Favourites and pins (the latest change wins)
+- Playtime: each device keeps its own time per game and shows its own time
+  plus the other devices', so time played on several devices adds up. A
+  device shares its time when a game closes.
+- Custom artwork (icon, logo, hero, cover). Pictures you pick from your files
+  are stored once in Drive under `hydra/artwork/`; SteamGridDB picks sync as
+  their link. The latest change wins.
 
 Folders, Wine/Proton paths, startup behaviour, Big Picture, MangoHud/GameMode,
 the network interface and the speed limit stay on each device. The list lives in

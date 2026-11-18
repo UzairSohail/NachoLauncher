@@ -49,7 +49,6 @@ import { GoogleSignInPrompt } from "./components/google-sign-in-prompt";
 import { StartWithComputerPrompt } from "./components/start-with-computer-prompt";
 import { useMissingScreenshotsToast } from "./hooks/use-missing-screenshots-toast";
 import { useScreenshotUploadFailureToast } from "./hooks/use-screenshot-upload-failure-toast";
-import { playMessageSound } from "./pages/chat-window/chat-sounds";
 import { usePersonalCloudSyncToasts } from "./pages/game-details/personal-cloud";
 
 import type { UserPreferences } from "@types";
@@ -731,13 +730,6 @@ export function App() {
       unsubscribe();
     };
   }, [playAudio]);
-
-  // Sent here when the chat window is closed or still loading.
-  useEffect(() => {
-    return window.electron.onChatMessageSound(() => {
-      void playMessageSound();
-    });
-  }, []);
 
   const handleToastClose = useCallback(() => {
     dispatch(closeToast());

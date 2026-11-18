@@ -45,7 +45,6 @@ import {
   useUserDetails,
   useGoogleDriveSignedIn,
 } from "@renderer/hooks";
-import { useSubscription } from "@renderer/hooks/use-subscription";
 import { RemoveGameFromLibraryModal } from "./remove-from-library-modal";
 import { ResetAchievementsModal } from "./reset-achievements-modal";
 import { ChangeGamePlaytimeModal } from "./change-game-playtime-modal";
@@ -252,7 +251,6 @@ export function GameOptionsModal({
     useDownload();
   const { userDetails, hasActiveSubscription } = useUserDetails();
   const { artifacts } = useContext(cloudSyncContext);
-  const { showHydraCloudModal } = useSubscription();
   const driveSignedIn = useGoogleDriveSignedIn();
   const cloudSaveAccessAction = resolveCloudSaveAccessAction(
     game.shop,
@@ -1078,24 +1076,12 @@ export function GameOptionsModal({
     });
 
     setSelectedCategory(availableCategory);
-
-    const isRequestedCloudCategoryAvailable =
-      (category === "hydra_cloud" && showCloudSaveV2Settings) ||
-      (category === "hydra_cloud_legacy" && showLegacyCloudSaveSettings);
-
-    if (
-      isRequestedCloudCategoryAvailable &&
-      cloudSaveAccessAction === "paywall"
-    ) {
-      showHydraCloudModal("backup");
-    }
   }, [
     cloudSaveAccessAction,
     initialCategory,
     showDownloadSettings,
     showCloudSaveV2Settings,
     showLegacyCloudSaveSettings,
-    showHydraCloudModal,
     visible,
   ]);
 
@@ -1130,9 +1116,6 @@ export function GameOptionsModal({
       (category === "hydra_cloud" || category === "hydra_cloud_legacy") &&
       cloudSaveAccessAction !== "open"
     ) {
-      if (cloudSaveAccessAction === "paywall") {
-        showHydraCloudModal("backup");
-      }
       return;
     }
     setSelectedCategory(category);

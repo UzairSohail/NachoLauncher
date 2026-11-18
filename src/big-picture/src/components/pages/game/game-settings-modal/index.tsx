@@ -29,6 +29,10 @@ import {
   GAME_CLOUD_V2_SETTINGS_PRIMARY_CONTROL_ID,
 } from "./cloud-v2-tab";
 import {
+  GamePersonalCloudSettingsTab,
+  GAME_PERSONAL_CLOUD_PRIMARY_CONTROL_ID,
+} from "./personal-cloud-tab";
+import {
   GameDownloadsSettingsTab,
   GAME_DOWNLOADS_SETTINGS_PRIMARY_CONTROL_ID,
 } from "./downloads-tab";
@@ -48,6 +52,7 @@ import {
 type GameSettingsTabId =
   | "launch"
   | "customization"
+  | "personal_cloud"
   | "hydra_cloud"
   | "hydra_cloud_legacy"
   | "compatibility"
@@ -57,6 +62,7 @@ type GameSettingsTabId =
 const GAME_SETTINGS_TAB_FOCUS_IDS: Record<GameSettingsTabId, string> = {
   launch: GAME_LAUNCH_SETTINGS_PRIMARY_CONTROL_ID,
   customization: GAME_CUSTOMIZATION_SETTINGS_PRIMARY_CONTROL_ID,
+  personal_cloud: GAME_PERSONAL_CLOUD_PRIMARY_CONTROL_ID,
   hydra_cloud: GAME_CLOUD_V2_SETTINGS_PRIMARY_CONTROL_ID,
   hydra_cloud_legacy: GAME_CLOUD_SETTINGS_PRIMARY_CONTROL_ID,
   downloads: GAME_DOWNLOADS_SETTINGS_PRIMARY_CONTROL_ID,
@@ -83,7 +89,7 @@ export function GameSettingsModal({
   cloudSettings,
   onClose,
 }: Readonly<GameSettingsModalProps>) {
-  const { t } = useTranslation(["game_details", "header"]);
+  const { t } = useTranslation(["game_details", "header", "personal_cloud"]);
   const [activeTabId, setActiveTabId] = useState<GameSettingsTabId>("launch");
   const { userDetails, hasActiveSubscription } = useUserDetails();
   const preferredAssets = useMemo(
@@ -159,6 +165,26 @@ export function GameSettingsModal({
       (driveSignedIn && usesDriveCloudSaves(game.shop, game.platform)),
     game.platform
   );
+  // PC games back up to Google Drive through Cloud Save Manager. Emulator
+  // games have their own Drive-backed tabs.
+  const shouldShowPersonalCloudTab =
+    game.shop !== "custom" && !usesDriveCloudSaves(game.shop, game.platform);
+  const personalCloudContent = useMemo(
+    () => (
+      <GamePersonalCloudSettingsTab
+        shop={game.shop}
+        objectId={game.objectId}
+        executablePath={game.executablePath}
+        onSelectExecutable={handleSelectExecutableFromCloudV2}
+      />
+    ),
+    [
+      game.shop,
+      game.objectId,
+      game.executablePath,
+      handleSelectExecutableFromCloudV2,
+    ]
+  );
   const shouldShowLegacyCloudTab =
     (isEmulatorSaveGame && driveSignedIn) ||
     shouldShowLegacyCloudSaveTab(
@@ -170,6 +196,7 @@ export function GameSettingsModal({
 
   useEffect(() => {
     const isUnavailableTab =
+      (activeTabId === "personal_cloud" && !shouldShowPersonalCloudTab) ||
       (activeTabId === "hydra_cloud" && !shouldShowCloudV2Tab) ||
       (activeTabId === "hydra_cloud_legacy" && !shouldShowLegacyCloudTab) ||
       (activeTabId === "downloads" && !shouldShowDownloadsTab);
@@ -179,6 +206,7 @@ export function GameSettingsModal({
     }
   }, [
     activeTabId,
+    shouldShowPersonalCloudTab,
     shouldShowCloudV2Tab,
     shouldShowLegacyCloudTab,
     shouldShowDownloadsTab,
@@ -196,6 +224,15 @@ export function GameSettingsModal({
         label: t("settings_category_customization"),
         content: customizationContent,
       },
+      ...(shouldShowPersonalCloudTab
+        ? [
+            {
+              id: "personal_cloud",
+              label: t("title", { ns: "personal_cloud" }),
+              content: personalCloudContent,
+            } satisfies SidebarModalTab<GameSettingsTabId>,
+          ]
+        : []),
       ...(shouldShowCloudV2Tab
         ? [
             {
@@ -250,6 +287,8 @@ export function GameSettingsModal({
       dangerContent,
       downloadContent,
       launchContent,
+      personalCloudContent,
+      shouldShowPersonalCloudTab,
       shouldShowCloudV2Tab,
       shouldShowLegacyCloudTab,
       shouldShowCompatibilityTab,

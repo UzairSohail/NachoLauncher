@@ -12,12 +12,6 @@ import { getUserData } from "./user/get-user-data";
 import { db } from "@main/level";
 import { levelKeys } from "@main/level/sublevels";
 import type { Auth, User } from "@types";
-import { SSEClient } from "./sse";
-import { FriendsSnapshotCache } from "./friends-snapshot";
-import { ChatOfficialMessages } from "./chat/chat-official-messages";
-import { ChatUnreadStore } from "./chat/chat-unread-store";
-import { clearChatSenderProfiles } from "./chat/chat-sender-profiles";
-import { closeChatNotifications } from "./notifications";
 import { trimTrailingSlashes } from "../../shared/trim-trailing-slashes.js";
 import {
   sanitizeNetworkLogPayload,
@@ -292,9 +286,6 @@ export class HydraApi {
       WindowManager.mainWindow.webContents.send("on-signin");
       void uploadGamesBatch();
 
-      SSEClient.close();
-      SSEClient.connect();
-
       const { syncDownloadSourcesFromApi } = await import("./user");
       if (generation !== this.authContexts.generation) return;
       syncDownloadSourcesFromApi();
@@ -461,14 +452,7 @@ export class HydraApi {
   }
 
   private static sendSignOutEvent() {
-    FriendsSnapshotCache.clear();
-    ChatUnreadStore.clear();
-    ChatOfficialMessages.stop();
-    clearChatSenderProfiles();
-    closeChatNotifications();
     // Covers the 401 path too, which never goes through the sign-out event.
-    WindowManager.closeFriendsWindow();
-    WindowManager.closeChatWindow();
     WindowManager.sendToAppWindows("on-signout");
   }
 
@@ -601,7 +585,6 @@ export class HydraApi {
 
         await persistence;
         if (signedOutGeneration !== this.authContexts.generation) throw err;
-        SSEClient.close();
         this.sendSignOutEvent();
       } finally {
         await persistence;

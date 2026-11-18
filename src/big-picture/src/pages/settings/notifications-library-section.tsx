@@ -102,28 +102,6 @@ export function NotificationsLibrarySection({
             repackUpdatesNotificationsEnabled: checked,
           }),
       },
-      {
-        id: "friend-request-notifications-enabled",
-        focusId:
-          NOTIFICATIONS_LIBRARY_ITEM_FOCUS_IDS.friendRequestNotificationsEnabled,
-        label: "Enable friend request notifications",
-        checked: form.friendRequestNotificationsEnabled,
-        onChange: (checked: boolean) =>
-          void updateUserPreferences({
-            friendRequestNotificationsEnabled: checked,
-          }),
-      },
-      {
-        id: "friend-start-game-notifications-enabled",
-        focusId:
-          NOTIFICATIONS_LIBRARY_ITEM_FOCUS_IDS.friendStartGameNotificationsEnabled,
-        label: "Enable friend start game notifications",
-        checked: form.friendStartGameNotificationsEnabled,
-        onChange: (checked: boolean) =>
-          void updateUserPreferences({
-            friendStartGameNotificationsEnabled: checked,
-          }),
-      },
     ];
   }, [form]);
 

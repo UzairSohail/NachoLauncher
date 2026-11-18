@@ -10,8 +10,6 @@ import {
   ThumbsUpIcon,
   TrashIcon,
   TrophyIcon,
-  UserCheckIcon,
-  UserMinusIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import cn from "classnames";
@@ -35,7 +33,6 @@ import {
   ScrollArea,
   VerticalFocusGroup,
 } from "../../components";
-import { openBigPictureCloudGiftModal } from "../../components/cloud-gift-modal.events";
 import { FocusRegionContext } from "../../components/context";
 import { IS_DESKTOP } from "../../constants";
 import {
@@ -48,7 +45,6 @@ import {
 } from "../../hooks";
 import { getPreferredGameAssets } from "../../helpers";
 import type {
-  FriendRequestAction,
   LibraryGame,
   LocalNotification,
   MergedNotification,
@@ -60,7 +56,6 @@ import {
   buildScreenshotNotificationTarget,
   buildSouvenirNotificationTarget,
   isScreenshotNotificationType,
-  CLOUD_GIFT_ID_VARIABLE,
   CLOUD_GIFT_RECEIVED_NOTIFICATION,
   NOTIFICATIONS_FETCH_FILTER,
   NOTIFICATIONS_FETCH_TAKE,
@@ -494,13 +489,19 @@ export function SidebarNotificationsDropdown({
   }, [fetchApiNotifications, refreshNotifications]);
 
   const mergedNotifications = useMemo<MergedNotification[]>(() => {
-    const apiWithSource = apiNotifications.map((notification) => ({
-      ...notification,
-      isRead: apiUnreadOverrides.has(notification.id)
-        ? false
-        : notification.isRead,
-      source: "api" as const,
-    }));
+    const apiWithSource = apiNotifications
+      .filter(
+        (notification) =>
+          !notification.type.startsWith("FRIEND_REQUEST_") &&
+          notification.type !== CLOUD_GIFT_RECEIVED_NOTIFICATION
+      )
+      .map((notification) => ({
+        ...notification,
+        isRead: apiUnreadOverrides.has(notification.id)
+          ? false
+          : notification.isRead,
+        source: "api" as const,
+      }));
     const localWithSource = localNotifications.map((notification) => ({
       ...notification,
       source: "local" as const,
@@ -692,16 +693,6 @@ export function SidebarNotificationsDropdown({
       await markAsRead(notification);
     }
 
-    if (
-      notification.source === "api" &&
-      notification.type === CLOUD_GIFT_RECEIVED_NOTIFICATION &&
-      notification.variables[CLOUD_GIFT_ID_VARIABLE]
-    ) {
-      openBigPictureCloudGiftModal(notification);
-      closeAndRestoreFocus();
-      return;
-    }
-
     const url = isNotificationContentEnabled(
       notification,
       screenshotFeatureFlags
@@ -732,51 +723,6 @@ export function SidebarNotificationsDropdown({
     event.stopPropagation();
     setMenuNotification(notification);
     setMenuPosition({ x: event.clientX, y: event.clientY });
-  };
-
-  const updateFriendRequest = (
-    senderId: string,
-    action: FriendRequestAction
-  ) => {
-    return globalThis.window.electron.hydraApi.patch(
-      `/profile/friend-requests/${senderId}`,
-      {
-        data: {
-          requestState: action,
-        },
-        needsAuth: true,
-      }
-    );
-  };
-
-  const acceptFriendRequest = async (notification: MergedNotification) => {
-    if (
-      notification.source !== "api" ||
-      notification.type !== "FRIEND_REQUEST_RECEIVED"
-    ) {
-      return;
-    }
-
-    const senderId = notification.variables.senderId;
-    if (!senderId) return;
-
-    await updateFriendRequest(senderId, "ACCEPTED");
-    await dismissNotification(notification);
-  };
-
-  const refuseFriendRequest = async (notification: MergedNotification) => {
-    if (
-      notification.source !== "api" ||
-      notification.type !== "FRIEND_REQUEST_RECEIVED"
-    ) {
-      return;
-    }
-
-    const senderId = notification.variables.senderId;
-    if (!senderId) return;
-
-    await updateFriendRequest(senderId, "REFUSED");
-    await dismissNotification(notification);
   };
 
   const buildMenuItems = (
@@ -812,26 +758,6 @@ export function SidebarNotificationsDropdown({
           closeAndRestoreFocus();
         },
       });
-    }
-
-    if (
-      notification.source === "api" &&
-      notification.type === "FRIEND_REQUEST_RECEIVED"
-    ) {
-      items.push(
-        {
-          id: "accept-friend-request",
-          label: "Accept Request",
-          icon: <UserCheckIcon size={18} />,
-          onSelect: () => acceptFriendRequest(notification),
-        },
-        {
-          id: "refuse-friend-request",
-          label: "Refuse Request",
-          icon: <UserMinusIcon size={18} />,
-          onSelect: () => refuseFriendRequest(notification),
-        }
-      );
     }
 
     items.push(

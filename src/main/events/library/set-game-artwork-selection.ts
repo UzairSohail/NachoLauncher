@@ -110,7 +110,13 @@ const setGameArtworkSelection = async (
 
     if (!url) return;
 
-    const synced = await saveSteamGridDbArtwork(shop, objectId, type, url);
+    const synced = await saveSteamGridDbArtwork(
+      shop,
+      objectId,
+      type,
+      url,
+      artworkId ?? null
+    );
     if (synced) {
       await markArtworkSelectionSynced(gameKey, type, url);
     }

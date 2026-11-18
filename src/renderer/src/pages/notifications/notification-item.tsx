@@ -12,8 +12,7 @@ import {
 import retroAchievementsLogo from "@renderer/assets/icons/retroachievements.png";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@renderer/components";
-import { useDate, useUserDetails } from "@renderer/hooks";
+import { useDate } from "@renderer/hooks";
 import cn from "classnames";
 import {
   buildScreenshotNotificationTarget,
@@ -22,7 +21,6 @@ import {
 } from "@shared";
 
 import type { Notification, Badge } from "@types";
-import { openCloudGiftModal } from "../shared-modals/cloud-gift-modal.events";
 import "./notification-item.scss";
 
 const PROFILE_DEEP_LINK_PARAMS = ["tab", "souvenir", "screenshot"];
@@ -105,8 +103,6 @@ interface NotificationItemProps {
   badges: Badge[];
   onDismiss: (id: string) => void;
   onMarkAsRead: (id: string) => void;
-  onAcceptFriendRequest?: (senderId: string) => void;
-  onRefuseFriendRequest?: (senderId: string) => void;
 }
 
 export function NotificationItem({
@@ -114,13 +110,10 @@ export function NotificationItem({
   badges,
   onDismiss,
   onMarkAsRead,
-  onAcceptFriendRequest,
-  onRefuseFriendRequest,
 }: Readonly<NotificationItemProps>) {
   const { t } = useTranslation("notifications_page");
   const { formatDistance } = useDate();
   const navigate = useNavigate();
-  const { updateFriendRequestState } = useUserDetails();
 
   const badge = useMemo(() => {
     if (notification.type !== "BADGE_RECEIVED") return null;
@@ -132,43 +125,9 @@ export function NotificationItem({
       onMarkAsRead(notification.id);
     }
 
-    if (
-      notification.type === "CLOUD_GIFT_RECEIVED" &&
-      notification.variables.giftId
-    ) {
-      openCloudGiftModal(notification);
-      return;
-    }
-
     const target = getNotificationTarget(notification);
     if (target) navigate(target);
   }, [notification, onMarkAsRead, navigate]);
-
-  const handleAccept = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const senderId = notification.variables.senderId;
-      if (senderId) {
-        await updateFriendRequestState(senderId, "ACCEPTED");
-        onAcceptFriendRequest?.(senderId);
-        onDismiss(notification.id);
-      }
-    },
-    [notification, updateFriendRequestState, onAcceptFriendRequest, onDismiss]
-  );
-
-  const handleRefuse = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const senderId = notification.variables.senderId;
-      if (senderId) {
-        await updateFriendRequestState(senderId, "REFUSED");
-        onRefuseFriendRequest?.(senderId);
-        onDismiss(notification.id);
-      }
-    },
-    [notification, updateFriendRequestState, onRefuseFriendRequest, onDismiss]
-  );
 
   const handleDismiss = useCallback(
     (e: React.MouseEvent) => {
@@ -398,18 +357,6 @@ export function NotificationItem({
           {formatDistance(new Date(notification.createdAt), new Date())}
         </span>
       </div>
-
-      {content.showActions &&
-        notification.type === "FRIEND_REQUEST_RECEIVED" && (
-          <div className="notification-item__actions">
-            <Button theme="primary" onClick={handleAccept}>
-              {t("accept")}
-            </Button>
-            <Button theme="outline" onClick={handleRefuse}>
-              {t("refuse")}
-            </Button>
-          </div>
-        )}
 
       {notification.type !== "FRIEND_REQUEST_RECEIVED" && (
         <button

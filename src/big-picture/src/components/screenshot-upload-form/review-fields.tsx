@@ -18,19 +18,12 @@ import {
 
 import {
   Checkbox,
-  DropdownSelect,
   SegmentedControl,
-  type DropdownSelectOption,
   type SegmentedControlOption,
 } from "../common";
 import type { FocusOverrideTarget } from "../../services";
 import { InlineTextField } from "../pages/screenshots/inline-text-field";
-import {
-  Feature,
-  useBigPictureToast,
-  useFeature,
-  useUserDetails,
-} from "../../hooks";
+import { Feature, useFeature } from "../../hooks";
 
 export const SCREENSHOT_QUALITY_LABELS: Record<ScreenshotQuality, string> = {
   STANDARD: "720p",
@@ -38,21 +31,6 @@ export const SCREENSHOT_QUALITY_LABELS: Record<ScreenshotQuality, string> = {
 };
 
 const BLOCK_TARGET: FocusOverrideTarget = { type: "block" };
-
-const QUALITY_OPTIONS: DropdownSelectOption<ScreenshotQuality>[] = [
-  { value: "STANDARD", label: SCREENSHOT_QUALITY_LABELS.STANDARD },
-  {
-    value: "CLOUD",
-    label: (
-      <span className="screenshot-upload-form__quality-option screenshot-upload-form__quality-option--locked">
-        <span className="screenshot-upload-form__quality-option-label">
-          {SCREENSHOT_QUALITY_LABELS.CLOUD}
-        </span>
-        <span className="screenshot-upload-form__cloud-badge">Nacho Cloud</span>
-      </span>
-    ),
-  },
-];
 
 export interface ReviewDraft {
   isSpoiler: boolean;
@@ -97,10 +75,8 @@ export const toUploadOptions = (
   };
 };
 
-export const getLastReviewFieldFocusId = (
-  focusIds: ReviewFieldFocusIds,
-  hasCloudSubscription: boolean
-) => (hasCloudSubscription ? focusIds.visibility : focusIds.quality);
+export const getLastReviewFieldFocusId = (focusIds: ReviewFieldFocusIds) =>
+  focusIds.visibility;
 
 interface ReviewFieldsProps {
   clientId: string;
@@ -126,8 +102,6 @@ export function ReviewFields({
   onChange,
 }: Readonly<ReviewFieldsProps>) {
   const { t } = useTranslation("big_picture");
-  const { showErrorToast } = useBigPictureToast();
-  const { hasActiveSubscription } = useUserDetails();
   const { isFeatureEnabled } = useFeature();
   const isCommentsEnabled = isFeatureEnabled(Feature.ScreenshotComments);
   const afterSpoilerFocusId = isCommentsEnabled
@@ -147,13 +121,6 @@ export function ReviewFields({
     ],
     [t]
   );
-
-  const selectQuality = (quality: ScreenshotQuality) => {
-    if (quality !== "CLOUD") return;
-    showErrorToast(t("screenshots_review_quality_cloud_title"), {
-      message: t("screenshots_review_quality_cloud_message"),
-    });
-  };
 
   return (
     <>
@@ -247,31 +214,11 @@ export function ReviewFields({
         focusId={focusIds.visibility}
         navigationOverrides={{
           up: { type: "item", itemId: beforeVisibilityFocusId },
-          down: hasActiveSubscription
-            ? downTarget
-            : { type: "item", itemId: focusIds.quality },
+          down: downTarget,
           left: leftTarget,
         }}
         onValueChange={(visibility) => onChange({ visibility })}
       />
-
-      {hasActiveSubscription ? null : (
-        <DropdownSelect
-          label={t("screenshots_review_quality")}
-          value="STANDARD"
-          options={QUALITY_OPTIONS}
-          disabled={disabled}
-          focusId={focusIds.quality}
-          focusNavigationOverrides={{
-            up: { type: "item", itemId: focusIds.visibility },
-            down: downTarget,
-            left: leftTarget,
-            right: BLOCK_TARGET,
-          }}
-          className="screenshot-upload-form__quality-select"
-          onValueChange={selectQuality}
-        />
-      )}
     </>
   );
 }

@@ -111,8 +111,6 @@ async function fixture(t: TestContext, apiUrl = "http://localhost:3000") {
     WindowManager: {
       mainWindow: null,
       sendToAppWindows: (event: string) => effects.push(event),
-      closeFriendsWindow: () => {},
-      closeChatWindow: () => {},
     },
     logger: Object.fromEntries(
       ["log", "info", "error"].map((method) => [
@@ -146,8 +144,6 @@ async function fixture(t: TestContext, apiUrl = "http://localhost:3000") {
     "@main/level": "export const db = harness.db;",
     "@main/level/sublevels":
       "export const levelKeys = { auth: 'auth', user: 'user' };",
-    "./sse":
-      "export const SSEClient = { close() { harness.effects.push('sse-close'); }, connect() {} };",
     "./achievements/achievement-watcher-manager":
       "export const AchievementWatcherManager = { resetSessionState() {} };",
     "./achievements/grouped-souvenir-worker":
@@ -157,14 +153,6 @@ async function fixture(t: TestContext, apiUrl = "http://localhost:3000") {
     "./steam-integration/steam-startup-sync":
       "export const startSteamSyncOnStartup = () => harness.effects.push('steam-start'); export const resetSteamStartupSync = () => {};",
     "./user": "export const syncDownloadSourcesFromApi = async () => {};",
-    "./friends-snapshot": "export const FriendsSnapshotCache = { clear() {} };",
-    "./chat/chat-unread-store":
-      "export const ChatUnreadStore = { clear() {} };",
-    "./chat/chat-official-messages":
-      "export const ChatOfficialMessages = { stop() {} };",
-    "./chat/chat-sender-profiles":
-      "export const clearChatSenderProfiles = () => {};",
-    "./notifications": "export const closeChatNotifications = () => {};",
   };
   const bundlePath = path.join(root, "api.mjs");
   // Exercise real auth, HTTP interceptors and profile code; replace environment boundaries only.

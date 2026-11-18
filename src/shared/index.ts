@@ -236,7 +236,10 @@ const getBaseDownloadersForUri = (uri: string): Downloader[] => {
   if (uri.startsWith("https://gofile.io")) return [Downloader.Gofile];
 
   if (uri.startsWith("https://pixeldrain.com")) return [Downloader.PixelDrain];
-  if (uri.startsWith("https://datanodes.to")) return [Downloader.Datanodes];
+  // Datanodes and VikingFile were unlocked by Hydra's paid API. They now only
+  // download through AllDebrid, which withAllDebridSupport adds when it
+  // supports the host.
+  if (uri.startsWith("https://datanodes.to")) return [];
   if (uri.startsWith("https://www.mediafire.com"))
     return [Downloader.Mediafire];
   if (
@@ -249,7 +252,7 @@ const getBaseDownloadersForUri = (uri: string): Downloader[] => {
     uri.startsWith("https://vikingfile.com") ||
     uri.startsWith("https://vik1ngfile.site")
   ) {
-    return [Downloader.VikingFile];
+    return [];
   }
   if (uri.startsWith("https://www.rootz.so")) {
     return [Downloader.Rootz];

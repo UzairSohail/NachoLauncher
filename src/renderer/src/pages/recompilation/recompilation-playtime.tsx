@@ -27,6 +27,7 @@ export function RecompilationPlaytime({
     playTimeInMilliseconds: game.playTimeInMilliseconds || 0,
     steamPlayTimeInMilliseconds: game.steamPlayTimeInMilliseconds,
     epicPlayTimeInMilliseconds: game.epicPlayTimeInMilliseconds,
+    otherDevicesPlayTimeInMilliseconds: game.otherDevicesPlayTimeInMilliseconds,
   });
 
   if (!game.lastTimePlayed && milliseconds <= 0) {

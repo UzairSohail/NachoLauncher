@@ -337,28 +337,6 @@ export function SettingsGeneral() {
       />
 
       <CheckboxField
-        label={t("enable_friend_request_notifications")}
-        checked={form.friendRequestNotificationsEnabled}
-        onChange={() =>
-          handleChange({
-            friendRequestNotificationsEnabled:
-              !form.friendRequestNotificationsEnabled,
-          })
-        }
-      />
-
-      <CheckboxField
-        label={t("enable_friend_start_game_notifications")}
-        checked={form.friendStartGameNotificationsEnabled}
-        onChange={() =>
-          handleChange({
-            friendStartGameNotificationsEnabled:
-              !form.friendStartGameNotificationsEnabled,
-          })
-        }
-      />
-
-      <CheckboxField
         label={t("enable_achievement_notifications")}
         checked={form.achievementNotificationsEnabled}
         onChange={async () => {

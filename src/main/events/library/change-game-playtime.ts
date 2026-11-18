@@ -12,6 +12,7 @@ import {
   HYDRA_GAME_REQUEST_TIMEOUT_MS,
 } from "../../services/library-sync/game-request-queue";
 import { resetHydraPlaytimeTicks } from "../../services/game-running-state";
+import { scheduleSettingsSync } from "../../services/game-record-updater";
 
 const changeGamePlaytime = async (
   _event: Electron.IpcMainInvokeEvent,
@@ -46,12 +47,19 @@ const changeGamePlaytime = async (
           await gamesSublevel.put(key, {
             ...latest,
             source: "hydra",
-            playTimeInMilliseconds: playTimeInSeconds * 1000,
+            // The new total includes time synced from other devices, so this
+            // device keeps only the rest.
+            playTimeInMilliseconds: Math.max(
+              0,
+              playTimeInSeconds * 1000 -
+                (latest.otherDevicesPlayTimeInMilliseconds ?? 0)
+            ),
             hasManuallyUpdatedPlaytime: true,
             unsyncedDeltaPlayTimeInMilliseconds: 0,
           });
           markHydraPlaytimeChanged(key);
           resetHydraPlaytimeTicks(key);
+          scheduleSettingsSync();
         }, current);
       },
       current

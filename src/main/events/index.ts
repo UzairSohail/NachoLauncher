@@ -12,12 +12,10 @@ import "./auth";
 import "./autoupdater";
 import "./big-picture";
 import "./catalogue";
-import "./chat";
 import "./cloud-save";
 import "./personal-cloud";
 import "./connectivity";
 import "./download-sources";
-import "./friends";
 import "./hardware";
 import "./library";
 import "./leveldb";
@@ -54,7 +52,4 @@ ipcMain.handle("retryAchievementSouvenirSync", () =>
 );
 ipcMain.handle("cleanupAchievementSouvenirSync", () =>
   cleanupAchievementSouvenirSync()
-);
-ipcMain.handle("getCloudIframeUrl", () =>
-  new URL("/cloud", import.meta.env.MAIN_VITE_CHECKOUT_URL).toString()
 );

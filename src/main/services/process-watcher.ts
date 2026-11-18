@@ -59,7 +59,7 @@ import {
   prepareLinuxGameCaptureSession,
   stopLinuxGameCaptureSession,
 } from "./linux-game-capture-session";
-import { updateGameRecord } from "./game-record-updater";
+import { scheduleSettingsSync, updateGameRecord } from "./game-record-updater";
 import { onScreenshotGameClosed, onScreenshotGameStarted } from "./screenshots";
 import { GameExecutables } from "./game-executables";
 import { runWithHydraSaveGuard } from "./cloud-save/save-file-gate";
@@ -711,6 +711,8 @@ const onCloseGame = (game: Game, options: { isShutdown?: boolean } = {}) => {
   if (!options.isShutdown) onScreenshotGameClosed(gameKey);
 
   void PersonalCloud.onGameClosed(game);
+  // Shares this session's time with the user's other devices.
+  scheduleSettingsSync();
 
   // An update that finished while this game was running can now remove the
   // old version, once its files are no longer in use.
