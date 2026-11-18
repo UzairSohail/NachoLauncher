@@ -1,10 +1,6 @@
 import { registerEvent } from "../register-event";
 import type { Download, StartGameDownloadPayload } from "@types";
-import {
-  DownloadManager,
-  DownloadOrchestrator,
-  logger,
-} from "@main/services";
+import { DownloadManager, DownloadOrchestrator, logger } from "@main/services";
 import { GameUpdates } from "@main/services/game-updates";
 import { resolveRomsFunDownload } from "@main/services/hosters/romsfun";
 import { downloadsSublevel, levelKeys } from "@main/level";
@@ -110,7 +106,6 @@ export const addGameToQueue = async (
     await downloadsSublevel.put(gameKey, download);
     didWriteDownload = true;
     await DownloadOrchestrator.enqueuePreparedDownload(download);
-
 
     return { ok: true };
   } catch (err: unknown) {

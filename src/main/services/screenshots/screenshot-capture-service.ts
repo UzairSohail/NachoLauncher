@@ -234,7 +234,6 @@ const finishCapture = async ({
     previewPath,
   });
 
-
   return screenshot;
 };
 
@@ -463,8 +462,6 @@ const reportUnresolvedGame = (
   toastEnabled: boolean
 ) => {
   const failure = getUnresolvedGameFailure(source, unresolved);
-  if (unresolved.candidates.length) {
-  }
   if (failure && toastEnabled) {
     showCaptureFailure(failure.kind, failure.gameTitle);
   }
@@ -489,7 +486,6 @@ const grabResolvedGame = async (
     showCaptureFailure(shareBlocker, gameTitle);
     return null;
   }
-
 
   const failCapture = (
     stage: CaptureFailureStage,

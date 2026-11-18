@@ -38,7 +38,6 @@ interface FolderInput {
   scanSubfolders: boolean;
 }
 
-
 type CancelSignal = {
   cancelled: boolean;
   abortController?: AbortController;

@@ -22,8 +22,7 @@ const hydraApiCall = async (
   const hydraApiOptions = {
     ...options,
     validateStatus: options?.acceptedStatuses
-      ? (status: number) =>
-          options.acceptedStatuses?.includes(status) ?? false
+      ? (status: number) => options.acceptedStatuses?.includes(status) ?? false
       : undefined,
   };
 

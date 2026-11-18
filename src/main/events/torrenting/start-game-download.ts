@@ -1,10 +1,6 @@
 import { registerEvent } from "../register-event";
 import type { Download, StartGameDownloadPayload } from "@types";
-import {
-  DownloadManager,
-  DownloadOrchestrator,
-  logger,
-} from "@main/services";
+import { DownloadManager, DownloadOrchestrator, logger } from "@main/services";
 import { GameUpdates } from "@main/services/game-updates";
 import { resolveRomsFunDownload } from "@main/services/hosters/romsfun";
 import { downloadsSublevel, levelKeys } from "@main/level";
@@ -104,7 +100,6 @@ export const startGameDownload = async (
     } else {
       await DownloadOrchestrator.startPreparedDownload(download);
     }
-
 
     return { ok: true };
   } catch (err: unknown) {

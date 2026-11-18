@@ -39,9 +39,7 @@ import {
   recompilationGameSessions,
   setGamePlaytime,
 } from "./game-running-state";
-import {
-  stopLinuxGameCaptureSession,
-} from "./linux-game-capture-session";
+import { stopLinuxGameCaptureSession } from "./linux-game-capture-session";
 import { scheduleSettingsSync, updateGameRecord } from "./game-record-updater";
 import { onScreenshotGameClosed, onScreenshotGameStarted } from "./screenshots";
 import { GameExecutables } from "./game-executables";

@@ -104,9 +104,7 @@ export function LocalEmulatorSavesSection({
       <header className="emulator-detail__section-header">
         <div className="emulator-detail__section-text">
           <div className="emulator-detail__section-title-row">
-            <h3>
-              {t("local_emulator_saves_section_title")}
-            </h3>
+            <h3>{t("local_emulator_saves_section_title")}</h3>
           </div>
           <p>{t("local_emulator_saves_section_description")}</p>
         </div>

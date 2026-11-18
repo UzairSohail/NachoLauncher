@@ -28,11 +28,6 @@ const layouts = [
     component: "LibraryGameCard",
     prefix: "library-game-card",
   },
-  {
-    file: "pages/profile/profile-content/user-library-game-card",
-    component: "UserLibraryGameCard",
-    prefix: "user-library-game",
-  },
 ] as const;
 
 function renderCard(

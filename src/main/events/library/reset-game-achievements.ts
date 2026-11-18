@@ -5,11 +5,7 @@ import {
 import { registerEvent } from "../register-event";
 import { collectGameAchievementFiles } from "@main/services/achievements/collect-game-achievement-files";
 import fs from "fs";
-import {
-  achievementsLogger,
-  emulators,
-  WindowManager,
-} from "@main/services";
+import { achievementsLogger, emulators, WindowManager } from "@main/services";
 import { getUnlockedAchievements } from "../user/get-unlocked-achievements";
 import { gamesSublevel, levelKeys } from "@main/level";
 import type { GameShop } from "@types";

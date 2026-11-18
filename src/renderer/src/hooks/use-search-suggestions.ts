@@ -126,7 +126,7 @@ export function useSearchSuggestions(
             limit,
             shop: shopParam,
           },
-          });
+        });
 
         if (abortController.signal.aborted) return;
 

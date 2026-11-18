@@ -20,7 +20,7 @@ export function useFeaturedGame() {
     globalThis.window.electron.hydraApi
       .get<unknown>("/catalogue/featured", {
         params: { language: "en" },
-        })
+      })
       .then((response) => {
         if (!isMounted) return;
 

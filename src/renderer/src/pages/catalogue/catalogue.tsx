@@ -252,7 +252,7 @@ export default function Catalogue() {
           count: number;
         }>("/catalogue/search", {
           data: requestData,
-          });
+        });
 
         if (requestId !== requestSequenceRef.current) return;
 

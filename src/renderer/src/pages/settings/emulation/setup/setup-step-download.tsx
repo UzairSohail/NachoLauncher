@@ -268,7 +268,6 @@ export function SetupStepDownload({ binary }: Readonly<Props>) {
             </span>
           </button>
         )}
-
       </div>
     </>
   );

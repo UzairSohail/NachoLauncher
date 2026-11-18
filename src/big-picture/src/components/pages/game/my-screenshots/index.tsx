@@ -58,9 +58,7 @@ const getThumbnailNavigation = (
   return index % SIDEBAR_COLUMNS === 0
     ? { left: leftTarget }
     : {
-        left: getItemFocusTarget(
-          getItemFocusId(items[index - 1])
-        ),
+        left: getItemFocusTarget(getItemFocusId(items[index - 1])),
         right: BLOCK_TARGET,
       };
 };

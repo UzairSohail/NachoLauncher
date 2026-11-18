@@ -1323,12 +1323,11 @@ export default function Game() {
       return;
     }
 
-    const targetScrollTop =
-      enteredFromSimilarGames
-        ? bounds.descriptionBottom -
-          bounds.pageClientHeight +
-          DESCRIPTION_FOCUS_ENTRY_MARGIN
-        : bounds.descriptionTop - DESCRIPTION_FOCUS_ENTRY_MARGIN;
+    const targetScrollTop = enteredFromSimilarGames
+      ? bounds.descriptionBottom -
+        bounds.pageClientHeight +
+        DESCRIPTION_FOCUS_ENTRY_MARGIN
+      : bounds.descriptionTop - DESCRIPTION_FOCUS_ENTRY_MARGIN;
     const nextScrollTop = Math.min(
       Math.max(0, targetScrollTop),
       bounds.maxScrollTop
@@ -1605,7 +1604,6 @@ export default function Game() {
                   </div>
                 </>
               ) : null}
-
             </div>
 
             <VerticalFocusGroup regionId={GAME_SIDEBAR_REGION_ID} asChild>

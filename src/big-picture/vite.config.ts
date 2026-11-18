@@ -23,9 +23,5 @@ export default defineConfig(() => ({
       "@locales": resolve(__dirname, "../../src/locales"),
     },
   },
-  plugins: [
-    svgr(),
-    react(),
-    contentSecurityPolicy(),
-  ],
+  plugins: [svgr(), react(), contentSecurityPolicy()],
 }));

@@ -165,7 +165,7 @@ async function fetchDownloadOptions(
         skip: 0,
         downloadSourceIds: sortedSources.map((source) => source.id),
       },
-      });
+    });
     const options = Array.isArray(response)
       ? filterDownloadableRepacks(response, multipartHosterDownloads)
       : [];

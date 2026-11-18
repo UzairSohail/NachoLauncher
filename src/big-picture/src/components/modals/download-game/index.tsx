@@ -1440,17 +1440,8 @@ function DownloadGameOptions({
   );
   const downloaderAvailability = useMemo(() => {
     void allDebridHostsVersion;
-    return getDownloaderAvailabilityOptions(
-      option,
-      userPreferences,
-      features
-    );
-  }, [
-    features,
-    option,
-    userPreferences,
-    allDebridHostsVersion,
-  ]);
+    return getDownloaderAvailabilityOptions(option, userPreferences, features);
+  }, [features, option, userPreferences, allDebridHostsVersion]);
   const availableDownloaderOptions = useMemo(
     () =>
       downloaderAvailability.filter(

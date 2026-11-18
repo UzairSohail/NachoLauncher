@@ -84,10 +84,10 @@ const resolveInstallerSize = (
   return null;
 };
 
-const getLibrary = async (
-): Promise<LibraryGame[]> => {
-  const entries = (await gamesSublevel.iterator().all())
-    .filter(([_key, game]) => !game.isDeleted);
+const getLibrary = async (): Promise<LibraryGame[]> => {
+  const entries = (await gamesSublevel.iterator().all()).filter(
+    ([_key, game]) => !game.isDeleted
+  );
   const keys = entries.map(([key]) => key);
   const catalogueKeys = entries.map(([key, game]) =>
     game.catalogueGame

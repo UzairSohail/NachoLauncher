@@ -504,7 +504,7 @@ export function useCatalogueData() {
                 take: pageSize,
                 skip,
               },
-              }
+            }
           );
 
         if (

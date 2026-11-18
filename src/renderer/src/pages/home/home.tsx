@@ -57,7 +57,7 @@ export default function Home() {
         `/catalogue/${category}`,
         {
           params,
-          }
+        }
       );
 
       setCatalogue((prev) => ({

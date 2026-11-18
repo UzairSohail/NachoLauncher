@@ -256,8 +256,7 @@ export function useGameDetails(
       globalThis.window.electron.hydraApi
         .get<ProtonDBData | null>(
           `/games/${catalogueShop}/${catalogueObjectId}/protondb`,
-          {
-            }
+          {}
         )
         .then((data) => {
           if (current) setProtonDBData(data);

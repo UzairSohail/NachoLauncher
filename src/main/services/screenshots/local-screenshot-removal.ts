@@ -135,9 +135,8 @@ export const deleteLocalScreenshotsForGame = async (
   const screenshots = await listLocalScreenshotFilesForGame(shop, objectId);
   const results = await Promise.allSettled(
     screenshots.map((screenshot) =>
-      removeLocalScreenshot(
-        screenshot.clientId,
-        (current) => isLocalScreenshotFileForGame(current, shop, objectId)
+      removeLocalScreenshot(screenshot.clientId, (current) =>
+        isLocalScreenshotFileForGame(current, shop, objectId)
       )
     )
   );

@@ -179,9 +179,7 @@ export function GameEmulationSaves({
       <div className="game-emulation-saves__header">
         <div className="game-emulation-saves__header-text">
           <div className="game-emulation-saves__header-title-row">
-            <h2>
-              {t("cloud_saves_section_title")}
-            </h2>
+            <h2>{t("cloud_saves_section_title")}</h2>
           </div>
           <p>{t("cloud_saves_section_description")}</p>
         </div>

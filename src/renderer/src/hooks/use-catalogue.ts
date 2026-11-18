@@ -24,7 +24,7 @@ async function getLocalizedSteamMetadata<T>(endpoint: string, locale: string) {
     languages.map(async (currentLanguage) => {
       const data = await window.electron.hydraApi.get<T>(endpoint, {
         params: { language: currentLanguage },
-        });
+      });
 
       return [currentLanguage, data] as const;
     })

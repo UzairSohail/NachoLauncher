@@ -146,7 +146,6 @@ export function GameAchievementsToolbar({
           options={sortOptions}
           onValueChange={onSortChange}
         />
-
       </HorizontalFocusGroup>
     </div>
   );

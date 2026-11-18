@@ -131,7 +131,7 @@ export const findCatalogueGameForRecomp = async (item: RecompCatalogItem) => {
       skip: 0,
       downloadSourceIds: [],
     },
-    });
+  });
 
   const match = pickCatalogueGameForRecomp(
     Array.isArray(response?.edges) ? response.edges : [],

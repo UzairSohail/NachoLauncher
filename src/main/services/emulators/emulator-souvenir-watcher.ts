@@ -222,7 +222,6 @@ export const startEmulatorSouvenirWatcher = async ({
     cropToClientArea: !EMULATOR_SYSTEMS.includes(system as EmulatorSystem),
     primeRealtimeUnlocks: tracking.realtimeUnlocks,
   });
-
 };
 
 export const stopEmulatorSouvenirWatcher = (

@@ -1,9 +1,5 @@
 import react from "@vitejs/plugin-react";
-import {
-  defineConfig,
-  externalizeDepsPlugin,
-  swcPlugin,
-} from "electron-vite";
+import { defineConfig, externalizeDepsPlugin, swcPlugin } from "electron-vite";
 import JavaScriptObfuscator from "javascript-obfuscator";
 import { randomInt } from "node:crypto";
 import { resolve } from "path";

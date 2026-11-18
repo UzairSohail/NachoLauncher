@@ -3,11 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { shell } from "electron";
 import { gamesSublevel } from "@main/level";
 import { resolveScreenshotPreferences } from "@shared";
-import type {
-  GameShop,
-  LocalScreenshot,
-  LocalScreenshotDraft,
-} from "@types";
+import type { GameShop, LocalScreenshot, LocalScreenshotDraft } from "@types";
 
 import { emulatorSessions } from "../emulators/emulator-session-tracker";
 import {

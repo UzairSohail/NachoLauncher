@@ -104,9 +104,7 @@ export const resolveRetroAchievementsGameId = async (
 
   const game = await HydraApi.get<{
     retroAchievementsGameId: number | null;
-  } | null>(`/games/${shop}/${objectId}`, null).catch(
-    () => null
-  );
+  } | null>(`/games/${shop}/${objectId}`, null).catch(() => null);
 
   return game?.retroAchievementsGameId ?? null;
 };
