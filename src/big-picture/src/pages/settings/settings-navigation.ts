@@ -51,6 +51,8 @@ export const GOOGLE_DRIVE_BROWSER_SIGN_IN_BUTTON_ID =
   "integrations-google-drive-browser-sign-in";
 export const GOOGLE_DRIVE_SYNC_CHECKBOX_ID = "integrations-google-drive-sync";
 export const GOOGLE_DRIVE_SYNC_BUTTON_ID = "integrations-google-drive-sync-now";
+export const GOOGLE_DRIVE_BACKUP_INTERVAL_ID =
+  "integrations-google-drive-backup-interval";
 export const COMPATIBILITY_GAMEMODE_FOCUS_ID = "compatibility-gamemode";
 export const COMPATIBILITY_MANGOHUD_FOCUS_ID = "compatibility-mangohud";
 export const COMPATIBILITY_COMMON_REDIST_BUTTON_ID =

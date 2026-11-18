@@ -1,4 +1,5 @@
 import type {
+  PersonalCloudBackupResult,
   PersonalCloudDeviceCode,
   PersonalCloudGameInfo,
   PersonalCloudLinkInput,
@@ -34,6 +35,15 @@ export interface PersonalCloudNativeModule {
     gameId: string,
     startedAtMs: number
   ) => Promise<PersonalCloudSyncResult>;
+  personalCloudBackupWhilePlaying: (
+    gameId: string,
+    pinPrevious: boolean
+  ) => Promise<PersonalCloudBackupResult>;
+  personalCloudFinishBackupSession: (
+    gameId: string,
+    pinnedVersionId: string | null,
+    backupVersionIds: string[]
+  ) => Promise<void>;
   personalCloudPlayingStart: (gameId: string) => void;
   personalCloudPlayingStop: (gameId: string) => void;
   personalCloudGameInfo: (gameId: string) => Promise<PersonalCloudGameInfo>;

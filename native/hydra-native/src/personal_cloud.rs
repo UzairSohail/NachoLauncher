@@ -20,8 +20,10 @@ use cloud_save_manager::device::Device;
 use cloud_save_manager::engine::{Engine, Keep, Outcome};
 use cloud_save_manager::google::{self, Client};
 use cloud_save_manager::manage::{self, SyncStatus};
+use cloud_save_manager::manifest::scan;
+use cloud_save_manager::Error as CsmError;
 use cloud_save_manager::secrets;
-use cloud_save_manager::state::State;
+use cloud_save_manager::state::{Base, State};
 use cloud_save_manager::store::{Store, Version};
 use cloud_save_manager::wrap::{self, Log};
 use napi::bindgen_prelude::{Buffer, Error};
@@ -447,6 +449,128 @@ pub async fn personal_cloud_learn_after_play(game_id: String, started_at_ms: f64
         catalogue.save(&opened.app.catalogue_path)?;
         opened.catalogue()?;
         sync_game(&opened, &game, false)
+    })
+    .await
+}
+
+/// What a backup made while the game is running did.
+#[napi(object)]
+pub struct PersonalCloudBackupResult {
+    /// pushed, up_to_date, skipped, no_saves, offline, paused,
+    /// waiting_for_prefix or not_in_catalogue.
+    pub outcome: String,
+    pub version_id: Option<String>,
+    /// The save from before this session, pinned so the version limit keeps
+    /// it. Unpin it with `personalCloudUnpinVersion` once the session ends.
+    pub pinned_version_id: Option<String>,
+}
+
+impl PersonalCloudBackupResult {
+    fn simple(outcome: &str) -> Self {
+        Self { outcome: outcome.into(), version_id: None, pinned_version_id: None }
+    }
+}
+
+fn backup_while_playing(opened: &Opened, game: &Game, pin_previous: bool) -> Result<PersonalCloudBackupResult> {
+    let device = opened.device()?;
+    let roots = device.roots_for(&game.id, None);
+    let local = match scan(game, &roots) {
+        Ok(local) => local,
+        Err(e) if matches!(e.downcast_ref(), Some(CsmError::PrefixNotReady)) => {
+            return Ok(PersonalCloudBackupResult::simple("waiting_for_prefix"));
+        }
+        Err(e) => return Err(e),
+    };
+    if local.files.is_empty() {
+        return Ok(PersonalCloudBackupResult::simple("no_saves"));
+    }
+    // The first sync of a game, and anything the cloud changed since this
+    // device's last sync, wait for the full sync after the game exits. A
+    // backup only ever uploads, so it never writes into a running game.
+    let Some(base) = opened.state.base(&game.id)? else {
+        return Ok(PersonalCloudBackupResult::simple("skipped"));
+    };
+    if base.content_hash == local.manifest.content_hash {
+        return Ok(PersonalCloudBackupResult::simple("up_to_date"));
+    }
+    let Some(head) = opened.store.head(&game.id)?.filter(|head| head.id == base.version_id) else {
+        return Ok(PersonalCloudBackupResult::simple("skipped"));
+    };
+    // Losing files is often an accident, which the exit sync settles.
+    if local.files.len() < head.file_count {
+        return Ok(PersonalCloudBackupResult::simple("skipped"));
+    }
+    let mut pinned_version_id = None;
+    if pin_previous && !opened.store.version(&game.id, &head.id)?.pinned {
+        opened.store.set_pinned(&game.id, &head.id, true)?;
+        pinned_version_id = Some(head.id.clone());
+    }
+    let version = match opened.store.commit(&game.id, &local, &device_name(), None) {
+        Ok(version) => version,
+        Err(e) if matches!(e.downcast_ref(), Some(CsmError::HeadMoved)) => {
+            return Ok(PersonalCloudBackupResult { pinned_version_id, ..PersonalCloudBackupResult::simple("skipped") });
+        }
+        Err(e) => return Err(e),
+    };
+    let Some(version) = version else {
+        return Ok(PersonalCloudBackupResult { pinned_version_id, ..PersonalCloudBackupResult::simple("up_to_date") });
+    };
+    opened.state.set_base(&game.id, &Base { version_id: version.id.clone(), content_hash: version.content_hash.clone() })?;
+    log_line(&opened.log(), &format!("{} backed up while playing as {}", game.id, version.id));
+    Ok(PersonalCloudBackupResult {
+        outcome: "pushed".into(),
+        version_id: Some(version.id),
+        pinned_version_id,
+    })
+}
+
+/// Uploads changed saves while the game is running. It never downloads and
+/// never settles a conflict; those wait for the sync after the game exits.
+/// With `pinPrevious`, the save from before this session is pinned first.
+#[napi]
+pub async fn personal_cloud_backup_while_playing(
+    game_id: String,
+    pin_previous: bool,
+) -> napi::Result<PersonalCloudBackupResult> {
+    blocking(move || {
+        let opened = Opened::new()?;
+        if manage::is_paused(&opened.state)? {
+            return Ok(PersonalCloudBackupResult::simple("paused"));
+        }
+        let Ok(game) = opened.game(&game_id) else {
+            return Ok(PersonalCloudBackupResult::simple("not_in_catalogue"));
+        };
+        match backup_while_playing(&opened, &game, pin_previous) {
+            Err(e) if CsmError::is_offline(&e) => Ok(PersonalCloudBackupResult::simple("offline")),
+            other => other,
+        }
+    })
+    .await
+}
+
+/// Tidies up after a session with backups. The backups were only stand-ins
+/// until the game exited, so the ones the exit sync replaced are removed, and
+/// the pre-session save is unpinned. History then looks as if the session had
+/// one upload, so the version limit keeps the same older saves as before.
+#[napi]
+pub async fn personal_cloud_finish_backup_session(
+    game_id: String,
+    pinned_version_id: Option<String>,
+    backup_version_ids: Vec<String>,
+) -> napi::Result<()> {
+    blocking(move || {
+        let opened = Opened::new()?;
+        let head = opened.store.head(&game_id)?.map(|head| head.id);
+        for id in backup_version_ids.iter().filter(|id| Some(*id) != head.as_ref()) {
+            if let Err(e) = opened.store.remove_version(&game_id, id) {
+                log_line(&opened.log(), &format!("{game_id} couldn't remove backup {id}: {e:#}"));
+            }
+        }
+        if let Some(id) = pinned_version_id {
+            opened.store.set_pinned(&game_id, &id, false)?;
+        }
+        opened.store.prune(&game_id)?;
+        Ok(())
     })
     .await
 }

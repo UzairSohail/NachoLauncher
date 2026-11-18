@@ -105,6 +105,7 @@ before(async () => {
       ".scss": "empty",
       ".css": "empty",
       ".wav": "text",
+      ".ogg": "text",
       ".png": "text",
       ".svg": "text",
       ".jpg": "text",

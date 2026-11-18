@@ -1,7 +1,7 @@
-import backSoundUrl from "../assets/audio/Back sound effect.wav";
-import launchSoundUrl from "../assets/audio/Launch Sound.wav";
-import scrollSoundUrl from "../assets/audio/Scroll Sound.wav";
-import selectSoundUrl from "../assets/audio/Select Sound.wav";
+import backSoundUrl from "../assets/audio/Back sound effect.ogg";
+import launchSoundUrl from "../assets/audio/Launch Sound.ogg";
+import scrollSoundUrl from "../assets/audio/Scroll Sound.ogg";
+import selectSoundUrl from "../assets/audio/Select Sound.ogg";
 
 export type NavigationAudioCue = "back" | "launch" | "scroll" | "select";
 

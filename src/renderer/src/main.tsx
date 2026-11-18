@@ -23,7 +23,11 @@ import { GameOptionsModalProvider } from "@renderer/context/game-options-modal/g
 
 import { store } from "./store";
 
-import resources from "@locales";
+import {
+  bundledLocaleResources,
+  lazyLocaleBackend,
+  LOCALE_NAMESPACES,
+} from "@locales/lazy";
 
 import { logger } from "./logger";
 import { addCookieInterceptor } from "./cookies";
@@ -68,9 +72,12 @@ const BigPictureApp = lazy(() => import("../../big-picture/src/app"));
 const BigPictureCatalogue = lazy(
   () => import("../../big-picture/src/pages/catalogue/catalogue")
 );
-const BigPictureComponentLab = lazy(
-  () => import("../../big-picture/src/pages/component-lab/component-lab")
-);
+// A design playground for development; release builds leave it out.
+const BigPictureComponentLab = import.meta.env.DEV
+  ? lazy(
+      () => import("../../big-picture/src/pages/component-lab/component-lab")
+    )
+  : null;
 const BigPictureDownloads = lazy(
   () => import("../../big-picture/src/pages/downloads/downloads")
 );
@@ -133,8 +140,11 @@ const syncDocumentLanguage = (language: string) => {
 await i18n
   .use(LanguageDetector)
   .use(initReactI18next)
+  .use(lazyLocaleBackend)
   .init({
-    resources,
+    resources: bundledLocaleResources,
+    partialBundledLanguages: true,
+    ns: LOCALE_NAMESPACES,
     fallbackLng: "en",
     interpolation: {
       escapeValue: false,
@@ -211,10 +221,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                   <Route path="/big-picture" element={<BigPictureApp />}>
                     <Route index element={<BigPictureHome />} />
                     <Route path="catalogue" element={<BigPictureCatalogue />} />
-                    <Route
-                      path="component-lab"
-                      element={<BigPictureComponentLab />}
-                    />
+                    {BigPictureComponentLab ? (
+                      <Route
+                        path="component-lab"
+                        element={<BigPictureComponentLab />}
+                      />
+                    ) : null}
                     <Route path="downloads" element={<BigPictureDownloads />} />
                     <Route path="settings" element={<BigPictureSettings />} />
                     <Route path="library" element={<BigPictureLibrary />} />

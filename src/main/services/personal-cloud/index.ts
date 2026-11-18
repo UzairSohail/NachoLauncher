@@ -3,6 +3,10 @@ import path from "node:path";
 import { shell } from "electron";
 
 import { db, gamesSublevel, levelKeys } from "@main/level";
+import {
+  isCloudSaveBackupDue,
+  normalizeCloudSaveBackupInterval,
+} from "@shared";
 import type {
   Game,
   GameShop,
@@ -13,6 +17,7 @@ import type {
   PersonalCloudStatus,
   PersonalCloudSyncEvent,
   PersonalCloudSyncResult,
+  UserPreferences,
 } from "@types";
 
 import { isGameRunning } from "../game-running-state";
@@ -38,6 +43,20 @@ const ensureAppFolder = createAppFolderGate(
     logger.info("[Personal Cloud] Moved the old hydra folder to Nacho", result)
 );
 
+/** How often running games are checked for a due backup. */
+const BACKUP_TICK_MS = 60_000;
+
+interface PlaySession {
+  game: Game;
+  lastBackupAt: number;
+  running: Promise<void> | null;
+  /** Set once a backup uploaded, so only the first one pins the old save. */
+  pushed: boolean;
+  pinnedVersionId: string | null;
+  /** Versions the backups uploaded, replaced by the sync after exit. */
+  backupVersionIds: string[];
+}
+
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
@@ -52,6 +71,8 @@ export class PersonalCloud {
   private static startedAt = new Map<string, number>();
   private static signingIn: Promise<PersonalCloudStatus> | null = null;
   private static pulling = new Set<string>();
+  private static sessions = new Map<string, PlaySession>();
+  private static backupTimer: NodeJS.Timeout | null = null;
 
   public static status(): Promise<PersonalCloudStatus> {
     return native().personalCloudStatus();
@@ -275,10 +296,122 @@ export class PersonalCloud {
     }
   }
 
+  private static async getBackupIntervalMinutes() {
+    const preferences = await db
+      .get<string, UserPreferences | null>(levelKeys.userPreferences, {
+        valueEncoding: "json",
+      })
+      .catch(() => null);
+    return normalizeCloudSaveBackupInterval(
+      preferences?.cloudSaveBackupIntervalMinutes
+    );
+  }
+
+  private static startBackupTimer() {
+    if (this.backupTimer) return;
+    this.backupTimer = setInterval(
+      () => void this.backupDueGames(),
+      BACKUP_TICK_MS
+    );
+  }
+
+  private static stopBackupTimerIfIdle() {
+    if (this.sessions.size > 0 || !this.backupTimer) return;
+    clearInterval(this.backupTimer);
+    this.backupTimer = null;
+  }
+
+  /** Backs up every running game whose interval has passed. */
+  private static async backupDueGames() {
+    const interval = await this.getBackupIntervalMinutes();
+    const now = Date.now();
+    for (const session of this.sessions.values()) {
+      if (session.running) continue;
+      if (!isCloudSaveBackupDue(interval, session.lastBackupAt, now)) continue;
+      session.lastBackupAt = now;
+      session.running = this.backupWhilePlaying(session).finally(() => {
+        session.running = null;
+      });
+    }
+  }
+
+  /**
+   * Uploads changed saves while the game runs, so another device gets recent
+   * progress even if this one sleeps or dies mid-session. It only uploads; a
+   * newer cloud save or a conflict waits for the sync after the game exits.
+   */
+  private static async backupWhilePlaying(session: PlaySession) {
+    const { game } = session;
+    const native_ = native();
+    if (typeof native_.personalCloudBackupWhilePlaying !== "function") return;
+    try {
+      if (!(await this.status()).signedIn) return;
+      const key = levelKeys.game(game.shop, game.objectId);
+      const gameId =
+        this.links.get(key)?.gameId ?? (await this.linkGame(game))?.gameId;
+      if (!gameId) return;
+      const result = await native_.personalCloudBackupWhilePlaying(
+        gameId,
+        !session.pushed
+      );
+      if (result.pinnedVersionId) {
+        session.pinnedVersionId = result.pinnedVersionId;
+      }
+      if (result.outcome === "pushed") {
+        session.pushed = true;
+        if (result.versionId) session.backupVersionIds.push(result.versionId);
+      }
+      logger.info("[Personal Cloud] Backup while playing", {
+        shop: game.shop,
+        objectId: game.objectId,
+        ...result,
+      });
+    } catch (error) {
+      logger.warn("[Personal Cloud] Backup while playing failed", {
+        shop: game.shop,
+        objectId: game.objectId,
+        error: errorMessage(error),
+      });
+    }
+  }
+
+  /** Removes the session's stand-in backups and unpins the old save. */
+  private static async finishBackupSession(
+    gameId: string,
+    session: PlaySession
+  ) {
+    if (!session.pinnedVersionId && session.backupVersionIds.length === 0) {
+      return;
+    }
+    try {
+      await native().personalCloudFinishBackupSession(
+        gameId,
+        session.pinnedVersionId,
+        session.backupVersionIds
+      );
+    } catch (error) {
+      logger.warn("[Personal Cloud] Couldn't tidy up the session backups", {
+        gameId,
+        error: errorMessage(error),
+      });
+    }
+  }
+
   /** Marks the game as playing, so the Cloud Save Manager app leaves it alone. */
   public static async onGameStarted(game: Game) {
     const key = levelKeys.game(game.shop, game.objectId);
     if (!this.startedAt.has(key)) this.startedAt.set(key, Date.now());
+    if (!this.sessions.has(key)) {
+      this.sessions.set(key, {
+        game,
+        lastBackupAt: Date.now(),
+        running: null,
+        pushed: false,
+        pinnedVersionId: null,
+        backupVersionIds: [],
+      });
+      this.startBackupTimer();
+    }
     try {
       if (!(await this.status()).signedIn) return;
       const link = await this.linkGame(game);
@@ -300,6 +433,11 @@ export class PersonalCloud {
     const key = levelKeys.game(game.shop, game.objectId);
     const startedAt = this.startedAt.get(key) ?? Date.now();
     this.startedAt.delete(key);
+    const session = this.sessions.get(key);
+    this.sessions.delete(key);
+    this.stopBackupTimerIfIdle();
+    // A backup still uploading would race the exit sync for the cloud head.
+    await session?.running;
     const cached = this.links.get(key);
     if (cached) {
       try {
@@ -310,11 +448,14 @@ export class PersonalCloud {
         });
       }
     }
-    return this.runSync(game, "post-exit", async (gameId) => {
+    const result = await this.runSync(game, "post-exit", async (gameId) => {
       const result = await native().personalCloudSync(gameId, true);
       if (result.outcome !== "not_in_catalogue") return result;
       return native().personalCloudLearnAfterPlay(gameId, startedAt);
     });
+    const gameId = this.links.get(key)?.gameId;
+    if (session && gameId) await this.finishBackupSession(gameId, session);
+    return result;
   }
 
   public static async syncNow(shop: GameShop, objectId: string) {
