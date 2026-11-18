@@ -561,7 +561,6 @@ export interface UserDetails {
   screenshotsVisibility?: ProfileVisibility;
   screenshotCommentsPolicy?: ScreenshotCommentsPolicy;
   bio: string;
-  workwondersJwt: string;
   subscription: Subscription | null;
   karma: number;
   quirks?: {

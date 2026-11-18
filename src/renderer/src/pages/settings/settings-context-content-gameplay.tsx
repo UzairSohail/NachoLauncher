@@ -1,12 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  Button,
-  CheckboxField,
-  GuideLink,
-  TextField,
-} from "@renderer/components";
+import { Button, CheckboxField, TextField } from "@renderer/components";
 import { settingsContext } from "@renderer/context";
 import { useAppSelector, useFeature } from "@renderer/hooks";
 import { FileDirectoryIcon, HistoryIcon } from "@primer/octicons-react";
@@ -166,11 +161,7 @@ export function SettingsContextContentGameplay() {
         <h3>{t("gameplay_metadata")}</h3>
 
         <CheckboxField
-          label={
-            <GuideLink article="steam-achievements">
-              {t("enable_steam_achievements")}
-            </GuideLink>
-          }
+          label={t("enable_steam_achievements")}
           checked={form.enableSteamAchievements}
           onChange={() =>
             handleChange({

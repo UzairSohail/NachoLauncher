@@ -65,7 +65,7 @@ const obfuscate = (): Plugin => ({
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode);
-  const csp = contentSecurityPolicy(env.RENDERER_VITE_EXTERNAL_RESOURCES_URL);
+  const csp = contentSecurityPolicy();
 
   const isProduction = mode === "production";
   const minify = isProduction ? "esbuild" : false;

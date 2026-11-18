@@ -1,11 +1,6 @@
 import type { Download, GameShop, LibraryGame, SeedingStatus } from "@types";
 
-import {
-  Badge,
-  Button,
-  ConfirmationModal,
-  GuideLink,
-} from "@renderer/components";
+import { Badge, Button, ConfirmationModal } from "@renderer/components";
 import {
   formatDownloadProgress,
   buildGameDetailsPath,
@@ -328,11 +323,7 @@ function HeroDownloadTime({
 
   let label: ReactNode = tGameDetails("calculating_eta");
   if (isDownloadingMetadata) {
-    label = (
-      <GuideLink article="downloading-metadata">
-        {t("downloading_metadata")}
-      </GuideLink>
-    );
+    label = t("downloading_metadata");
   } else if (hasEta) {
     label = etaText;
   }

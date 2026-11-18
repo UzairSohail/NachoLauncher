@@ -1236,10 +1236,7 @@ export function DownloadSettingsModal({
   const getDownloadPathError = (): ReactNode => {
     if (hasWritePermission === false) {
       return (
-        <span
-          className="download-settings-modal__path-error"
-          data-open-article="cannot-write-directory"
-        >
+        <span className="download-settings-modal__path-error">
           {t("no_write_permission")}
         </span>
       );

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button, CheckboxField, GuideLink, Modal } from "@renderer/components";
+import { Button, CheckboxField, Modal } from "@renderer/components";
 import { useAppSelector, useToast } from "@renderer/hooks";
 import { LinkExternalIcon, PersonIcon, SyncIcon } from "@primer/octicons-react";
 
@@ -149,12 +149,7 @@ export function SettingsRetroAchievements() {
 
   const emulatorNote = (
     <p className="settings-retroachievements__emulator-note">
-      <GuideLink
-        article="retroachievements-emulators"
-        title={t("retroachievements_view_guide")}
-      >
-        {t("retroachievements_emulator_note")}
-      </GuideLink>
+      {t("retroachievements_emulator_note")}
     </p>
   );
 
