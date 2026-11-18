@@ -37,6 +37,7 @@ import {
 import { gameDetailsContext } from "@renderer/context";
 import { useFileIcons } from "@renderer/hooks/use-file-icons";
 import { usePs4PkgPicker } from "@renderer/components/ps4-pkg-job/ps4-pkg-job-host";
+import { GameTdpSection } from "./tdp-section";
 import {
   getDiscRegion,
   getSkuRegionFlag,
@@ -1206,6 +1207,8 @@ export function GeneralSettingsSection({
           />
         </div>
       )}
+
+      <GameTdpSection shop={game.shop} objectId={game.objectId} />
     </>
   );
 }

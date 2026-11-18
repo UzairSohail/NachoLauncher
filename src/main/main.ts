@@ -44,6 +44,7 @@ import { isDebridPendingError } from "./services/download/debrid-files";
 import { GofileApi } from "./services/hosters";
 import { clearLegacyAchievementPersistence } from "./level/clear-legacy-achievements";
 import { DriveChangeFeed } from "./services/personal-cloud/change-feed";
+import { TdpController } from "./services/tdp";
 import { migrateEmulatorCloudSaveDefaults } from "./services/cloud-save/automatic-sync-emulator-migration";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
 import { UmuUpdater } from "./services/umu-updater";
@@ -122,6 +123,8 @@ export const loadState = async () => {
   if (process.platform === "linux") {
     DeckyPlugin.checkAndUpdateIfOutdated();
     void UmuUpdater.checkForUpdates();
+    // Puts this device's TDP limit back on SteamOS Desktop mode.
+    void TdpController.apply();
   }
 
   void watchSteamLibraries();

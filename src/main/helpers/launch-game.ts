@@ -34,6 +34,7 @@ import {
   wasGameLauncherGameDetected,
 } from "@main/services/game-launcher-status";
 import { UmuUpdater } from "@main/services/umu-updater";
+import { TdpController } from "@main/services/tdp";
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch-dispatch";
 import { resolveSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch";
@@ -877,6 +878,9 @@ const launchGameWithCloudSaveChecks = async (
   // Run preflight check for common redistributables (Windows only)
   // Wrapped in try/catch to ensure game launch is never blocked
   await runCommonRedistPreflight(shop, objectId);
+
+  // Sets the game's TDP override before it starts, on SteamOS Desktop mode.
+  TdpController.onGameLaunching(gameKey);
 
   if (updatedGame) {
     void runAchievementMetadataExport(gameKey, updatedGame);

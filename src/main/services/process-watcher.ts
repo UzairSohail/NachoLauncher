@@ -6,6 +6,7 @@ import { db, gamesSublevel, levelKeys } from "@main/level";
 import { PersonalCloud } from "./personal-cloud";
 import { logger, networkLogger } from "./logger";
 import { PowerSaveBlockerManager } from "./power-save-blocker";
+import { TdpController } from "./tdp";
 import path from "node:path";
 import { AchievementWatcherManager } from "./achievements/achievement-watcher-manager";
 import { abortAchievementMetadataExport } from "./achievements/metadata-export";
@@ -360,6 +361,9 @@ async function onOpenGame(game: Game, matchedPath: string) {
 
   void onScreenshotGameStarted(gameKey);
 
+  // Applies the game's TDP override on SteamOS Desktop mode, if it has one.
+  TdpController.onGameStarted(gameKey);
+
   void PersonalCloud.onGameStarted(game);
 
   // On Linux, keep the launcher visible briefly and let it auto-close itself.
@@ -426,6 +430,7 @@ const onCloseGame = (game: Game, options: { isShutdown?: boolean } = {}) => {
   launchedGamePids.delete(gameKey);
   stopLinuxGameCaptureSession(gameKey);
   PowerSaveBlockerManager.markGameClosed(gameKey);
+  TdpController.onGameClosed(gameKey);
   abortAchievementMetadataExport(gameKey);
 
   const { localDelta: delta } = getGamePlaytimeDeltas(

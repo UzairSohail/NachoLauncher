@@ -261,6 +261,15 @@ export interface UserPreferences {
   bigPictureSoundsEnabled?: boolean;
   /** Per device: turns off blur and motion effects in Big Picture. */
   bigPictureReduceEffects?: boolean;
+  /**
+   * Per device: TDP limit in watts applied through steamos-manager on SteamOS
+   * Desktop mode. Null or missing leaves the system default.
+   */
+  tdpLimitWatts?: number | null;
+  /** Per device: per-game TDP limits in watts, keyed by `shop:objectId`. */
+  tdpGameLimits?: Record<string, number>;
+  /** Per device: last TDP range steamos-manager reported, in watts. */
+  tdpLimitRange?: { min: number; max: number } | null;
   bigPictureVirtualKeyboardEnabled?: boolean;
   bigPictureDiagnosticsEnabled?: boolean;
   bigPictureDiagnosticsPosition?: BigPictureDiagnosticsPosition;

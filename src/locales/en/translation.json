@@ -3983,5 +3983,23 @@
     "game_not_found": "Couldn't find {{game}} in the catalogue, so this recomp can't be opened yet.",
     "open_failed": "Couldn't open this recomp. Try again in a moment.",
     "credit": "Catalog by recomplauncher.com. Each recomp is made by its own developer and downloads from their GitHub."
+  },
+  "tdp": {
+    "category": "Power",
+    "title": "TDP limit",
+    "description": "Caps how much power the CPU and GPU can draw. Lower saves battery and runs cooler, higher gives more performance. Only applies in Desktop mode; Game Mode keeps using Steam's or Decky's setting.",
+    "system_default": "System default",
+    "watts": "{{watts}} W",
+    "current": "Now: {{watts}} W",
+    "range": "This device allows {{min}} to {{max}} W.",
+    "enable": "Turn on TDP control",
+    "enable_description": "This device takes a TDP limit only in its Custom power profile. Nacho reads the limits once, then switches the profile only while a limit is set.",
+    "game_title": "TDP limit for this game",
+    "game_description": "Applied when the game starts and put back when it closes.",
+    "game_use_global": "Use global setting ({{value}})",
+    "game_active": "This game's limit is active now.",
+    "error": "Could not change the TDP limit",
+    "quick_title": "TDP limit",
+    "quick_subtitle": "Power limit for Desktop mode"
   }
 }
