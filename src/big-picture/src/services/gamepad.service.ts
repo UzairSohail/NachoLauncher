@@ -79,8 +79,8 @@ type StickPositions = Record<GamepadStickSide, StickPosition>;
 
 /** Poll every frame for this long after the last gamepad input. */
 const GAMEPAD_ACTIVE_POLL_WINDOW_MS = 4_000;
-/** About 15 times a second while idle: the first press still feels instant. */
-const GAMEPAD_IDLE_POLL_MS = 66;
+/** About 30 times a second while idle: shorter than the quickest button tap. */
+const GAMEPAD_IDLE_POLL_MS = 33;
 /** While Big Picture is hidden, such as during a game. */
 const GAMEPAD_HIDDEN_POLL_MS = 500;
 
