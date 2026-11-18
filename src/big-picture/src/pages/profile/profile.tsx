@@ -450,6 +450,10 @@ function getLibraryCarouselPlaytimeInMilliseconds(
         "steamPlayTimeInMilliseconds" in game
           ? game.steamPlayTimeInMilliseconds
           : undefined,
+      otherDevicesPlayTimeInMilliseconds:
+        "otherDevicesPlayTimeInMilliseconds" in game
+          ? game.otherDevicesPlayTimeInMilliseconds
+          : undefined,
     });
   }
 

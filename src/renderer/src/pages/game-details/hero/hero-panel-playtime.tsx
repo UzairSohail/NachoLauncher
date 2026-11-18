@@ -47,6 +47,8 @@ export function HeroPanelPlaytime() {
       playTimeInMilliseconds: game?.playTimeInMilliseconds || 0,
       steamPlayTimeInMilliseconds: game?.steamPlayTimeInMilliseconds,
       epicPlayTimeInMilliseconds: game?.epicPlayTimeInMilliseconds,
+      otherDevicesPlayTimeInMilliseconds:
+        game?.otherDevicesPlayTimeInMilliseconds,
     });
     const seconds = milliseconds / 1000;
     const minutes = seconds / 60;
@@ -73,6 +75,7 @@ export function HeroPanelPlaytime() {
     playTimeInMilliseconds: game.playTimeInMilliseconds || 0,
     steamPlayTimeInMilliseconds: game.steamPlayTimeInMilliseconds,
     epicPlayTimeInMilliseconds: game.epicPlayTimeInMilliseconds,
+    otherDevicesPlayTimeInMilliseconds: game.otherDevicesPlayTimeInMilliseconds,
   });
 
   const hasDownload =

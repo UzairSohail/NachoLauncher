@@ -63,6 +63,8 @@ export interface Game extends LibraryCatalogueMetadata {
   playTimeInMilliseconds: number;
   steamPlayTimeInMilliseconds?: number;
   epicPlayTimeInMilliseconds?: number;
+  /** Time played on the user's other devices, from Drive settings sync. */
+  otherDevicesPlayTimeInMilliseconds?: number;
   hasActiveEpicImport?: boolean;
   epicImportScope?: {
     environment: string;

@@ -165,6 +165,8 @@ export function GameDetailsContent() {
       playTimeInMilliseconds: game?.playTimeInMilliseconds ?? 0,
       steamPlayTimeInMilliseconds: game?.steamPlayTimeInMilliseconds,
       epicPlayTimeInMilliseconds: game?.epicPlayTimeInMilliseconds,
+      otherDevicesPlayTimeInMilliseconds:
+        game?.otherDevicesPlayTimeInMilliseconds,
     }),
     userDetailsId: userDetails?.id,
     isGameInLibrary,

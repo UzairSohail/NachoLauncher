@@ -11,6 +11,7 @@ import {
   HYDRA_GAME_REQUEST_TIMEOUT_MS,
 } from "../../services/library-sync/game-request-queue";
 import { resetHydraPlaytimeTicks } from "../../services/game-running-state";
+import { scheduleSettingsSync } from "../../services/game-record-updater";
 
 const resetGamePlaytime = async (
   _event: Electron.IpcMainInvokeEvent,
@@ -48,6 +49,7 @@ const resetGamePlaytime = async (
         });
         markHydraPlaytimeChanged(key);
         resetHydraPlaytimeTicks(key);
+        scheduleSettingsSync();
       }, current);
     },
     current

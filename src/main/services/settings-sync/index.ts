@@ -13,6 +13,7 @@ import type {
 import {
   db,
   downloadSourcesSublevel,
+  gamesSublevel,
   levelKeys,
   themesSublevel,
 } from "@main/level";
@@ -39,6 +40,13 @@ import {
 import { GameCollections } from "../game-collections";
 import { recordCollection, recordLocalValues } from "./sync-merge";
 import { describeSettingsSyncError } from "./sync-error";
+import {
+  otherDevicesPlaytime,
+  recordGameFlags,
+  recordOwnPlaytime,
+  syncedGamePatch,
+  type GameWithKey,
+} from "./game-library-sync";
 import { SYNCED_SECRET_KEYS } from "./synced-keys";
 
 const SETTINGS_FILE = "hydra/settings.json";
@@ -211,12 +219,14 @@ export class SettingsSync {
 
   /** Stamps whatever changed on this device since the last sync. */
   private static async recordLocal(record: LocalSyncRecord, now: number) {
-    const [preferences, sources, themes, collections] = await Promise.all([
-      getUserPreferences(),
-      downloadSourcesSublevel.values().all(),
-      themesSublevel.values().all(),
-      GameCollections.all(),
-    ]);
+    const [preferences, sources, themes, collections, games] =
+      await Promise.all([
+        getUserPreferences(),
+        downloadSourcesSublevel.values().all(),
+        themesSublevel.values().all(),
+        GameCollections.all(),
+        gamesSublevel.iterator().all() as Promise<GameWithKey[]>,
+      ]);
 
     const sourceItems: Record<string, SyncedDownloadSource> = {};
     for (const source of sources) {
@@ -267,12 +277,15 @@ export class SettingsSync {
         now,
         deviceId
       ),
+      gameFlags: recordGameFlags(state.gameFlags, games, now, deviceId),
+      playtime: recordOwnPlaytime(state.playtime, games, now, deviceId),
     } satisfies SettingsSyncState;
   }
 
   private static async applyIncoming(
     merged: SettingsSyncState,
-    incoming: Record<keyof SettingsSyncState, string[]>
+    incoming: Record<keyof SettingsSyncState, string[]>,
+    deviceId: string
   ) {
     const preferenceChanges: Partial<UserPreferences> = {};
     for (const key of incoming.preferences) {
@@ -303,6 +316,35 @@ export class SettingsSync {
     }
 
     await this.applyGameCollections(merged, incoming.gameCollections);
+    await this.applyGameLibrary(merged, incoming.gameFlags, deviceId);
+  }
+
+  /**
+   * Applies favourite and pin changes from other devices, and sets every
+   * game's time played on the other devices.
+   */
+  private static async applyGameLibrary(
+    merged: SettingsSyncState,
+    changedFlags: string[],
+    deviceId: string
+  ) {
+    const changed = new Set(changedFlags);
+    const others = otherDevicesPlaytime(merged.playtime, deviceId);
+    const games = (await gamesSublevel.iterator().all()) as GameWithKey[];
+    const { updateGameRecord } = await import("../game-record-updater");
+    let updated = false;
+
+    for (const [key, game] of games) {
+      if (game.isDeleted) continue;
+      const entry = changed.has(key) ? merged.gameFlags[key] : null;
+      const flags = entry && !entry.deleted ? entry.value : null;
+      const patch = syncedGamePatch(game, flags, others.get(key));
+      if (!patch) continue;
+      await updateGameRecord(key, patch);
+      updated = true;
+    }
+
+    if (updated) WindowManager.sendToAppWindows("on-library-batch-complete");
   }
 
   /**
@@ -425,7 +467,7 @@ export class SettingsSync {
 
     this.applying = true;
     try {
-      await this.applyIncoming(merged, incoming);
+      await this.applyIncoming(merged, incoming, record.deviceId);
     } finally {
       this.applying = false;
     }
