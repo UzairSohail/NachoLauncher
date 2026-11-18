@@ -10,7 +10,7 @@ import {
 } from "../../../src/shared/companion";
 import { listFiles, readFile, readFileById, trashFile, writeFile } from "./drive";
 
-const DEVICES_FOLDER = "hydra/devices";
+const DEVICES_FOLDER = "Nacho/devices";
 
 const emptyCompanion = (): CompanionDocument => ({
   version: 1,

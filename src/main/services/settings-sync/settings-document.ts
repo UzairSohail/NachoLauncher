@@ -56,7 +56,7 @@ export interface SettingsSyncState {
   gameArtwork: SyncEntries<SyncedArtwork>;
 }
 
-/** `hydra/settings.json` in Drive. */
+/** `Nacho/settings.json` in Drive. */
 export interface SettingsSyncDocument {
   version: 1;
   updatedAt: number;

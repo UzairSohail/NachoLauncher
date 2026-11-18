@@ -50,6 +50,10 @@ export interface PersonalCloudNativeModule {
   personalCloudReadFile: (key: string) => Promise<Buffer | null>;
   personalCloudWriteFile: (key: string, data: Buffer) => Promise<void>;
   personalCloudDeleteFile: (key: string) => Promise<void>;
+  personalCloudMoveLegacyFolder: () => Promise<{
+    outcome: "nothing" | "renamed" | "merged";
+    copied: number;
+  }>;
   personalCloudChanges: (
     token: string | null
   ) => Promise<{ changed: boolean; token: string } | null>;

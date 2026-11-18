@@ -15,15 +15,15 @@ import type {
  * game saves (the Cloud Save Manager folder). Upstream Hydra sent these to its
  * paid `/profile/emulation-saves` API, which Nacho can't sign in to.
  *
- * Drive layout, all under the folder's `hydra/` area:
- *   hydra/emulation-saves/index.json      every save's record (EmulationCloudSave[])
- *   hydra/emulation-saves/files/<id>.bin  the save bytes (.psu, .mcs, zip, .gci …)
+ * Drive layout, all under the folder's `Nacho/` area:
+ *   Nacho/emulation-saves/index.json      every save's record (EmulationCloudSave[])
+ *   Nacho/emulation-saves/files/<id>.bin  the save bytes (.psu, .mcs, zip, .gci …)
  *
  * The index is small and read whole. Each save keeps its newest few versions;
  * older ones go to the Drive bin, so a mistaken overwrite can still be undone.
  */
 
-const ROOT = "hydra/emulation-saves";
+const ROOT = "Nacho/emulation-saves";
 const INDEX_FILE = `${ROOT}/index.json`;
 const blobKey = (id: string) => `${ROOT}/files/${id}.bin`;
 const SAVE_KIND = "game_save" as const;

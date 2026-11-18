@@ -54,8 +54,8 @@ import {
 } from "./game-library-sync";
 import { SYNCED_SECRET_KEYS } from "./synced-keys";
 
-const SETTINGS_FILE = "hydra/settings.json";
-const KEY_FILE = "hydra/sync-key";
+const SETTINGS_FILE = "Nacho/settings.json";
+const KEY_FILE = "Nacho/sync-key";
 const PUSH_DELAY_MS = 5_000;
 // Other devices' changes normally arrive through DriveChangeFeed; this is
 // only a safety net in case a change notice is missed.
@@ -104,8 +104,8 @@ const toSyncedTheme = (theme: Theme): SyncedTheme => ({
  * Syncs settings, API keys, download sources, themes and library collections
  * through the user's Google Drive, using the Google sign-in shared with Cloud
  * Save Manager. The
- * file is `hydra/settings.json`; credentials inside it are sealed with a key
- * kept next to it in `hydra/sync-key`.
+ * file is `Nacho/settings.json`; credentials inside it are sealed with a key
+ * kept next to it in `Nacho/sync-key`.
  */
 export class SettingsSync {
   private static running: Promise<void> | null = null;

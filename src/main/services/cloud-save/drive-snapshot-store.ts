@@ -23,8 +23,8 @@ import { PersonalCloud } from "../personal-cloud";
  * snapshots on Hydra Cloud, a paid service Nacho can't sign in to. This keeps
  * the same snapshot model in the user's own Google Drive instead:
  *
- *   hydra/cloud-saves/<game>/snapshot.json       the game's active snapshot
- *   hydra/cloud-saves/<game>/blobs/<sha256>.blob  file contents, by hash
+ *   Nacho/cloud-saves/<game>/snapshot.json       the game's active snapshot
+ *   Nacho/cloud-saves/<game>/blobs/<sha256>.blob  file contents, by hash
  *
  * Like Hydra's API there is one active snapshot per game, its id stays the
  * same and its version goes up by one on every commit. A commit whose base
@@ -33,7 +33,7 @@ import { PersonalCloud } from "../personal-cloud";
  * uses go to the Drive bin.
  */
 
-const ROOT = "hydra/cloud-saves";
+const ROOT = "Nacho/cloud-saves";
 
 interface StoredSnapshot {
   schemaVersion: 1;

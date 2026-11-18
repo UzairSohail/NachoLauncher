@@ -21,7 +21,7 @@ import { PersonalCloud } from "./personal-cloud";
  * only. It now syncs through the user's Google Drive with the rest of the
  * settings:
  *
- * - An uploaded image goes to `hydra/artwork/<sha256>.<ext>` in Drive.
+ * - An uploaded image goes to `Nacho/artwork/<sha256>.<ext>` in Drive.
  * - A SteamGridDB pick is just its URL.
  * - Each game's choice per artwork type is an entry in the Drive settings
  *   file (see settings-sync), so the latest change wins.
@@ -84,7 +84,7 @@ const parseArtworkSyncKey = (
   return ARTWORK_TYPES.includes(type) ? [key.slice(0, slash), type] : null;
 };
 
-const blobKey = (hash: string, ext: string) => `hydra/artwork/${hash}.${ext}`;
+const blobKey = (hash: string, ext: string) => `Nacho/artwork/${hash}.${ext}`;
 
 export const readArtworkSyncStore = (): Promise<ArtworkSyncStore> =>
   db

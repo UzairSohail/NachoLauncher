@@ -68,9 +68,14 @@ const search = async (q: string, fields = "id,name,modifiedTime") => {
 
 const folders = new Map<string, string>();
 
+/** The launcher's own folder inside the Drive folder. */
+export const APP_FOLDER = "Nacho";
+/** Its name before the rebrand. */
+const LEGACY_APP_FOLDER = "hydra";
+
 /**
- * The ID of a folder inside the launcher's Drive folder, such as "hydra" or
- * "hydra/devices". Found the same way the launcher finds it: oldest first.
+ * The ID of a folder inside the launcher's Drive folder, such as "Nacho" or
+ * "Nacho/devices". Found the same way the launcher finds it: oldest first.
  */
 export const folderId = async (
   path: string,
@@ -87,9 +92,19 @@ export const folderId = async (
     if (!parent) return null;
   }
 
-  let q = `name = ${quoted(name)} and mimeType = '${FOLDER_MIME}' and trashed = false`;
-  if (parent) q += ` and ${quoted(parent)} in parents`;
-  let id = (await search(q, "id"))[0]?.id ?? null;
+  const find = async (folderName: string) => {
+    let q = `name = ${quoted(folderName)} and mimeType = '${FOLDER_MIME}' and trashed = false`;
+    if (parent) q += ` and ${quoted(parent)} in parents`;
+    return (await search(q, "id"))[0]?.id ?? null;
+  };
+  let id = await find(name);
+  // A launcher that hasn't updated yet still keeps its files in the old
+  // "hydra" folder. Use it until a launcher moves it to "Nacho", and don't
+  // remember it, since that move can bin it.
+  if (!id && path === APP_FOLDER) {
+    const legacy = await find(LEGACY_APP_FOLDER);
+    if (legacy) return legacy;
+  }
 
   if (!id && create) {
     const reply = await (
@@ -126,7 +141,7 @@ const findFile = async (key: string) => {
 export const readFileById = async (id: string) =>
   (await request(`${API}/files/${id}?alt=media`)).text();
 
-/** Reads a file by its key, like `hydra/companion.json`. Null when missing. */
+/** Reads a file by its key, like `Nacho/companion.json`. Null when missing. */
 export const readFile = async (key: string) => {
   const file = await findFile(key);
   return file ? readFileById(file.id) : null;
