@@ -70,11 +70,11 @@ linux:
   extraResources:
     - from: binaries/7zzs
     - from: binaries/umu/umu-run
+  # The AppImage is what Nacho Launcher updates itself from. rpm builds failed
+  # in CI, and snap isn't used, so only the AppImage and deb are built.
   target:
     - AppImage
-    - snap
     - deb
-    - rpm
   maintainer: electronjs.org
   category: Game
   mimeTypes:
