@@ -14,6 +14,11 @@ export interface InstalledRepackInfo {
   createdAt?: string | null;
   /** The link the version was downloaded from, used to spot re-listings. */
   uri?: string | null;
+  /**
+   * Set when this listing was the one picked for the download. Otherwise it
+   * was matched later by its link, after the source may have changed it.
+   */
+  chosenAtDownload?: boolean;
 }
 
 export interface GameUpdateInfo extends InstalledRepackInfo {
