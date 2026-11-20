@@ -1241,6 +1241,8 @@
     "game_update_hint": "You can keep playing the current version while the new one downloads. Nacho Launcher removes the old files once the new version is ready, and puts them back if you cancel. Saves outside the game folder aren't touched. If the game was installed with a setup, install the new version into the same folder.",
     "game_update_listing_missing": "This version isn't available to download right now. Try again later.",
     "game_update_skip": "Skip this version",
+    "installed_version": "Installed: {{version}}",
+    "update_available_version": "Update available: {{version}}",
     "game_update_later": "Later",
     "game_update_confirm": "Update"
   },

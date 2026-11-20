@@ -31,8 +31,9 @@ import { isGameRunning } from "./game-running-state";
 import { PersonalCloud } from "./personal-cloud";
 import { LocalNotificationManager } from "./notifications/local-notifications";
 
-const FIRST_CHECK_DELAY_MS = 2 * 60 * 1000;
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+// Soon after start-up, so a short session on a handheld still gets a check.
+const FIRST_CHECK_DELAY_MS = 30 * 1000;
+const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const DELAY_BETWEEN_GAMES_MS = 500;
 
 const PREVIOUS_SUFFIX = " (previous version)";
@@ -79,6 +80,56 @@ const deleteSourceArchives = async (download: Download) => {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const hostOf = (uri: string) => {
+  try {
+    return new URL(uri).hostname.replace(/^www\./, "") || null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Stand-ins for the listing a game was installed from, when that listing is
+ * gone: one per source that shares the download's host (or the only source
+ * listing the game), dated when the download started, so any listing
+ * uploaded after it counts as newer.
+ */
+const inferInstalledRepacks = (
+  game: Game,
+  download: Download,
+  repacks: GameRepack[]
+): InstalledRepackInfo[] => {
+  if (!download.timestamp || repacks.length === 0) return [];
+
+  const host = hostOf(download.uri);
+  const matching = host
+    ? repacks.filter((repack) =>
+        [...repack.uris, ...(repack.uriGroups ?? []).flat()].some(
+          (uri) => hostOf(uri) === host
+        )
+      )
+    : [];
+  const sourceIds = new Set(repacks.map((repack) => repack.downloadSourceId));
+  const fromSources =
+    matching.length > 0 ? matching : sourceIds.size === 1 ? repacks : [];
+
+  const sources = new Map<string, string>();
+  for (const repack of fromSources) {
+    sources.set(repack.downloadSourceId, repack.downloadSourceName);
+  }
+
+  const downloadedAt = new Date(download.timestamp).toISOString();
+  return [...sources].map(([downloadSourceId, downloadSourceName]) => ({
+    id: "",
+    title: game.title,
+    downloadSourceId,
+    downloadSourceName,
+    uploadDate: downloadedAt,
+    createdAt: downloadedAt,
+    uri: download.uri,
+  }));
+};
+
 const catalogueIdentity = (game: Game) =>
   game.catalogueGame ?? { shop: game.shop, objectId: game.objectId };
 
@@ -105,24 +156,32 @@ export class GameUpdates {
     return Array.isArray(repacks) ? repacks : [];
   }
 
-  /** Works out which listing an older install came from, by its link. */
+  /**
+   * Works out which listing an older install came from, by its link. When
+   * the source has already replaced that listing with a newer one, the link
+   * is nowhere to be found, so this falls back to what the download itself
+   * tells us: which source shares its host, and when it was downloaded. That
+   * guess is used for this check only and is never saved.
+   */
   private static async findInstalledRepack(
     game: Game,
     download: Download | undefined,
     sourceIds: string[]
-  ): Promise<InstalledRepackInfo | null> {
-    if (game.installedRepack) return game.installedRepack;
-    if (!download?.uri) return null;
+  ): Promise<InstalledRepackInfo[]> {
+    if (game.installedRepack) return [game.installedRepack];
+    if (!download?.uri) return [];
 
     const repacks = await this.fetchRepacks(game, sourceIds);
     const repack = findRepackByUri(repacks, download.uri);
-    if (!repack) return null;
+    if (repack) {
+      const installedRepack = toInstalledRepackInfo(repack, download.uri);
+      await updateGameRecord(levelKeys.game(game.shop, game.objectId), {
+        installedRepack,
+      });
+      return [installedRepack];
+    }
 
-    const installedRepack = toInstalledRepackInfo(repack, download.uri);
-    await updateGameRecord(levelKeys.game(game.shop, game.objectId), {
-      installedRepack,
-    });
-    return installedRepack;
+    return inferInstalledRepacks(game, download, repacks);
   }
 
   private static isInstalled(game: Game, download: Download | undefined) {
@@ -142,26 +201,37 @@ export class GameUpdates {
     const download = await downloadsSublevel.get(gameKey).catch(() => null);
     if (!this.isInstalled(game, download ?? undefined)) return null;
 
-    const installed = await this.findInstalledRepack(
-      game,
-      download ?? undefined,
-      sourceIds
-    );
-    if (!installed || !sourceIds.includes(installed.downloadSourceId)) {
-      return null;
+    const candidates = (
+      await this.findInstalledRepack(game, download ?? undefined, sourceIds)
+    ).filter((installed) => sourceIds.includes(installed.downloadSourceId));
+
+    let repack: GameRepack | null = null;
+    for (const installed of candidates) {
+      const repacks = await this.fetchRepacks(game, [
+        installed.downloadSourceId,
+      ]);
+      repack = findGameUpdate(installed, repacks);
+      if (repack) break;
     }
 
-    const repacks = await this.fetchRepacks(game, [installed.downloadSourceId]);
-    const repack = findGameUpdate(installed, repacks);
+    const isSkipped =
+      repack !== null &&
+      repack.id === game.skippedUpdateRepackId &&
+      (!game.skippedUpdateTitle || repack.title === game.skippedUpdateTitle);
 
-    if (!repack || repack.id === game.skippedUpdateRepackId) {
+    if (!repack || isSkipped) {
       if (game.availableUpdate) {
         await updateGameRecord(gameKey, { availableUpdate: null });
       }
       return null;
     }
 
-    if (game.availableUpdate?.id === repack.id) return null;
+    if (
+      game.availableUpdate?.id === repack.id &&
+      game.availableUpdate.title === repack.title
+    ) {
+      return null;
+    }
 
     const update: GameUpdateInfo = {
       ...toInstalledRepackInfo(repack),
@@ -289,6 +359,7 @@ export class GameUpdates {
   public static async skipUpdate(shop: Game["shop"], objectId: string) {
     await updateGameRecord(levelKeys.game(shop, objectId), (game) => ({
       skippedUpdateRepackId: game.availableUpdate?.id ?? null,
+      skippedUpdateTitle: game.availableUpdate?.title ?? null,
       availableUpdate: null,
     }));
   }
@@ -516,6 +587,7 @@ export class GameUpdates {
       installedRepack: repack,
       availableUpdate: null,
       skippedUpdateRepackId: null,
+      skippedUpdateTitle: null,
     });
   }
 }

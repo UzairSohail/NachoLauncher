@@ -1,5 +1,6 @@
 import {
   ArchiveIcon,
+  ArrowCircleUpIcon,
   DownloadSimpleIcon,
   FileIcon,
   GearIcon,
@@ -65,6 +66,11 @@ export interface HeroProps {
   canAddToLibrary: boolean;
   downNavigationTarget?: FocusOverrideTarget;
   sidebarEntryTarget?: FocusOverrideTarget;
+  /** The installed version, as its source titles it. */
+  installedVersion?: string | null;
+  /** The newer version the source lists, if any. */
+  availableUpdateTitle?: string | null;
+  onUpdate?: () => void;
 }
 
 function getFavoriteLeftTargetId(
@@ -83,9 +89,11 @@ function getFavoriteLeftTargetId(
 
 function getSettingsLeftTargetId(
   shouldShowCatalogActions: boolean,
-  hasPrimaryAction: boolean
+  hasPrimaryAction: boolean,
+  hasUpdateButton = false
 ): string {
-  if (shouldShowCatalogActions) return GAME_HERO_DOWNLOAD_OPTIONS_ID;
+  if (shouldShowCatalogActions || hasUpdateButton)
+    return GAME_HERO_DOWNLOAD_OPTIONS_ID;
   if (hasPrimaryAction) return GAME_HERO_PRIMARY_ACTION_ID;
   return BIG_PICTURE_SIDEBAR_ITEM_IDS.home;
 }
@@ -111,6 +119,9 @@ export function Hero({
   canAddToLibrary,
   downNavigationTarget,
   sidebarEntryTarget,
+  installedVersion = null,
+  availableUpdateTitle = null,
+  onUpdate,
 }: Readonly<HeroProps>) {
   const { t } = useTranslation("game_details");
   const heroRef = useRef<HTMLElement | null>(null);
@@ -152,6 +163,11 @@ export function Hero({
     Boolean(game) ||
     canAddToLibrary;
   const shouldShowCatalogActions = !game && canAddToLibrary;
+  const hasUpdateButton =
+    Boolean(availableUpdateTitle && onUpdate) &&
+    !isDownloading &&
+    !isGameRunning &&
+    Boolean(game?.executablePath);
   const shouldShowFavoriteButton = Boolean(game);
   const shouldShowCloudSaveButton =
     !!game && isCloudSaveV2Eligible(game.shop, game.platform);
@@ -263,17 +279,18 @@ export function Hero({
 
   const { primaryActionButton, downloadOptionsButton, settingsButton } =
     useMemo(() => {
-      const primaryActionRightTarget = shouldShowCatalogActions
-        ? {
-            type: "item" as const,
-            itemId: GAME_HERO_DOWNLOAD_OPTIONS_ID,
-          }
-        : shouldShowFavoriteButton
+      const primaryActionRightTarget =
+        shouldShowCatalogActions || hasUpdateButton
           ? {
               type: "item" as const,
-              itemId: GAME_HERO_OPEN_SETTINGS_ID,
+              itemId: GAME_HERO_DOWNLOAD_OPTIONS_ID,
             }
-          : lastActionRightTarget;
+          : shouldShowFavoriteButton
+            ? {
+                type: "item" as const,
+                itemId: GAME_HERO_OPEN_SETTINGS_ID,
+              }
+            : lastActionRightTarget;
       const primaryActionNavigationOverrides: FocusOverrides = {
         left: {
           type: "item",
@@ -297,7 +314,8 @@ export function Hero({
       };
       const settingsLeftTargetId = getSettingsLeftTargetId(
         shouldShowCatalogActions,
-        hasPrimaryAction
+        hasPrimaryAction,
+        hasUpdateButton
       );
       const settingsNavigationOverrides: FocusOverrides = {
         left: {
@@ -362,7 +380,17 @@ export function Hero({
               Launch Game
             </Button>
           ),
-          downloadOptionsButton: null,
+          downloadOptionsButton: hasUpdateButton ? (
+            <Button
+              focusId={GAME_HERO_DOWNLOAD_OPTIONS_ID}
+              focusNavigationOverrides={downloadOptionsNavigationOverrides}
+              variant="secondary"
+              icon={<ArrowCircleUpIcon size={24} />}
+              onClick={onUpdate}
+            >
+              {t("game_update_button")}
+            </Button>
+          ) : null,
           settingsButton: shouldShowFavoriteButton ? (
             <Button
               focusId={GAME_HERO_OPEN_SETTINGS_ID}
@@ -449,6 +477,7 @@ export function Hero({
       dominantColor,
       game,
       hasPrimaryAction,
+      hasUpdateButton,
       heroDownNavigationTarget,
       isAddingToLibrary,
       isGameRunning,
@@ -459,6 +488,7 @@ export function Hero({
       onOpenDownloadOptions,
       onOpenSettings,
       onPlay,
+      onUpdate,
       shouldShowCatalogActions,
       shouldShowCloudSaveButton,
       shouldShowFavoriteButton,
@@ -511,6 +541,21 @@ export function Hero({
             __html: shopDetails.short_description || "",
           }}
         />
+
+        {game?.executablePath && (installedVersion || availableUpdateTitle) && (
+          <Typography className="game-page__hero-version">
+            {installedVersion &&
+              t("installed_version", { version: installedVersion })}
+            {installedVersion && availableUpdateTitle && " · "}
+            {availableUpdateTitle && (
+              <span className="game-page__hero-version-update">
+                {t("update_available_version", {
+                  version: availableUpdateTitle,
+                })}
+              </span>
+            )}
+          </Typography>
+        )}
 
         <HorizontalFocusGroup
           regionId={GAME_HERO_ACTIONS_REGION_ID}

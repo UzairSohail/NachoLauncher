@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   compareVersions,
+  describeVersion,
   extractVersion,
   findGameUpdate,
   findRepackByUri,
@@ -99,5 +100,64 @@ describe("game updates", () => {
       findRepackByUri([repack({}), listing], "https://example.com/a")?.id,
       "r9"
     );
+  });
+
+  it("finds an update when the source retitles the same listing", () => {
+    const retitled = repack({
+      id: "r1",
+      title: "Some Game v1.1.0 + 2 DLCs",
+      uris: ["https://example.com/new-file"],
+    });
+    assert.equal(findGameUpdate(installed, [retitled])?.title, retitled.title);
+  });
+
+  it("uses the date when one title has a build and the other a version", () => {
+    const build = {
+      ...installed,
+      title: "Dreadmoor (Build 20450123)",
+      uploadDate: "2026-11-01T00:00:00.000Z",
+      uri: null,
+    };
+    const newer = repack({
+      id: "r2",
+      title: "Dreadmoor v0.9.5",
+      uploadDate: "2026-11-13T00:00:00.000Z",
+    });
+    const older = repack({
+      id: "r3",
+      title: "Dreadmoor v0.9.0",
+      uploadDate: "2026-10-01T00:00:00.000Z",
+    });
+    assert.equal(findGameUpdate(build, [older, newer])?.id, "r2");
+  });
+
+  it("finds a newer listing for an install dated by its download", () => {
+    const inferred = {
+      id: "",
+      title: "Dreadmoor",
+      downloadSourceId: "src00001",
+      downloadSourceName: "SteamRIP",
+      uploadDate: "2026-11-05T00:00:00.000Z",
+      uri: "https://example.com/old-file",
+    };
+    const newer = repack({
+      id: "r2",
+      title: "Dreadmoor (Build 20612345)",
+      uploadDate: "2026-11-13T00:00:00.000Z",
+    });
+    assert.equal(findGameUpdate(inferred, [newer])?.id, "r2");
+    assert.equal(
+      findGameUpdate(inferred, [
+        repack({ ...newer, uploadDate: "2026-11-01T00:00:00.000Z" }),
+      ]),
+      null
+    );
+  });
+
+  it("describes the installed version for display", () => {
+    assert.equal(describeVersion("Game (Build 14523)"), "Build 14523");
+    assert.equal(describeVersion("Game – v2.21 + DLC"), "v2.21");
+    assert.equal(describeVersion("Game 1.2.3.4 [SteamRIP]"), "v1.2.3.4");
+    assert.equal(describeVersion("Cyberpunk 2077"), null);
   });
 });

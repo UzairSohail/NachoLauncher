@@ -20,6 +20,7 @@ import {
   pickDefaultDownloader,
   getDownloadAttempts,
   DownloadError,
+  toInstalledRepackInfo,
 } from "@shared";
 import { useAllDebridHosts } from "@renderer/hooks/use-all-debrid-hosts";
 import { DOWNLOADER_NAME, IS_DESKTOP } from "../../../constants";
@@ -89,6 +90,11 @@ interface DownloadGameModalProps {
     coverImageUrl?: string | null;
     downloadSources?: string[];
   };
+  /**
+   * The listing of a newer version of the installed game. The modal opens
+   * straight on it, and downloading it replaces the installed version.
+   */
+  updateRepackId?: string | null;
 }
 
 interface SteamDownloadOptionData {
@@ -125,6 +131,7 @@ interface DownloadGameOptionsProps {
   onSelectDownloadPath: (path: string) => void;
   onAutomaticExtractionChange: (checked: boolean) => void;
   onDeleteArchiveFilesAfterExtractionChange: (checked: boolean) => void;
+  replaceInstalledVersion: boolean;
 }
 
 interface DownloadDirectorySuggestion {
@@ -491,6 +498,7 @@ export function DownloadGameModal({
   visible,
   onClose,
   game,
+  updateRepackId = null,
 }: Readonly<DownloadGameModalProps>) {
   const sessionVersionRef = useRef(0);
   const previousVisibleRef = useRef(visible);
@@ -512,6 +520,7 @@ export function DownloadGameModal({
       visible={visible}
       onClose={onClose}
       game={game}
+      updateRepackId={updateRepackId}
     />
   );
 }
@@ -520,6 +529,7 @@ function DownloadGameModalSession({
   visible,
   onClose,
   game,
+  updateRepackId = null,
 }: Readonly<DownloadGameModalProps>) {
   const userPreferences = useUserPreferences();
   const virtualKeyboardTarget = useVirtualKeyboardStore(
@@ -635,6 +645,20 @@ function DownloadGameModalSession({
   const handleOnBack = () => {
     if (isntFirstStep) requestStepChange(DownloadGameStep.SourceList);
   };
+
+  // Opening for an update goes straight to the new version's settings.
+  const openedUpdateRef = useRef(false);
+  useEffect(() => {
+    if (!visible || !updateRepackId || openedUpdateRef.current) return;
+    const update = downloadOptions.find(
+      (option) => option.id === updateRepackId
+    );
+    if (!update) return;
+    openedUpdateRef.current = true;
+    handleNextStep(update);
+    // handleNextStep is recreated every render; this runs once per session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, updateRepackId, downloadOptions]);
 
   useNavigationScreenActions(
     isntFirstStep && !isVirtualKeyboardOpen
@@ -843,6 +867,9 @@ function DownloadGameModalSession({
         onDeleteArchiveFilesAfterExtractionChange={
           handleDeleteArchiveFilesAfterExtractionChange
         }
+        replaceInstalledVersion={
+          updateRepackId !== null && option.id === updateRepackId
+        }
       />
     ),
     [
@@ -855,6 +882,7 @@ function DownloadGameModalSession({
       handleSelectDownloadPath,
       onClose,
       selectedDownloadPath,
+      updateRepackId,
       visible,
     ]
   );
@@ -1422,6 +1450,7 @@ function DownloadGameOptions({
   onSelectDownloadPath,
   onAutomaticExtractionChange,
   onDeleteArchiveFilesAfterExtractionChange,
+  replaceInstalledVersion,
 }: Readonly<DownloadGameOptionsProps>) {
   const { t } = useTranslation("game_details");
   const { showErrorToast } = useBigPictureToast();
@@ -1647,6 +1676,9 @@ function DownloadGameOptions({
       automaticallyExtract: automaticExtractionEnabled,
       automaticallyDeleteArchiveFiles: deleteArchiveFilesAfterExtraction,
       fileSize: option.fileSize,
+      // Remembered so Nacho can tell when the source lists a newer version.
+      repack: toInstalledRepackInfo(option, uri),
+      replaceInstalledVersion,
     });
 
     // Debrid can reject a host; move on to the listing's next link it could

@@ -7,7 +7,7 @@ import {
   type SkuRegion,
 } from "@renderer/helpers";
 import type { GameShop, ShopAssets } from "@types";
-import { hasCloudSaveExecutableSelection } from "@shared";
+import { describeVersion, hasCloudSaveExecutableSelection } from "@shared";
 import { useFinishedDownloadStep } from "@renderer/hooks/use-finished-download-step";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -809,9 +809,25 @@ export default function Game() {
   );
   useHeaderTitle(resolvedGameTitle);
 
+  const [updateRepackId, setUpdateRepackId] = useState<string | null>(null);
+  const updatableGame = downloadGame?.availableUpdate ? downloadGame : game;
+  const availableUpdate = updatableGame?.availableUpdate ?? null;
+  const installedRepack =
+    downloadGame?.installedRepack ?? game?.installedRepack ?? null;
+  const installedVersion = installedRepack
+    ? (describeVersion(installedRepack.title) ?? installedRepack.title)
+    : null;
+
   const handleOpenDownloadModal = useCallback(() => {
+    setUpdateRepackId(null);
     setIsDownloadModalOpen(true);
   }, []);
+
+  const handleOpenUpdate = useCallback(() => {
+    if (!availableUpdate) return;
+    setUpdateRepackId(availableUpdate.id);
+    setIsDownloadModalOpen(true);
+  }, [availableUpdate]);
 
   const installStep = useFinishedDownloadStep(downloadGame);
   const [executablePickerTarget, setExecutablePickerTarget] =
@@ -1479,6 +1495,9 @@ export default function Game() {
             canAddToLibrary={canAddToLibrary}
             downNavigationTarget={contentBelowHeroTarget}
             sidebarEntryTarget={sidebarEntryTarget}
+            installedVersion={installedVersion}
+            availableUpdateTitle={availableUpdate?.title ?? null}
+            onUpdate={handleOpenUpdate}
           />
           {game && launchSettings && customizationSettings && cloudSettings && (
             <GameSettingsModal
@@ -1823,6 +1842,7 @@ export default function Game() {
         <DownloadGameModal
           visible={isDownloadModalOpen}
           onClose={handleCloseDownloadModal}
+          updateRepackId={updateRepackId}
           game={{
             objectId: downloadGame?.objectId ?? game?.objectId ?? objectId!,
             shop: downloadGame?.shop ?? game?.shop ?? shop!,
