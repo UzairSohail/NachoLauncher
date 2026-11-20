@@ -35,6 +35,7 @@ import { LocalNotificationManager } from "./notifications/local-notifications";
 const FIRST_CHECK_DELAY_MS = 30 * 1000;
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const DELAY_BETWEEN_GAMES_MS = 500;
+const LISTING_DATE_SLACK_MS = 24 * 60 * 60 * 1000;
 
 const PREVIOUS_SUFFIX = " (previous version)";
 
@@ -118,16 +119,48 @@ const inferInstalledRepacks = (
     sources.set(repack.downloadSourceId, repack.downloadSourceName);
   }
 
+  return [...sources].map(([downloadSourceId, downloadSourceName]) =>
+    installedAsOfDownload(game, download, downloadSourceId, downloadSourceName)
+  );
+};
+
+/** A download started at this time, as a stand-in for its listing. */
+const installedAsOfDownload = (
+  game: Game,
+  download: Download,
+  downloadSourceId: string,
+  downloadSourceName: string
+): InstalledRepackInfo => {
   const downloadedAt = new Date(download.timestamp).toISOString();
-  return [...sources].map(([downloadSourceId, downloadSourceName]) => ({
+  return {
     id: "",
     title: game.title,
     downloadSourceId,
     downloadSourceName,
     uploadDate: downloadedAt,
     createdAt: downloadedAt,
-    uri: download.uri,
-  }));
+    // Left out on purpose: the listing that still carries this link was
+    // changed after the download, so it's a newer version, not a re-listing.
+    uri: null,
+  };
+};
+
+/**
+ * Whether a listing was uploaded after the download started. The download
+ * can't be that version: the source changed the listing (often keeping the
+ * same link) after the game was downloaded.
+ */
+const listedAfterDownload = (
+  listing: { uploadDate: string | null; createdAt?: string | null },
+  download: Download | undefined
+) => {
+  if (!download?.timestamp) return false;
+  const listedAt = Date.parse(listing.uploadDate ?? listing.createdAt ?? "");
+  // A day's slack, since sources often give dates without a time zone.
+  return (
+    !Number.isNaN(listedAt) &&
+    listedAt > download.timestamp + LISTING_DATE_SLACK_MS
+  );
 };
 
 const catalogueIdentity = (game: Game) =>
@@ -168,16 +201,44 @@ export class GameUpdates {
     download: Download | undefined,
     sourceIds: string[]
   ): Promise<InstalledRepackInfo[]> {
-    if (game.installedRepack) return [game.installedRepack];
+    const gameKey = levelKeys.game(game.shop, game.objectId);
+    if (game.installedRepack) {
+      if (
+        game.installedRepack.chosenAtDownload ||
+        !listedAfterDownload(game.installedRepack, download)
+      ) {
+        return [game.installedRepack];
+      }
+      // Saved by an earlier check that matched a listing the source had
+      // already moved on to a newer version, so it names a version that
+      // isn't the one installed.
+      logger.info(
+        "[Game Updates] Dropping a newer listing saved as installed",
+        {
+          shop: game.shop,
+          objectId: game.objectId,
+          title: game.installedRepack.title,
+        }
+      );
+      await updateGameRecord(gameKey, { installedRepack: null });
+    }
     if (!download?.uri) return [];
 
     const repacks = await this.fetchRepacks(game, sourceIds);
     const repack = findRepackByUri(repacks, download.uri);
+    if (repack && listedAfterDownload(repack, download)) {
+      return [
+        installedAsOfDownload(
+          game,
+          download,
+          repack.downloadSourceId,
+          repack.downloadSourceName
+        ),
+      ];
+    }
     if (repack) {
       const installedRepack = toInstalledRepackInfo(repack, download.uri);
-      await updateGameRecord(levelKeys.game(game.shop, game.objectId), {
-        installedRepack,
-      });
+      await updateGameRecord(gameKey, { installedRepack });
       return [installedRepack];
     }
 
@@ -584,7 +645,7 @@ export class GameUpdates {
     repack: InstalledRepackInfo
   ) {
     await updateGameRecord(levelKeys.game(shop, objectId), {
-      installedRepack: repack,
+      installedRepack: { ...repack, chosenAtDownload: true },
       availableUpdate: null,
       skippedUpdateRepackId: null,
       skippedUpdateTitle: null,
