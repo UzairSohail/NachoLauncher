@@ -39,18 +39,51 @@ const VERSION_PATTERNS = [
   /(?:^|[\s([])(\d+\.\d+(?:\.\d+)+)(?=$|[\s)\]+,])/,
 ];
 
-/** Reads the version out of a release title, as numbers. */
-export const extractVersion = (title: string): number[] | null => {
-  for (const pattern of VERSION_PATTERNS) {
+/**
+ * Reads the version out of a release title, as numbers, along with which
+ * kind of number it is: a version ("v1.2", "1.2.3") or a build number. The
+ * two can't be compared with each other.
+ */
+export const readVersion = (
+  title: string
+): { kind: "version" | "build"; parts: number[] } | null => {
+  for (const [index, pattern] of VERSION_PATTERNS.entries()) {
     const match = pattern.exec(title);
     if (match) {
-      return match[1]
-        .split(/[._-]/)
-        .filter(Boolean)
-        .map((part) => Number.parseInt(part, 10));
+      return {
+        kind: index === 1 ? "build" : "version",
+        parts: match[1]
+          .split(/[._-]/)
+          .filter(Boolean)
+          .map((part) => Number.parseInt(part, 10)),
+      };
     }
   }
   return null;
+};
+
+/** Reads the version out of a release title, as numbers. */
+export const extractVersion = (title: string): number[] | null =>
+  readVersion(title)?.parts ?? null;
+
+/**
+ * Compares the versions in two titles: 1 when `a` is newer, -1 when older,
+ * 0 when they're the same, or null when they can't be compared (one has no
+ * version, or one is a build number and the other a version).
+ */
+export const compareTitleVersions = (a: string, b: string) => {
+  const versionA = readVersion(a);
+  const versionB = readVersion(b);
+  if (!versionA || !versionB || versionA.kind !== versionB.kind) return null;
+  return compareVersions(versionA.parts, versionB.parts);
+};
+
+/** The part of a release title that says which version it is, for display. */
+export const describeVersion = (title: string) => {
+  const version = readVersion(title);
+  if (!version) return null;
+  const text = version.parts.join(".");
+  return version.kind === "build" ? `Build ${text}` : `v${text}`;
 };
 
 export const compareVersions = (a: number[], b: number[]) => {
@@ -148,23 +181,22 @@ export const findGameUpdate = <T extends RepackLike>(
   installed: InstalledRepackInfo,
   repacks: T[]
 ): T | null => {
-  const installedVersion = extractVersion(installed.title);
   const installedTime = timeOf(installed);
   const installedTitle = normalizeTitle(installed.title);
 
   const candidates = repacks.filter((repack) => {
     if (repack.downloadSourceId !== installed.downloadSourceId) return false;
-    if (repack.id === installed.id) return false;
+    // Some sources keep the same listing and only change its title and
+    // links when a game updates, so the same id with a new title can still
+    // be a newer version.
     if (normalizeTitle(repack.title) === installedTitle) return false;
     if (installed.uri && repackUris(repack).includes(installed.uri)) {
       return false;
     }
     if (!isSameGame(repack.title, installed.title)) return false;
 
-    const version = extractVersion(repack.title);
-    if (version && installedVersion) {
-      return compareVersions(version, installedVersion) > 0;
-    }
+    const comparison = compareTitleVersions(repack.title, installed.title);
+    if (comparison !== null) return comparison > 0;
 
     const time = timeOf(repack);
     return time !== null && installedTime !== null && time > installedTime;
@@ -173,12 +205,8 @@ export const findGameUpdate = <T extends RepackLike>(
   if (candidates.length === 0) return null;
 
   return candidates.reduce((best, repack) => {
-    const bestVersion = extractVersion(best.title);
-    const version = extractVersion(repack.title);
-    if (bestVersion && version) {
-      const comparison = compareVersions(version, bestVersion);
-      if (comparison !== 0) return comparison > 0 ? repack : best;
-    }
+    const comparison = compareTitleVersions(repack.title, best.title);
+    if (comparison) return comparison > 0 ? repack : best;
     return (timeOf(repack) ?? 0) > (timeOf(best) ?? 0) ? repack : best;
   });
 };

@@ -108,6 +108,8 @@ export interface Game extends LibraryCatalogueMetadata {
   availableUpdate?: GameUpdateInfo | null;
   /** A listing the user chose to skip, so it isn't offered again. */
   skippedUpdateRepackId?: string | null;
+  /** The skipped listing's title, since a source can retitle the same listing for a later version. */
+  skippedUpdateTitle?: string | null;
   /** The version an update is replacing, kept playable until the new one is ready. */
   previousInstall?: PreviousInstall | null;
   installedSizeInBytes?: number | null;

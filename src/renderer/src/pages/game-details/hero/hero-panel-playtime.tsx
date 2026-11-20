@@ -10,7 +10,7 @@ import {
 import { Link } from "@renderer/components";
 import { gameDetailsContext } from "@renderer/context";
 import { MAX_MINUTES_TO_SHOW_IN_PLAYTIME } from "@renderer/constants";
-import { getDisplayedPlayTimeInMilliseconds } from "@shared";
+import { describeVersion, getDisplayedPlayTimeInMilliseconds } from "@shared";
 import { AlertFillIcon } from "@primer/octicons-react";
 import { Tooltip } from "react-tooltip";
 import "./hero-panel-playtime.scss";
@@ -20,10 +20,13 @@ export function HeroPanelPlaytime() {
 
   const {
     game: operationalGame,
+    downloadGame,
     presentation,
     isGameRunning,
   } = useContext(gameDetailsContext);
   const game = presentation ?? operationalGame;
+  const installedRepack =
+    downloadGame?.installedRepack ?? operationalGame?.installedRepack ?? null;
   const { t } = useTranslation("game_details");
   const { numberFormatter } = useFormat();
   const { progress, lastPacket } = useDownload();
@@ -165,6 +168,18 @@ export function HeroPanelPlaytime() {
         <p>
           {t("last_time_played", {
             period: lastTimePlayed,
+          })}
+        </p>
+      )}
+
+      {!isExtracting && !hasDownload && installedRepack && (
+        <p
+          className="hero-panel-playtime__version"
+          title={`${installedRepack.title} · ${installedRepack.downloadSourceName}`}
+        >
+          {t("installed_version", {
+            version:
+              describeVersion(installedRepack.title) ?? installedRepack.title,
           })}
         </p>
       )}
