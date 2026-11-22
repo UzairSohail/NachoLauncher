@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 
 import { setUserPreferences } from "@renderer/features";
 import { useAppDispatch } from "@renderer/hooks";
@@ -53,28 +53,16 @@ export interface SettingsContext {
     React.SetStateAction<SettingsCategoryId>
   >;
   clearSourceUrl: () => void;
-  clearTheme: () => void;
   sourceUrl: string | null;
   currentCategoryId: SettingsCategoryId;
-  appearance: {
-    theme: string | null;
-    authorId: string | null;
-    authorName: string | null;
-  };
 }
 
 export const settingsContext = createContext<SettingsContext>({
   updateUserPreferences: async () => {},
   setCurrentCategoryId: () => {},
   clearSourceUrl: () => {},
-  clearTheme: () => {},
   sourceUrl: null,
   currentCategoryId: "general",
-  appearance: {
-    theme: null,
-    authorId: null,
-    authorName: null,
-  },
 });
 
 const { Provider } = settingsContext;
@@ -89,15 +77,6 @@ export function SettingsContextProvider({
 }: Readonly<SettingsContextProviderProps>) {
   const dispatch = useAppDispatch();
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
-  const [appearance, setAppearance] = useState<{
-    theme: string | null;
-    authorId: string | null;
-    authorName: string | null;
-  }>({
-    theme: null,
-    authorId: null,
-    authorName: null,
-  });
   const [currentCategoryId, setCurrentCategoryId] =
     useState<SettingsCategoryId>(() => {
       const stored = localStorage.getItem(SETTINGS_CATEGORY_STORAGE_KEY);
@@ -107,9 +86,6 @@ export function SettingsContextProvider({
   const [searchParams] = useSearchParams();
   const defaultSourceUrl = searchParams.get("urls");
   const defaultTab = searchParams.get("tab");
-  const defaultAppearanceTheme = searchParams.get("theme");
-  const defaultAppearanceAuthorId = searchParams.get("authorId");
-  const defaultAppearanceAuthorName = searchParams.get("authorName");
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_CATEGORY_STORAGE_KEY, currentCategoryId);
@@ -139,36 +115,6 @@ export function SettingsContextProvider({
     }
   }, [defaultTab]);
 
-  useEffect(() => {
-    if (appearance.theme) setCurrentCategoryId("general");
-  }, [appearance.theme]);
-
-  useEffect(() => {
-    if (
-      defaultAppearanceTheme &&
-      defaultAppearanceAuthorId &&
-      defaultAppearanceAuthorName
-    ) {
-      setAppearance({
-        theme: defaultAppearanceTheme,
-        authorId: defaultAppearanceAuthorId,
-        authorName: defaultAppearanceAuthorName,
-      });
-    }
-  }, [
-    defaultAppearanceTheme,
-    defaultAppearanceAuthorId,
-    defaultAppearanceAuthorName,
-  ]);
-
-  const clearTheme = useCallback(() => {
-    setAppearance({
-      theme: null,
-      authorId: null,
-      authorName: null,
-    });
-  }, []);
-
   const clearSourceUrl = () => setSourceUrl(null);
 
   const updateUserPreferences = async (values: Partial<UserPreferences>) => {
@@ -185,10 +131,8 @@ export function SettingsContextProvider({
         updateUserPreferences,
         setCurrentCategoryId,
         clearSourceUrl,
-        clearTheme,
         currentCategoryId,
         sourceUrl,
-        appearance,
       }}
     >
       {children}

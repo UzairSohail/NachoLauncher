@@ -30,7 +30,6 @@ import { t } from "i18next";
 import { orderBy } from "lodash-es";
 import path from "node:path";
 import UserAgent from "user-agents";
-import { logger } from "./logger";
 import {
   addSteamGridDbCacheControl,
   isSteamGridDbArtworkRequest,
@@ -177,31 +176,11 @@ export class WindowManager {
     };
   }
 
-  private static formatVersionNumber(version: string) {
-    return version.replaceAll(".", "-");
-  }
-
   public static async loadWindowURL(window: BrowserWindow, hash: string = "") {
-    // HMR for renderer base on electron-vite cli.
-    // Load the remote URL for development or the local html file for production.
+    // HMR for renderer base on electron-vite cli. Builds always load the
+    // renderer they ship with; nothing is loaded from a remote host.
     if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
       window.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}#/${hash}`);
-    } else if (import.meta.env.MAIN_VITE_LAUNCHER_SUBDOMAIN) {
-      // Try to load from remote URL in production
-      try {
-        await window.loadURL(
-          `https://release-v${this.formatVersionNumber(app.getVersion())}.${import.meta.env.MAIN_VITE_LAUNCHER_SUBDOMAIN}#/${hash}`
-        );
-      } catch (error) {
-        // Fall back to local file if remote URL fails
-        logger.error(
-          "Failed to load from MAIN_VITE_LAUNCHER_SUBDOMAIN, falling back to local file:",
-          error
-        );
-        window.loadFile(path.join(__dirname, "../renderer/index.html"), {
-          hash,
-        });
-      }
     } else {
       window.loadFile(path.join(__dirname, "../renderer/index.html"), {
         hash,

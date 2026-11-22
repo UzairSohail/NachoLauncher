@@ -142,8 +142,6 @@ export function getDownloaderAvailabilityOptions(
 
   return allDownloaders
     .filter((downloader) => {
-      if (downloader === Downloader.Hydra) return false;
-
       return isFeatureEnabledForDownloader(downloader, enabledFeatures);
     })
     .map((downloader) => {

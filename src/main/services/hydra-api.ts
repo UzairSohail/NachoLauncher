@@ -8,11 +8,12 @@ import {
 import { summarizeNetworkError } from "./network-error-summary";
 
 /*
- * Nacho only uses Hydra's public catalogue: game details, assets, search,
- * achievement definitions, download sources and a few release lists. There
- * is no Hydra account any more, so nothing here signs in or sends a token.
- * Everything that used to follow the account lives in the user's Google
- * Drive instead.
+ * Hydra's public catalogue is the only Hydra service Nacho still uses: game
+ * search and details, assets, stats, achievement definitions, download
+ * source matching, ROM and recompilation lists, and the PS4 PKG keys. There
+ * is no Hydra account, so nothing here signs in or sends a token. Feature
+ * switches, ProtonDB, the Decky plugin and the renderer no longer come from
+ * Hydra.
  */
 
 declare module "axios" {

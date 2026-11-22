@@ -44,6 +44,7 @@ export * from "./archive-org";
 export * from "./direct-hosts";
 export * from "./romsfun";
 export * from "./constants";
+export * from "./features";
 export * from "./window-layout";
 export {
   getDisplayedPlayTimeInMilliseconds,
@@ -78,9 +79,6 @@ export * from "./platform-to-system";
 export * from "./classics-emulator-games";
 export * from "./tracker-list";
 export * from "./screenshot-preferences";
-export * from "./screenshot-moderation";
-export * from "./screenshot-upload-outcome";
-export * from "./screenshots";
 export * from "./my-game-screenshots";
 export * from "./rich-text";
 export * from "./local-screenshots";
@@ -261,7 +259,6 @@ const getBaseDownloadersForUri = (uri: string): Downloader[] => {
   // Magnets are only ever downloaded through a debrid provider, never peer to peer.
   if (uri.startsWith("magnet:")) {
     return [
-      Downloader.Hydra,
       Downloader.TorBox,
       Downloader.RealDebrid,
       Downloader.Premiumize,

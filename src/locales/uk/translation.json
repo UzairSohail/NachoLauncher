@@ -338,7 +338,6 @@
     "download_error_real_debrid_account_not_authorized": "Ваш обліковий запис Real-Debrid не авторизований для нових завантажень. Будь ласка, перевірте налаштування облікового запису та спробуйте ще раз.",
     "download_error_not_cached_on_real_debrid": "Це завантаження недоступне на Real-Debrid, і перевірка статусу завантаження з Real-Debrid наразі недоступна.",
     "download_error_not_cached_on_torbox": "Це завантаження недоступне на TorBox, і перевірка статусу завантаження з TorBox наразі недоступна.",
-    "download_error_not_cached_on_hydra": "Це завантаження недоступне через Nimbus.",
     "game_removed_from_favorites": "Гра видалена з улюбленних",
     "game_added_to_favorites": "Гра була добавлена у улюблені",
     "automatically_extract_downloaded_files": "Автоматично розархівувати завантаженні файли",

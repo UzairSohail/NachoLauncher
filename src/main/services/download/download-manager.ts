@@ -1679,8 +1679,6 @@ export class DownloadManager {
         return this.getAllDebridDownloadOptions(download, resumingFilename);
       case Downloader.TorBox:
         return this.getTorBoxDownloadOptions(download);
-      case Downloader.Hydra:
-        throw new Error(DownloadError.NotCachedOnHydra);
       case Downloader.VikingFile:
         return this.getVikingFileDownloadOptions(download, resumingFilename);
       case Downloader.Rootz:
@@ -2595,9 +2593,6 @@ export class DownloadManager {
       }
       case Downloader.TorBox:
         throw new Error("TorBox folders require the HTTP download manager.");
-      case Downloader.Hydra: {
-        throw new Error(DownloadError.NotCachedOnHydra);
-      }
       case Downloader.VikingFile: {
         logger.log(
           `[DownloadManager] Processing VikingFile download for URI: ${download.uri}`

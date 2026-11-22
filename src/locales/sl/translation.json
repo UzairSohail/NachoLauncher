@@ -401,7 +401,6 @@
     "manual_playtime_warning": "Vaše ure bodo označene kot ročno posodobljene, tega ni mogoče razveljaviti.",
     "manual_playtime_tooltip": "Ta čas igranja je bil ročno posodobljen",
     "download_error_not_cached_on_torbox": "Ta prenos ni na voljo v TorBox in preverjanje statusa prenosa iz TorBox še ni na voljo.",
-    "download_error_not_cached_on_hydra": "Ta prenos ni na voljo v Nimbus.",
     "game_removed_from_favorites": "Igra odstranjena iz priljubljenih",
     "game_added_to_favorites": "Igra dodana med priljubljene",
     "game_removed_from_pinned": "Igra odstranjena iz pripetih",

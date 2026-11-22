@@ -1,65 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 
-export enum Feature {
-  CheckDownloadWritePermission = "CHECK_DOWNLOAD_WRITE_PERMISSION",
-  TorBox = "TORBOX",
-  Premiumize = "PREMIUMIZE",
-  AllDebrid = "ALLDEBRID",
-  Nimbus = "NIMBUS",
-  NimbusPreview = "NIMBUS_PREVIEW",
-  MultipartHosterDownloads = "MULTIPART_HOSTER_DOWNLOADS",
-  Screenshots = "SCREENSHOTS",
-  ScreenshotComments = "SCREENSHOT_COMMENTS",
-}
+import { ENABLED_FEATURES, Feature } from "@shared";
 
-const FEATURES_STORAGE_KEY = "features";
+export { Feature };
 
-function getStoredFeatures() {
-  try {
-    return JSON.parse(
-      globalThis.window.localStorage.getItem(FEATURES_STORAGE_KEY) ?? "[]"
-    ) as string[];
-  } catch {
-    return [];
-  }
-}
-
+/** The features are fixed in the build (see shared/features.ts). */
 export function useFeature() {
-  const [features, setFeatures] = useState<string[] | null>(() => {
-    return getStoredFeatures();
-  });
-
-  useEffect(() => {
-    globalThis.window.electron.hydraApi
-      .get<string[]>("/features")
-      .then((resolvedFeatures) => {
-        const nextFeatures = resolvedFeatures ?? [];
-        globalThis.window.localStorage.setItem(
-          FEATURES_STORAGE_KEY,
-          JSON.stringify(nextFeatures)
-        );
-        setFeatures(nextFeatures);
-      })
-      .catch(() => {
-        setFeatures(
-          (currentFeatures) => currentFeatures ?? getStoredFeatures()
-        );
-      });
-  }, []);
-
   const isFeatureEnabled = useCallback(
-    (feature: Feature) => {
-      if (!features) {
-        return getStoredFeatures().includes(feature);
-      }
-
-      return features.includes(feature);
-    },
-    [features]
+    (feature: Feature) => ENABLED_FEATURES.includes(feature),
+    []
   );
 
   return {
-    features,
+    features: ENABLED_FEATURES as string[],
     isFeatureEnabled,
     Feature,
   };

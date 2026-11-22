@@ -403,7 +403,6 @@
     "manual_playtime_warning": "Jūsu stundas tiks atzīmētas kā manuāli atjauninātas. Šo darbību nevar atcelt.",
     "manual_playtime_tooltip": "Šis spēles laiks tika atjaunināts manuāli",
     "download_error_not_cached_on_torbox": "Šī lejupielāde nav pieejama TorBox, un TorBox lejupielādes statusu pagaidām nav iespējams iegūt.",
-    "download_error_not_cached_on_hydra": "Šī lejupielāde nav pieejama Nimbus.",
     "game_removed_from_favorites": "Spēle dzēsta no izlases",
     "game_added_to_favorites": "Spēle pievienota izlasei",
     "game_removed_from_pinned": "Spēle dzēsta no piespraustajiem",

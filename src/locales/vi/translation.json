@@ -646,7 +646,6 @@
     "manual_playtime_warning": "Số giờ của bạn sẽ được đánh dấu là cập nhật thủ công. Bạn chỉ có thể gỡ nhãn này bằng cách đặt lại thời gian chơi của game.",
     "manual_playtime_tooltip": "Thời gian chơi này đã được cập nhật thủ công",
     "download_error_not_cached_on_torbox": "Bản tải này không có sẵn trên TorBox và tính năng theo dõi trạng thái tải từ TorBox chưa được hỗ trợ.",
-    "download_error_not_cached_on_hydra": "Bản tải này không có sẵn trên Nimbus.",
     "game_removed_from_favorites": "Đã xóa game khỏi yêu thích",
     "game_added_to_favorites": "Đã thêm game vào yêu thích",
     "game_removed_from_pinned": "Đã bỏ ghim game",

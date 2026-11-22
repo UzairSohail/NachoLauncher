@@ -11,29 +11,12 @@ import {
 import { logger } from "./logger";
 import { SevenZip } from "./7zip";
 import { SystemPath } from "./system-path";
-import { HydraApi } from "./hydra-api";
-
-interface DeckyReleaseInfo {
-  version: string;
-  downloadUrl: string;
-}
+import { fetchDeckyReleaseInfo, type DeckyReleaseInfo } from "./decky-release";
 
 export class DeckyPlugin {
-  private static releaseInfo: DeckyReleaseInfo | null = null;
-
   private static async getDeckyReleaseInfo(): Promise<DeckyReleaseInfo> {
-    if (this.releaseInfo) {
-      return this.releaseInfo;
-    }
-
     try {
-      const response = await HydraApi.get<DeckyReleaseInfo>(
-        "/decky/release",
-        {}
-      );
-
-      this.releaseInfo = response;
-      return response;
+      return await fetchDeckyReleaseInfo();
     } catch (error) {
       logger.error("Failed to fetch Decky release info:", error);
       throw error;

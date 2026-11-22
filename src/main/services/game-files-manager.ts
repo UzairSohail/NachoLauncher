@@ -12,7 +12,9 @@ import { runAchievementMetadataExport } from "@main/services/achievements/metada
 import { db, downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 import {
   Downloader,
+  Feature,
   getNextClassicsDiscLabel,
+  isNachoFeatureEnabled,
   removeSymbolsFromName,
 } from "@shared";
 import type {
@@ -34,7 +36,6 @@ import sharp from "sharp";
 import { ExtractionProgress, SevenZip } from "./7zip";
 import { type ArchiveExtractors, extractArchive } from "./archive-extraction";
 import { NativeAddon } from "./native-addon";
-import { HydraApi } from "./hydra-api";
 import * as emulators from "./emulators";
 import * as retroarch from "./retroarch";
 import { getPathType } from "./extraction-path";
@@ -118,23 +119,9 @@ const findPs4Pkgs = async (directory: string, depth = 0): Promise<string[]> => {
 
 const PS4_PKG_KIND_ORDER = { game: 0, patch: 1 } as const;
 
-const IN_PLACE_EXTRACTION_FEATURE = "IN_PLACE_ARCHIVE_EXTRACTION";
-const FEATURES_REQUEST_TIMEOUT_MS = 10_000;
-
-// Fails closed: without an answer from the API, archives go to 7-Zip.
-const isInPlaceExtractionEnabled = () =>
-  HydraApi.get<string[]>("/features", null, {
-    timeout: FEATURES_REQUEST_TIMEOUT_MS,
-  })
-    .then(
-      (features) =>
-        Array.isArray(features) &&
-        features.includes(IN_PLACE_EXTRACTION_FEATURE)
-    )
-    .catch((error) => {
-      logger.warn("[GameFilesManager] Could not load feature flags", error);
-      return false;
-    });
+// Off unless the build turns it on: archives go to 7-Zip.
+const isInPlaceExtractionEnabled = async () =>
+  isNachoFeatureEnabled(Feature.InPlaceArchiveExtraction);
 
 const archiveExtractors: Omit<ArchiveExtractors, "inPlaceEnabled"> = {
   inPlace: (options, onProgress) =>

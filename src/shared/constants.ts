@@ -6,7 +6,7 @@ export enum Downloader {
   Datanodes = 4,
   Mediafire = 5,
   TorBox = 6,
-  Hydra = 7,
+  // 7 was Nimbus, Hydra's paid download service.
   FuckingFast = 9,
   VikingFile = 10,
   Rootz = 11,
@@ -65,12 +65,6 @@ export enum Cracker {
   ali213 = "ALI213",
 }
 
-export enum AuthPage {
-  SignIn = "/",
-  UpdateEmail = "/update-email",
-  UpdatePassword = "/update-password",
-}
-
 export enum DownloadError {
   NotCachedOnRealDebrid = "download_error_not_cached_on_real_debrid",
   RealDebridTorrentNotReady = "download_error_real_debrid_torrent_not_ready",
@@ -78,7 +72,6 @@ export enum DownloadError {
   NotCachedOnTorBox = "download_error_not_cached_on_torbox",
   GofileQuotaExceeded = "download_error_gofile_quota_exceeded",
   RealDebridAccountNotAuthorized = "download_error_real_debrid_account_not_authorized",
-  NotCachedOnHydra = "download_error_not_cached_on_hydra",
   NotCachedOnPremiumize = "download_error_not_cached_on_premiumize",
   PremiumizeTransferStarted = "download_error_premiumize_transfer_started",
   NotCachedOnAllDebrid = "download_error_not_cached_on_alldebrid",
@@ -164,16 +157,3 @@ export const getGameExecutableFilters = (
 
 export const GAMEMODE_SITE_URL = "https://github.com/FeralInteractive/gamemode";
 export const MANGOHUD_SITE_URL = "https://github.com/flightlessmango/MangoHud";
-
-export const CLOUD_GIFT_RECEIVED_NOTIFICATION = "CLOUD_GIFT_RECEIVED";
-export const CLOUD_GIFT_STATUS_PENDING_ACCEPTANCE = "PENDING_ACCEPTANCE";
-export const CLOUD_GIFT_ID_VARIABLE = "giftId";
-
-export const NOTIFICATIONS_FETCH_FILTER = "all";
-export const NOTIFICATIONS_FETCH_TAKE = 20;
-export const NOTIFICATIONS_FETCH_SKIP = 0;
-
-// The API reports a friend's current game for Steam and Epic only unless asked,
-// so a friend in a Classics (LaunchBox) game would show as merely online.
-export const PROFILE_FRIENDS_PATH =
-  "/profile/friends?shop=steam&shop=launchbox";

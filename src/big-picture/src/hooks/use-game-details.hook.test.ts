@@ -149,6 +149,7 @@ async function fixture(
         : null;
     },
     getGameStats: async () => null,
+    getProtonDBData: async () => null,
     getGameAssets: async (
       objectId: string,
       shop: string,

@@ -508,7 +508,6 @@
     "manual_playtime_warning": "プレイ時間は手動更新済みとしてマークされ、元に戻すことはできません。",
     "manual_playtime_tooltip": "このプレイ時間は手動で更新されました",
     "download_error_not_cached_on_torbox": "このダウンロードはTorBoxで利用できません。",
-    "download_error_not_cached_on_hydra": "このダウンロードはNimbusで利用できません。",
     "game_removed_from_favorites": "ゲームをお気に入りから削除しました",
     "game_added_to_favorites": "ゲームをお気に入りに追加しました",
     "game_removed_from_pinned": "ゲームのピンを外しました",

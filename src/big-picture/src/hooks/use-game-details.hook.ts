@@ -253,12 +253,9 @@ export function useGameDetails(
           if (current) setHowLongToBeat(null);
         });
 
-      globalThis.window.electron.hydraApi
-        .get<ProtonDBData | null>(
-          `/games/${catalogueShop}/${catalogueObjectId}/protondb`,
-          {}
-        )
-        .then((data) => {
+      globalThis.window.electron
+        .getProtonDBData(catalogueShop, catalogueObjectId)
+        .then((data: ProtonDBData | null) => {
           if (current) setProtonDBData(data);
         })
         .catch(() => {

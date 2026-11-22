@@ -17,7 +17,6 @@ export const DOWNLOADER_NAME: Record<Downloader, string> = {
   [Downloader.Datanodes]: "Datanodes",
   [Downloader.Mediafire]: "Mediafire",
   [Downloader.TorBox]: "TorBox",
-  [Downloader.Hydra]: "Nimbus",
   [Downloader.FuckingFast]: "FuckingFast",
   [Downloader.VikingFile]: "VikingFile",
   [Downloader.Rootz]: "Rootz",

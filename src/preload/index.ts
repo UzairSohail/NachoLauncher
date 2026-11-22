@@ -546,6 +546,8 @@ contextBridge.exposeInMainWorld("electron", {
   getRandomGame: () => ipcRenderer.invoke("getRandomGame"),
   getGameStats: (objectId: string, shop: GameShop) =>
     ipcRenderer.invoke("getGameStats", objectId, shop),
+  getProtonDBData: (shop: GameShop, objectId: string) =>
+    ipcRenderer.invoke("getProtonDBData", shop, objectId),
   getCatalogueNames: (list: "developers" | "publishers") =>
     ipcRenderer.invoke("getCatalogueNames", list),
   getGameAssets: (
@@ -1926,17 +1928,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("getThemeSoundPath", themeId),
   getThemeSoundDataUrl: (themeId: string) =>
     ipcRenderer.invoke("getThemeSoundDataUrl", themeId),
-  importThemeSoundFromStore: (
-    themeId: string,
-    themeName: string,
-    storeUrl: string
-  ) =>
-    ipcRenderer.invoke(
-      "importThemeSoundFromStore",
-      themeId,
-      themeName,
-      storeUrl
-    ),
 
   /* Editor */
   openEditorWindow: (themeId: string) =>

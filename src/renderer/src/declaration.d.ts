@@ -12,6 +12,7 @@ import type {
   AppUpdaterEvent,
   ManualUpdateCheckResult,
   GameShop,
+  ProtonDBData,
   GameCollection,
   Steam250Game,
   DownloadProgress,
@@ -411,6 +412,10 @@ declare global {
     ) => Promise<ShopDetailsWithAssets | null>;
     getRandomGame: () => Promise<Steam250Game>;
     getGameStats: (objectId: string, shop: GameShop) => Promise<GameStats>;
+    getProtonDBData: (
+      shop: GameShop,
+      objectId: string
+    ) => Promise<ProtonDBData | null>;
     getCatalogueNames: (list: "developers" | "publishers") => Promise<string[]>;
     getGameAssets: (
       objectId: string,
@@ -1463,11 +1468,6 @@ declare global {
     removeThemeAchievementSound: (themeId: string) => Promise<void>;
     getThemeSoundPath: (themeId: string) => Promise<string | null>;
     getThemeSoundDataUrl: (themeId: string) => Promise<string | null>;
-    importThemeSoundFromStore: (
-      themeId: string,
-      themeName: string,
-      storeUrl: string
-    ) => Promise<void>;
 
     /* Editor */
     openEditorWindow: (themeId: string) => Promise<void>;

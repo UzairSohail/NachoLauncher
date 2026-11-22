@@ -608,7 +608,6 @@
     "manual_playtime_warning": "Jam bermain kamu akan ditandai sebagai diperbarui secara manual, dan ini tidak dapat dibatalkan.",
     "manual_playtime_tooltip": "Waktu bermain ini telah diperbarui secara manual",
     "download_error_not_cached_on_torbox": "Unduhan ini tidak tersedia di TorBox dan pemantauan status unduhan dari TorBox belum tersedia.",
-    "download_error_not_cached_on_hydra": "Unduhan ini tidak tersedia di Nimbus.",
     "game_removed_from_favorites": "Game telah dihapus dari favorit",
     "game_added_to_favorites": "Game telah ditambahkan ke favorit",
     "game_removed_from_pinned": "Game telah dihapus dari yang disematkan",

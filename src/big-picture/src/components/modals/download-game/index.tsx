@@ -70,7 +70,6 @@ import {
   DownloadSimpleIcon,
   MagnifyingGlassIcon,
   SortAscendingIcon,
-  StarIcon,
 } from "@phosphor-icons/react";
 
 import "./styles.scss";
@@ -1504,16 +1503,7 @@ function DownloadGameOptions({
       disabled: isOptionsInteractionLocked,
       label: (
         <span className="download-game-modal__downloader-option-label">
-          <span className="download-game-modal__downloader-option-slot download-game-modal__downloader-option-slot--left">
-            {downloaderOption.downloader === Downloader.Hydra && (
-              <StarIcon
-                size={14}
-                weight="fill"
-                aria-hidden="true"
-                className="download-game-modal__downloader-option-icon"
-              />
-            )}
-          </span>
+          <span className="download-game-modal__downloader-option-slot download-game-modal__downloader-option-slot--left" />
           <span className="download-game-modal__downloader-option-name">
             {DOWNLOADER_NAME[downloaderOption.downloader]}
           </span>

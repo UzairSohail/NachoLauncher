@@ -508,7 +508,6 @@
     "manual_playtime_warning": "A Játszottidő „Manuálisan frissített”-ként lesz megjelölve, és ez nem visszavonható.",
     "manual_playtime_tooltip": "Ez a Játszottidő manuálisan lett frissítve",
     "download_error_not_cached_on_torbox": "Ez a letöltés nem elérhető a TorBoxon, és lekérdezni letöltési állapotot még nem lehet.",
-    "download_error_not_cached_on_hydra": "Ez a letöltés nem elérhető a Nimbuson.",
     "game_removed_from_favorites": "Játék eltávolítva a kedvencek közül",
     "game_added_to_favorites": "Játék hozzáadva a kedvencekhez",
     "game_removed_from_pinned": "Játék eltávolítva a kitűzöttek közül",
