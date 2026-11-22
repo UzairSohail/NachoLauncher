@@ -69,7 +69,6 @@ export const getDownloadOptions = (
 
   return allDownloaders
     .filter((downloader) => {
-      if (downloader === Downloader.Hydra) return false; // Temporarily comment out Nimbus
       if (!downloaderMap.has(downloader)) return false;
       if (
         downloader === Downloader.Premiumize &&
@@ -96,9 +95,6 @@ export const getDownloadOptions = (
       } else if (downloader === Downloader.VikingFile) {
         isConfigured = !!userPreferences?.allDebridApiToken;
       }
-      // } else if (downloader === Downloader.Hydra) {
-      //   isConfigured = isFeatureEnabled(Feature.Nimbus);
-      // }
 
       const isAvailableButNotConfigured = hasAvailableUri && !isConfigured;
 

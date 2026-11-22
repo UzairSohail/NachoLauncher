@@ -340,20 +340,6 @@ const handleDeepLinkPath = (uri?: string) => {
       WindowManager.redirect(`settings${url.search}`);
       return;
     }
-
-    if (url.host === "install-theme") {
-      const themeName = url.searchParams.get("theme");
-      const authorId = url.searchParams.get("authorId");
-      const authorName = url.searchParams.get("authorName");
-
-      if (themeName && authorId && authorName) {
-        WindowManager.redirect(
-          `settings?theme=${themeName}&authorId=${authorId}&authorName=${authorName}`
-        );
-      }
-
-      return;
-    }
   } catch (error) {
     logger.error("Error handling deep link", uri, error);
   }

@@ -32,9 +32,7 @@ const isConfigured = (
       return Boolean(tokens?.premiumizeApiToken);
     case Downloader.TorBox:
       return Boolean(tokens?.torBoxApiToken);
-    // Needs a Hydra subscription, which Nacho doesn't have.
     case Downloader.VikingFile:
-    case Downloader.Hydra:
     case Downloader.Torrent:
       return false;
     default:

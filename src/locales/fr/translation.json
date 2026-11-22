@@ -632,7 +632,6 @@
     "download_error_real_debrid_account_not_authorized": "Votre compte Real-Debrid n'est pas autorisé à effectuer de nouveaux téléchargements. Veuillez vérifier les paramètres de votre compte et réessayer.",
     "download_error_not_cached_on_real_debrid": "Ce téléchargement n'est pas disponible sur Real-Debrid, et le suivi n'est pas encore disponible.",
     "download_error_not_cached_on_torbox": "Ce téléchargement n'est pas disponible sur TorBox, et le suivi n'est pas encore disponible.",
-    "download_error_not_cached_on_hydra": "Ce téléchargement n'est pas disponible sur Nimbus.",
     "game_removed_from_favorites": "Jeu retiré des favoris",
     "game_added_to_favorites": "Jeu ajouté aux favoris",
     "automatically_extract_downloaded_files": "Extraire automatiquement les fichiers téléchargés",

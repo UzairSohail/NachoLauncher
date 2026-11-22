@@ -338,7 +338,6 @@
     "download_error_real_debrid_account_not_authorized": "Ditt Real-Debrid-konto är inte auktoriserat att göra nya nedladdningar. Kontrollera dina kontoinställningar och försök igen.",
     "download_error_not_cached_on_real_debrid": "Denna nedladdning finns inte på Real-Debrid och statusövervakning från Real-Debrid är ännu inte tillgänglig.",
     "download_error_not_cached_on_torbox": "Denna nedladdning finns inte på TorBox och statusövervakning från TorBox är ännu inte tillgänglig.",
-    "download_error_not_cached_on_hydra": "Denna nedladdning finns inte på Nimbus.",
     "game_removed_from_favorites": "Spelet togs bort från favoriter",
     "game_added_to_favorites": "Spelet lades till i favoriter",
     "automatically_extract_downloaded_files": "Extrahera nedladdade filer automatiskt",

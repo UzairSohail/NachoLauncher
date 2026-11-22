@@ -1,5 +1,6 @@
 import { lazy, Suspense, useContext, useEffect, useState } from "react";
 import type {
+  GameShop,
   HowLongToBeatCategory,
   ProtonDBData,
   SteamAppDetails,
@@ -59,8 +60,8 @@ const getProtonDBData = (shop: string, objectId: string) => {
     return inFlightRequest;
   }
 
-  const request = window.electron.hydraApi
-    .get<ProtonDBData | null>(`/games/${shop}/${objectId}/protondb`, {})
+  const request = window.electron
+    .getProtonDBData(shop as GameShop, objectId)
     .then((protonData) => {
       protonDBResponseCache.set(cacheKey, protonData);
       return protonData;

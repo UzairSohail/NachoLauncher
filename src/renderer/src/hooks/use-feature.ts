@@ -1,67 +1,20 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 
-import { logger } from "@renderer/logger";
-import { ensureArray } from "@renderer/helpers";
+import { ENABLED_FEATURES, Feature } from "@shared";
 
-export enum Feature {
-  CheckDownloadWritePermission = "CHECK_DOWNLOAD_WRITE_PERMISSION",
-  TorBox = "TORBOX",
-  Premiumize = "PREMIUMIZE",
-  AllDebrid = "ALLDEBRID",
-  Nimbus = "NIMBUS",
-  NimbusPreview = "NIMBUS_PREVIEW",
-  ChatImages = "CHAT_IMAGES",
-  Gamification = "GAMIFICATION",
-  GamificationShop = "GAMIFICATION_SHOP",
-  Screenshots = "SCREENSHOTS",
-  ScreenshotComments = "SCREENSHOT_COMMENTS",
-  GameLeaderboardsExtended = "GAME_LEADERBOARDS_EXTENDED",
-  GlobalLeaderboards = "GLOBAL_LEADERBOARDS",
-  LeaderboardReports = "LEADERBOARD_REPORTS",
-  MultipartHosterDownloads = "MULTIPART_HOSTER_DOWNLOADS",
-  LeaderboardBadges = "LEADERBOARD_BADGES",
-  Recompilations = "RECOMPILATIONS",
-  RecompilationCloudSaves = "RECOMPILATION_CLOUD_SAVES",
-}
+export { Feature };
 
-export const readCachedFeatures = (): string[] => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem("features") ?? "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
+/** The features are fixed in the build (see shared/features.ts). */
 export function useFeature() {
-  const [features, setFeatures] = useState<string[] | null>(null);
-  const [hasFeaturesFailed, setHasFeaturesFailed] = useState(false);
-
-  useEffect(() => {
-    window.electron.hydraApi
-      .get<string[]>("/features")
-      .then((response) => {
-        const safeFeatures = ensureArray<string>(response, "/features");
-        localStorage.setItem("features", JSON.stringify(safeFeatures));
-        setFeatures(safeFeatures);
-      })
-      .catch((error) => {
-        logger.error(error);
-        setHasFeaturesFailed(true);
-      });
-  }, []);
-
   const isFeatureEnabled = useCallback(
-    (feature: Feature) => {
-      return (features ?? readCachedFeatures()).includes(feature);
-    },
-    [features]
+    (feature: Feature) => ENABLED_FEATURES.includes(feature),
+    []
   );
 
   return {
     isFeatureEnabled,
-    isFeaturesLoaded: features !== null,
-    isFeaturesSettled: features !== null || hasFeaturesFailed,
+    isFeaturesLoaded: true,
+    isFeaturesSettled: true,
     Feature,
   };
 }

@@ -608,7 +608,6 @@
     "manual_playtime_warning": "Le tue ore saranno contrassegnate come aggiornate manualmente e non potrà essere annullato.",
     "manual_playtime_tooltip": "Questo tempo di gioco è stato aggiornato manualmente",
     "download_error_not_cached_on_torbox": "Questo download non è disponibile su TorBox e il controllo dello stato su TorBox non è ancora disponibile.",
-    "download_error_not_cached_on_hydra": "Questo download non è disponibile su Nimbus.",
     "game_removed_from_favorites": "Gioco rimosso dai preferiti",
     "game_added_to_favorites": "Gioco aggiunto ai preferiti",
     "game_removed_from_pinned": "Gioco rimosso dai fissati",

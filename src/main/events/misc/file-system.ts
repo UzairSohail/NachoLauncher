@@ -1,4 +1,3 @@
-import { app } from "electron";
 import { access, readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { platform } from "node:os";
@@ -19,19 +18,6 @@ interface PathInfo {
   exists: boolean;
   isDirectory: boolean;
   isFile: boolean;
-}
-
-function getReleaseRendererOrigin(): string | null {
-  const subdomain = import.meta.env.MAIN_VITE_LAUNCHER_SUBDOMAIN;
-  if (!subdomain) return null;
-
-  try {
-    return new URL(
-      `https://release-v${app.getVersion().replaceAll(".", "-")}.${subdomain}`
-    ).origin;
-  } catch {
-    return null;
-  }
 }
 
 function getDevRendererOrigin(): string | null {
@@ -58,10 +44,9 @@ function isTrustedRendererUrl(url: string): boolean {
     return true;
   }
 
-  const trustedOrigins = [
-    getDevRendererOrigin(),
-    getReleaseRendererOrigin(),
-  ].filter((origin): origin is string => Boolean(origin));
+  const trustedOrigins = [getDevRendererOrigin()].filter(
+    (origin): origin is string => Boolean(origin)
+  );
 
   return trustedOrigins.includes(parsedUrl.origin);
 }

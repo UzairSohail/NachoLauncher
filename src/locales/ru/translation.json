@@ -962,7 +962,6 @@
     "manual_playtime_warning": "Ваши часы будут отмечены как обновленные вручную. Убрать эту отметку можно только сбросив время игры.",
     "manual_playtime_tooltip": "Это время игры было обновлено вручную",
     "download_error_not_cached_on_torbox": "Эта загрузка недоступна на TorBox, и получить статус загрузки с TorBox пока невозможно.",
-    "download_error_not_cached_on_hydra": "Эта загрузка недоступна на Nimbus.",
     "game_removed_from_favorites": "Игра удалена из избранного",
     "game_added_to_favorites": "Игра добавлена в избранное",
     "game_removed_from_pinned": "Игра удалена из закрепленных",

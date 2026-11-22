@@ -591,7 +591,6 @@
     "manual_playtime_warning": "Часовете ще бъдат маркирани като ръчно обновени и това не може да бъде отменено.",
     "manual_playtime_tooltip": "Това време на игра е обновено ръчно",
     "download_error_not_cached_on_torbox": "Това изтегляне не е налично в TorBox и не може да се следи статуса.",
-    "download_error_not_cached_on_hydra": "Това изтегляне не е налично в Nimbus.",
     "game_removed_from_favorites": "Играта е премахната от любими",
     "game_added_to_favorites": "Играта е добавена в любими",
     "game_removed_from_pinned": "Играта е премахната от закачените",

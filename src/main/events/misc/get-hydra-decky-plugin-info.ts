@@ -1,13 +1,9 @@
 import { registerEvent } from "../register-event";
-import { logger, HydraApi } from "@main/services";
+import { logger } from "@main/services";
+import { fetchDeckyReleaseInfo } from "@main/services/decky-release";
 import { HYDRA_DECKY_PLUGIN_LOCATION } from "@main/constants";
 import fs from "node:fs";
 import path from "node:path";
-
-interface DeckyReleaseInfo {
-  version: string;
-  downloadUrl: string;
-}
 
 const getHydraDeckyPluginInfo = async (
   _event: Electron.IpcMainInvokeEvent
@@ -22,10 +18,7 @@ const getHydraDeckyPluginInfo = async (
     // Fetch the expected version from API
     let expectedVersion: string | null = null;
     try {
-      const releaseInfo = await HydraApi.get<DeckyReleaseInfo>(
-        "/decky/release",
-        {}
-      );
+      const releaseInfo = await fetchDeckyReleaseInfo();
       expectedVersion = releaseInfo.version;
     } catch (error) {
       logger.error("Failed to fetch Decky release info:", error);

@@ -403,7 +403,6 @@
     "manual_playtime_warning": "Pelituntisi merkitään manuaalisesti päivitetyiksi. Tätä toimintoa ei voi peruuttaa.",
     "manual_playtime_tooltip": "Tämä peliaika on päivitetty manuaalisesti",
     "download_error_not_cached_on_torbox": "Tämä lataus ei ole saatavilla TorBoxissa, eikä lataustilan hakeminen TorBoxista ole toistaiseksi mahdollista.",
-    "download_error_not_cached_on_hydra": "Tämä lataus ei ole saatavilla Nimbuksessa.",
     "game_removed_from_favorites": "Peli poistettu suosikeista",
     "game_added_to_favorites": "Peli lisätty suosikkeihin",
     "game_removed_from_pinned": "Peli poistettu kiinnitetyistä",

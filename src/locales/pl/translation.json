@@ -646,7 +646,6 @@
     "manual_playtime_warning": "Twój czas gry zostanie oznaczony jako zaktualizowany ręcznie. To oznaczenie można usunąć tylko przez zresetowanie czasu gry.",
     "manual_playtime_tooltip": "Ten czas gry został zaktualizowany ręcznie",
     "download_error_not_cached_on_torbox": "To pobieranie nie jest dostępne na TorBox, a sprawdzanie jego statusu w TorBox nie jest jeszcze dostępne.",
-    "download_error_not_cached_on_hydra": "To pobieranie nie jest dostępne w Nimbus.",
     "game_removed_from_favorites": "Gra usunięta z ulubionych",
     "game_added_to_favorites": "Gra dodana do ulubionych",
     "game_removed_from_pinned": "Gra usunięta z przypiętych",

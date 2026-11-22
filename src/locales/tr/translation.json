@@ -338,7 +338,6 @@
     "download_error_real_debrid_account_not_authorized": "Real-Debrid hesabınız yeni indirmeler için yetkili değil. Hesap ayarlarınızı kontrol edip tekrar deneyin.",
     "download_error_not_cached_on_real_debrid": "Bu indirme Real-Debrid üzerinde mevcut değil ve durum sorgulanamıyor.",
     "download_error_not_cached_on_torbox": "Bu indirme TorBox üzerinde mevcut değil ve durum sorgulanamıyor.",
-    "download_error_not_cached_on_hydra": "Bu indirme Nimbus üzerinde mevcut değil.",
     "game_removed_from_favorites": "Oyun favorilerden kaldırıldı",
     "game_added_to_favorites": "Oyun favorilere eklendi",
     "automatically_extract_downloaded_files": "İndirilen dosyaları otomatik çıkart",

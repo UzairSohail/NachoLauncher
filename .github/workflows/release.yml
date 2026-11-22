@@ -210,26 +210,22 @@ jobs:
         run: yarn build:linux --publish never
         env:
           MAIN_VITE_API_URL: ${{ vars.MAIN_VITE_API_URL || 'https://hydra-api-us-east-1.losbroxas.org' }}
-          MAIN_VITE_NIMBUS_API_URL: ${{ vars.MAIN_VITE_NIMBUS_API_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RENDERER_VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           RENDERER_VITE_REAL_DEBRID_REFERRAL_ID: ${{ vars.RENDERER_VITE_REAL_DEBRID_REFERRAL_ID }}
           RENDERER_VITE_TORBOX_REFERRAL_CODE: ${{ vars.RENDERER_VITE_TORBOX_REFERRAL_CODE }}
-          MAIN_VITE_LAUNCHER_SUBDOMAIN: ${{ vars.MAIN_VITE_LAUNCHER_SUBDOMAIN }}
 
       - name: Build Windows
         if: matrix.os == 'windows-2022'
         run: yarn build:win --publish never
         env:
           MAIN_VITE_API_URL: ${{ vars.MAIN_VITE_API_URL || 'https://hydra-api-us-east-1.losbroxas.org' }}
-          MAIN_VITE_NIMBUS_API_URL: ${{ vars.MAIN_VITE_NIMBUS_API_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           RENDERER_VITE_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           RENDERER_VITE_REAL_DEBRID_REFERRAL_ID: ${{ vars.RENDERER_VITE_REAL_DEBRID_REFERRAL_ID }}
           RENDERER_VITE_TORBOX_REFERRAL_CODE: ${{ vars.RENDERER_VITE_TORBOX_REFERRAL_CODE }}
-          MAIN_VITE_LAUNCHER_SUBDOMAIN: ${{ vars.MAIN_VITE_LAUNCHER_SUBDOMAIN }}
 
       - name: Upload build to the draft release
         shell: bash
