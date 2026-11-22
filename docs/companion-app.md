@@ -11,6 +11,8 @@ Google Drive. From your phone you can:
 - uninstall a game from a chosen computer, or remove it from that computer's
   library,
 - add and remove download sources for all your computers.
+- enter debrid, SteamGridDB and RetroAchievements keys for all your computers.
+  Each key is checked with its service first, like Settings does on a computer.
 
 There's no server. The phone and every launcher read and write small files in
 the same `Cloud Save Manager/hydra/` Drive folder that settings sync already
@@ -22,7 +24,7 @@ uses.
 | --- | --- | --- |
 | `hydra/companion.json` | the phone | Download requests, and the list of computer ids |
 | `hydra/devices/<id>.json` | each launcher | Its name, free space, a short library list, and what it did with each request |
-| `hydra/settings.json` | launchers and phone | Settings sync. The phone only changes `downloadSources` |
+| `hydra/settings.json` | launchers and phone | Settings sync. The phone only changes `downloadSources`, the sealed `secrets` (opened and resealed with `hydra/sync-key`) and `preferences.retroAchievementsUsername` |
 
 Each file has a single writer, so nothing overwrites anything. The files stay
 small: no images or catalogue data are stored (the phone gets those from the
@@ -100,8 +102,11 @@ APK over the old one, and Google needs the new fingerprint.
 
 ### 3. Build
 
-Actions > **Nacho Companion** > Run workflow. It publishes `NachoCompanion.apk` as the
-`phone-app` pre-release, replacing the previous build. The desktop Release
+The **Nacho Companion** workflow builds automatically whenever a merge to
+`master` changes the phone app (`companion/`, `src/shared/companion.ts` or the
+workflow itself). You can also start it by hand: Actions > **Nacho Companion** >
+Run workflow. It publishes `NachoCompanion.apk` as the `phone-app` pre-release,
+replacing the previous build, so only the latest APK is ever kept. The desktop Release
 workflow and the launcher's auto-update ignore that release.
 
 Install the APK on your phone (allow installs from your browser when asked) and

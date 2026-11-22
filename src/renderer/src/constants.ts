@@ -36,3 +36,6 @@ export const LEADERBOARD_HEADER_BANNER_IMAGE_SIZE = { width: 960, height: 240 };
 export const LEADERBOARD_SIDEBAR_COVER_IMAGE_SIZE = { width: 88, height: 128 };
 
 export const MAX_DOWNLOAD_SPEED_HISTORY = 300;
+
+export const STEAM_GRID_DB_API_KEY_URL =
+  "https://www.steamgriddb.com/profile/preferences/api";

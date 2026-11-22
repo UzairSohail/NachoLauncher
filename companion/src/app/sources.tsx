@@ -91,7 +91,7 @@ export default function SourcesScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
         <Text style={styles.small}>
           Changes reach each computer the next time Nacho Launcher syncs its settings
-          there, which happens when it opens and every 15 minutes.
+          there, within a minute or so while it's open.
         </Text>
         <View style={{ gap: 8 }}>
           <TextInput

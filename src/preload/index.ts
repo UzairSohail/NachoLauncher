@@ -1090,6 +1090,8 @@ contextBridge.exposeInMainWorld("electron", {
   authenticateAllDebrid: (apiToken: string) =>
     ipcRenderer.invoke("authenticateAllDebrid", apiToken),
   getAllDebridHosts: () => ipcRenderer.invoke("getAllDebridHosts"),
+  validateSteamGridDbApiKey: (apiKey: string) =>
+    ipcRenderer.invoke("validateSteamGridDbApiKey", apiKey),
   authenticateTorBox: (apiToken: string) =>
     ipcRenderer.invoke("authenticateTorBox", apiToken),
 

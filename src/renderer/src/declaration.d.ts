@@ -750,6 +750,7 @@ declare global {
     authenticatePremiumize: (apiToken: string) => Promise<PremiumizeUser>;
     authenticateAllDebrid: (apiToken: string) => Promise<AllDebridUser>;
     getAllDebridHosts: () => Promise<string[]>;
+    validateSteamGridDbApiKey: (apiKey: string) => Promise<boolean>;
     authenticateTorBox: (apiToken: string) => Promise<TorBoxUser>;
     getUserPreferences: () => Promise<UserPreferences | null>;
     updateUserPreferences: (

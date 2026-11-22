@@ -119,6 +119,19 @@ export default function DevicesScreen() {
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.title}>API keys</Text>
+          <Text style={styles.small}>
+            Debrid, SteamGridDB and RetroAchievements keys for all your computers.
+          </Text>
+          <Button
+            title="Manage keys"
+            kind="secondary"
+            onPress={() => router.push("/keys")}
+            style={{ marginTop: 6 }}
+          />
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.title}>Google account</Text>
           <Text style={styles.small}>{account?.email}</Text>
           <Button
