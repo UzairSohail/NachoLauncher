@@ -58,6 +58,7 @@ function SignInGate() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="game/[shop]/[objectId]" options={{ title: "" }} />
       <Stack.Screen name="sources" options={{ title: "Download sources" }} />
+      <Stack.Screen name="keys" options={{ title: "API keys" }} />
     </Stack>
   );
 }
