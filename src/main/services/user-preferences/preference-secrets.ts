@@ -11,6 +11,7 @@ export const SECRET_PREFERENCE_KEYS = [
   "torBoxApiToken",
   "ggDealsApiKey",
   "retroAchievementsWebApiKey",
+  "steamGridDbApiKey",
 ] as const satisfies readonly (keyof UserPreferences)[];
 
 export type SecretPreferenceKey = (typeof SECRET_PREFERENCE_KEYS)[number];

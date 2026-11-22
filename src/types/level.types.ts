@@ -226,6 +226,7 @@ export interface UserPreferences {
   torBoxApiToken?: string | null;
   retroAchievementsWebApiKey?: string | null;
   retroAchievementsUsername?: string | null;
+  steamGridDbApiKey?: string | null;
   preferQuitInsteadOfHiding?: boolean;
   openFriendsWindowOnStartup?: boolean;
   runAtStartup?: boolean;

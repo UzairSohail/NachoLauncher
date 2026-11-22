@@ -56,6 +56,7 @@ export function GameArtworkPicker({
     currentArtworkId,
     isLoading,
     hasMore,
+    apiKeyStatus,
     pendingId,
     loadNextPage,
     reloadSelection,
@@ -124,6 +125,16 @@ export function GameArtworkPicker({
           {t("steamgriddb_section_title")}
         </span>
       </div>
+
+      {!isLoading && !items.length && apiKeyStatus ? (
+        <p className="game-artwork-picker__hint">
+          {t(
+            apiKeyStatus === "invalid"
+              ? "steamgriddb_api_key_invalid"
+              : "steamgriddb_api_key_required"
+          )}
+        </p>
+      ) : null}
 
       <GridFocusGroup
         regionId={ARTWORK_GRID_REGION_ID}
