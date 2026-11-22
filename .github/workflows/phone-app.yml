@@ -5,7 +5,10 @@ name: Nacho Companion
 # launcher's auto-update never mistakes it for a desktop version, and the
 # desktop Release workflow leaves it alone.
 #
-# Runs only when started by hand (Actions > Nacho Companion > Run workflow).
+# Runs on every push to master that changes the phone app (companion/, the
+# file formats it shares with the launcher in src/shared/companion.ts, or this
+# workflow), and can still be started by hand (Actions > Nacho Companion > Run
+# workflow). Docs-only changes don't trigger a build.
 #
 # Needs these repository secrets (see docs/companion-app.md):
 #   ANDROID_KEYSTORE_BASE64    the signing keystore, base64 encoded
@@ -13,6 +16,13 @@ name: Nacho Companion
 # And optionally this repository variable:
 #   GOOGLE_WEB_CLIENT_ID       a Web OAuth client in the launcher's Google Cloud project
 on:
+  push:
+    branches: [master]
+    paths:
+      - "companion/**"
+      - "!companion/**.md"
+      - "src/shared/companion.ts"
+      - ".github/workflows/phone-app.yml"
   workflow_dispatch:
 
 concurrency:
