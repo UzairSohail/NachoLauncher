@@ -10,6 +10,7 @@ import type {
   CatalogueGameIdentity,
   ArtworkItem,
   ArtworkKind,
+  ArtworkPage,
   GameArtworkSelection,
   GameShop,
 } from "@types";
@@ -125,6 +126,9 @@ export function useGameArtworkGrid({
   const [hasMore, setHasMore] = useState(true);
   const [isStale, setIsStale] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
+  const [apiKeyStatus, setApiKeyStatus] = useState<
+    ArtworkPage["apiKeyStatus"] | null
+  >(null);
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   const pageRef = useRef(0);
@@ -168,6 +172,7 @@ export function useGameArtworkGrid({
           return Array.from(merged.values());
         });
 
+        setApiKeyStatus(result.apiKeyStatus ?? null);
         setIsStale(result.cache === "stale");
         setHasMore(result.hasMore);
         setHasFailed(false);
@@ -196,6 +201,7 @@ export function useGameArtworkGrid({
     setHasMore(true);
     setIsStale(false);
     setHasFailed(false);
+    setApiKeyStatus(null);
     setIsLoading(true);
   }, []);
 
@@ -272,6 +278,7 @@ export function useGameArtworkGrid({
     hasMore,
     isStale,
     hasFailed,
+    apiKeyStatus,
     pendingId,
     loadNextPage,
     reloadSelection: loadSelection,

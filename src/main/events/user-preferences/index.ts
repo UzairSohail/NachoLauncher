@@ -1,6 +1,7 @@
 import "./authenticate-real-debrid";
 import "./authenticate-premiumize";
 import "./authenticate-all-debrid";
+import "./validate-steam-grid-db-api-key";
 import "./get-all-debrid-hosts";
 import "./authenticate-torbox";
 import "./auto-launch";

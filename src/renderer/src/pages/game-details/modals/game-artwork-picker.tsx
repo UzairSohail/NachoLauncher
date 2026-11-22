@@ -10,7 +10,8 @@ import { useTranslation } from "react-i18next";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
-import { Button } from "@renderer/components";
+import { Button, Link } from "@renderer/components";
+import { STEAM_GRID_DB_API_KEY_URL } from "@renderer/constants";
 import {
   getArtworkDisplaySource,
   getLastArtworkRowIds,
@@ -428,6 +429,7 @@ export function GameArtworkPicker({
     hasMore,
     isStale,
     hasFailed,
+    apiKeyStatus,
     pendingId,
     loadNextPage,
     reloadSelection,
@@ -706,7 +708,20 @@ export function GameArtworkPicker({
                 </div>
               )}
 
-              {isEmpty && (
+              {isEmpty && apiKeyStatus && (
+                <span className="game-artwork__hint">
+                  {t(
+                    apiKeyStatus === "invalid"
+                      ? "steamgriddb_api_key_invalid"
+                      : "steamgriddb_api_key_required"
+                  )}{" "}
+                  <Link to={STEAM_GRID_DB_API_KEY_URL}>
+                    {t("steamgriddb_get_api_key")}
+                  </Link>
+                </span>
+              )}
+
+              {isEmpty && !apiKeyStatus && (
                 <span className="game-artwork__hint">
                   {t("steamgriddb_no_results")}
                 </span>

@@ -32,6 +32,8 @@ export interface ArtworkPage {
   items: ArtworkItem[];
   cache: "fresh" | "stale";
   hasMore: boolean;
+  /** Set when SteamGridDB needs the user's API key, or rejected it. */
+  apiKeyStatus?: "missing" | "invalid";
 }
 
 export interface SelectedArtwork {
