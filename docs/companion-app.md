@@ -100,8 +100,11 @@ APK over the old one, and Google needs the new fingerprint.
 
 ### 3. Build
 
-Actions > **Nacho Companion** > Run workflow. It publishes `NachoCompanion.apk` as the
-`phone-app` pre-release, replacing the previous build. The desktop Release
+The **Nacho Companion** workflow builds automatically whenever a merge to
+`master` changes the phone app (`companion/`, `src/shared/companion.ts` or the
+workflow itself). You can also start it by hand: Actions > **Nacho Companion** >
+Run workflow. It publishes `NachoCompanion.apk` as the `phone-app` pre-release,
+replacing the previous build, so only the latest APK is ever kept. The desktop Release
 workflow and the launcher's auto-update ignore that release.
 
 Install the APK on your phone (allow installs from your browser when asked) and
