@@ -13,6 +13,7 @@ import {
   styles,
 } from "../../components/ui";
 import { forgetDevice } from "../../lib/link";
+import { checkForUpdatesNow, installedBuild } from "../../lib/update-check";
 import { useLink } from "../../lib/link-context";
 
 const PLATFORMS: Record<string, string> = {
@@ -24,6 +25,14 @@ const PLATFORMS: Record<string, string> = {
 export default function DevicesScreen() {
   const { account, devices, loading, refresh, error, signOut } = useLink();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const build = installedBuild();
+
+  const checkForUpdates = async () => {
+    setChecking(true);
+    await checkForUpdatesNow();
+    setChecking(false);
+  };
 
   const forget = (id: string, name: string) =>
     Alert.alert(
@@ -116,6 +125,20 @@ export default function DevicesScreen() {
             title="Sign out"
             kind="secondary"
             onPress={() => void signOut()}
+            style={{ marginTop: 6 }}
+          />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.title}>Nacho Companion</Text>
+          <Text style={styles.small}>
+            {build === null ? "Development build" : `Build ${build}`}
+          </Text>
+          <Button
+            title="Check for updates"
+            kind="secondary"
+            loading={checking}
+            onPress={() => void checkForUpdates()}
             style={{ marginTop: 6 }}
           />
         </View>
