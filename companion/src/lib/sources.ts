@@ -1,41 +1,23 @@
-import { PHONE_DEVICE_ID } from "./config";
-import { readFile, writeFile } from "./drive";
-
-const SETTINGS_FILE = "Nacho/settings.json";
-
-interface SyncEntry<T> {
-  value: T | null;
-  updatedAt: number;
-  deviceId: string;
-  deleted?: true;
-}
+import {
+  loadSettings,
+  NO_SETTINGS_MESSAGE,
+  phoneEntry,
+  saveSettings,
+  type SyncEntries,
+} from "./settings-file";
 
 export interface SyncedSource {
   name: string;
   url: string;
 }
 
-/**
- * The launchers' synced settings file. Only the download sources are touched;
- * everything else, including the encrypted keys, is written back as it was.
- */
-type SettingsFile = Record<string, unknown> & {
-  version: 1;
-  updatedAt: number;
-  deviceId: string;
-  downloadSources?: Record<string, SyncEntry<SyncedSource>>;
-};
-
-const loadSettings = async (): Promise<SettingsFile | null> => {
-  const text = await readFile(SETTINGS_FILE);
-  if (!text) return null;
-  return JSON.parse(text) as SettingsFile;
-};
+const sourceEntries = (value: unknown) =>
+  (value ?? {}) as SyncEntries<SyncedSource>;
 
 /** The download sources every launcher shares, by URL. */
 export const loadSources = async (): Promise<SyncedSource[]> => {
   const settings = await loadSettings();
-  return Object.entries(settings?.downloadSources ?? {})
+  return Object.entries(sourceEntries(settings?.downloadSources))
     .filter(([, entry]) => !entry.deleted && entry.value)
     .map(([url, entry]) => ({ name: entry.value?.name ?? url, url }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -47,22 +29,18 @@ export const loadSources = async (): Promise<SyncedSource[]> => {
  */
 const changeSource = async (url: string, value: SyncedSource | null) => {
   const settings = await loadSettings();
-  if (!settings) {
-    throw new Error(
-      "Turn on settings sync in the launcher first, so there's a source list to change."
-    );
-  }
+  if (!settings) throw new Error(NO_SETTINGS_MESSAGE);
   const now = Date.now();
-  const entry: SyncEntry<SyncedSource> = value
-    ? { value, updatedAt: now, deviceId: PHONE_DEVICE_ID }
-    : { value: null, updatedAt: now, deviceId: PHONE_DEVICE_ID, deleted: true };
-  const next: SettingsFile = {
-    ...settings,
-    updatedAt: now,
-    deviceId: PHONE_DEVICE_ID,
-    downloadSources: { ...(settings.downloadSources ?? {}), [url]: entry },
-  };
-  await writeFile(SETTINGS_FILE, JSON.stringify(next));
+  await saveSettings(
+    {
+      ...settings,
+      downloadSources: {
+        ...sourceEntries(settings.downloadSources),
+        [url]: phoneEntry(value, now),
+      },
+    },
+    now
+  );
 };
 
 export const addSource = (source: SyncedSource) => changeSource(source.url, source);
