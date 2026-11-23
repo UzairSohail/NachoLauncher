@@ -18,6 +18,7 @@ import {
   CLASSICS_PS_PLATFORM_LABELS,
   getUpdatableGame,
   isGameReadyToPlay,
+  canDownloadFromLibraryCard,
   resolveClassicsBadge,
 } from "@renderer/helpers";
 import { AchievementProgress, SteamLibraryBadge } from "@renderer/components";
@@ -29,6 +30,7 @@ import {
   AlertFillIcon,
   ImageIcon,
   CheckCircleFillIcon,
+  DownloadIcon,
   SyncIcon,
 } from "@primer/octicons-react";
 import {
@@ -55,8 +57,12 @@ export const LibraryGameCard = memo(function LibraryGameCard({
   onContextMenu,
 }: Readonly<LibraryGameCardProps>) {
   const { t } = useTranslation("library");
-  const { formatPlayTime, handleCardClick, handleContextMenuClick } =
-    useGameCard(game, onContextMenu);
+  const {
+    formatPlayTime,
+    handleCardClick,
+    handleContextMenuClick,
+    handleDownloadClick,
+  } = useGameCard(game, onContextMenu);
 
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
@@ -161,6 +167,8 @@ export const LibraryGameCard = memo(function LibraryGameCard({
   const availableUpdate = getUpdatableGame(game)?.availableUpdate ?? null;
   const showReadyBadge =
     (!hideReadySizeBadges && isInstalled) || availableUpdate !== null;
+  const showDownloadButton =
+    !showReadyBadge && canDownloadFromLibraryCard(game);
 
   const handleImageError = () => {
     if (catalogueImage.markFailed()) return;
@@ -298,7 +306,8 @@ export const LibraryGameCard = memo(function LibraryGameCard({
           {(showSteamLibraryBadge ||
             showEpicLibraryBadge ||
             showPlatformBadge ||
-            showReadyBadge) && (
+            showReadyBadge ||
+            showDownloadButton) && (
             <div className="library-game-card__top-right">
               {(showSteamLibraryBadge || showEpicLibraryBadge) && (
                 <div className="library-game-card__import-badges">
@@ -353,6 +362,25 @@ export const LibraryGameCard = memo(function LibraryGameCard({
                     {availableUpdate ? t("update_available") : t("installed")}
                   </span>
                 </div>
+              )}
+
+              {showDownloadButton && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="library-game-card__download-button"
+                  title={t("download_from_card")}
+                  onClick={handleDownloadClick}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ")
+                      handleDownloadClick(event);
+                  }}
+                >
+                  <DownloadIcon size={11} />
+                  <span className="library-game-card__installed-text">
+                    {t("download")}
+                  </span>
+                </span>
               )}
             </div>
           )}

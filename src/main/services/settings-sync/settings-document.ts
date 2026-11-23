@@ -5,6 +5,7 @@ import type {
   UserPreferences,
 } from "@types";
 import type { SyncedArtwork } from "../game-artwork-cloud";
+import type { SyncedLibraryGame } from "./game-library-sync.js";
 import type { PreferenceSecrets } from "../user-preferences/preference-secrets";
 import { openJson, sealJson, type SealedBox } from "./secret-box.js";
 import {
@@ -54,6 +55,8 @@ export interface SettingsSyncState {
   playtime: SyncEntries<SyncedDevicePlaytime>;
   /** Keyed by `<game key>/<artwork type>`. */
   gameArtwork: SyncEntries<SyncedArtwork>;
+  /** Keyed by game key (shop:objectId): which games are in the library. */
+  libraryGames: SyncEntries<SyncedLibraryGame>;
 }
 
 /** `Nacho/settings.json` in Drive. */
@@ -70,6 +73,7 @@ export interface SettingsSyncDocument {
   gameFlags?: SyncEntries<SyncedGameFlags>;
   playtime?: SyncEntries<SyncedDevicePlaytime>;
   gameArtwork?: SyncEntries<SyncedArtwork>;
+  libraryGames?: SyncEntries<SyncedLibraryGame>;
 }
 
 export const emptySettingsSyncState = (): SettingsSyncState => ({
@@ -81,6 +85,7 @@ export const emptySettingsSyncState = (): SettingsSyncState => ({
   gameFlags: {},
   playtime: {},
   gameArtwork: {},
+  libraryGames: {},
 });
 
 export const pickSyncedPreferences = (
@@ -122,6 +127,7 @@ export const toSettingsDocument = (
   gameFlags: state.gameFlags,
   playtime: state.playtime,
   gameArtwork: state.gameArtwork,
+  libraryGames: state.libraryGames,
 });
 
 export const fromSettingsDocument = (
@@ -143,6 +149,7 @@ export const fromSettingsDocument = (
     gameFlags: document.gameFlags ?? {},
     playtime: document.playtime ?? {},
     gameArtwork: document.gameArtwork ?? {},
+    libraryGames: document.libraryGames ?? {},
   };
 };
 
@@ -163,6 +170,7 @@ const SECTIONS = [
   "gameFlags",
   "playtime",
   "gameArtwork",
+  "libraryGames",
 ] as const satisfies readonly (keyof SettingsSyncState)[];
 
 export const mergeSettingsState = (

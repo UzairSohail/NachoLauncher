@@ -205,6 +205,20 @@
       border-color ease 0.2s;
   }
 
+  &__download-button {
+    @extend .library-game-card__installed-badge;
+    cursor: pointer;
+    color: #fff;
+    background: rgba(globals.$brand-teal, 0.35);
+    border-color: rgba(globals.$brand-teal, 0.6);
+
+    &:hover,
+    &:focus-visible {
+      background: rgba(globals.$brand-teal, 0.6);
+      outline: none;
+    }
+  }
+
   &__installed-icon {
     color: #fff;
     flex-shrink: 0;

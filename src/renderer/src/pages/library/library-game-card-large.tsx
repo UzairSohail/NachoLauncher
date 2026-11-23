@@ -19,6 +19,7 @@ import {
   CLASSICS_PS_PLATFORM_LABELS,
   getUpdatableGame,
   isGameReadyToPlay,
+  canDownloadFromLibraryCard,
   resolveClassicsBadge,
 } from "@renderer/helpers";
 import { AchievementProgress, SteamLibraryBadge } from "@renderer/components";
@@ -30,6 +31,7 @@ import {
   DatabaseIcon,
   FileZipIcon,
   CheckCircleFillIcon,
+  DownloadIcon,
   SyncIcon,
 } from "@primer/octicons-react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
@@ -106,8 +108,12 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
   onContextMenu,
 }: Readonly<LibraryGameCardLargeProps>) {
   const { t } = useTranslation("library");
-  const { formatPlayTime, handleCardClick, handleContextMenuClick } =
-    useGameCard(game, onContextMenu);
+  const {
+    formatPlayTime,
+    handleCardClick,
+    handleContextMenuClick,
+    handleDownloadClick,
+  } = useGameCard(game, onContextMenu);
 
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
@@ -417,6 +423,23 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
         emulatorIcon={classicsEmulatorIcon}
         updateTitle={updateTitle}
       />
+    ) : canDownloadFromLibraryCard(game) ? (
+      <span
+        role="button"
+        tabIndex={0}
+        className="library-game-card-large__download-button"
+        title={t("download_from_card")}
+        onClick={handleDownloadClick}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ")
+            handleDownloadClick(event);
+        }}
+      >
+        <DownloadIcon size={12} />
+        <span className="library-game-card-large__installed-text">
+          {t("download")}
+        </span>
+      </span>
     ) : null;
 
   return (
