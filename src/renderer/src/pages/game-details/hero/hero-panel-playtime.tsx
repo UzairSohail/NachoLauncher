@@ -172,17 +172,22 @@ export function HeroPanelPlaytime() {
         </p>
       )}
 
-      {!isExtracting && !hasDownload && installedRepack && (
-        <p
-          className="hero-panel-playtime__version"
-          title={`${installedRepack.title} · ${installedRepack.downloadSourceName}`}
-        >
-          {t("installed_version", {
-            version:
-              describeVersion(installedRepack.title) ?? installedRepack.title,
-          })}
-        </p>
-      )}
+      {!isExtracting &&
+        !hasDownload &&
+        installedRepack &&
+        Boolean(
+          operationalGame?.executablePath ?? downloadGame?.executablePath
+        ) && (
+          <p
+            className="hero-panel-playtime__version"
+            title={`${installedRepack.title} · ${installedRepack.downloadSourceName}`}
+          >
+            {t("installed_version", {
+              version:
+                describeVersion(installedRepack.title) ?? installedRepack.title,
+            })}
+          </p>
+        )}
 
       {game.hasManuallyUpdatedPlaytime && (
         <Tooltip

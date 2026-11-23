@@ -15,10 +15,13 @@ const hasDownloadFolder = async (
 
   if (!folderPath) return false;
 
-  return fs.promises.access(folderPath).then(
-    () => true,
-    () => false
-  );
+  // An emptied folder (files deleted by hand, or a download that never
+  // finished on this machine) is not an install.
+  const stat = await fs.promises.stat(folderPath).catch(() => null);
+  if (!stat) return false;
+  if (!stat.isDirectory()) return true;
+  const entries = await fs.promises.readdir(folderPath).catch(() => []);
+  return entries.length > 0;
 };
 
 registerEvent("hasDownloadFolder", hasDownloadFolder);

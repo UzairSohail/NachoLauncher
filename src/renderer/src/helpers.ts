@@ -510,14 +510,15 @@ const DOWNLOAD_IN_PROGRESS_STATUSES = new Set([
   "waiting",
   "paused",
   "extracting",
-  "complete",
   "seeding",
 ]);
 
 /**
  * A library game that isn't on this machine (added here, or on another
  * device and synced) and has nothing downloading, so its card offers a
- * Download button. Custom games and Classics have no download options.
+ * Download button. That includes a finished download with no game file
+ * chosen, whose files may be gone. Custom games and Classics have no
+ * download options.
  */
 export const canDownloadFromLibraryCard = (game: LibraryGame): boolean =>
   game.shop !== "custom" &&
