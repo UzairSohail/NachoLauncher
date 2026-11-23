@@ -505,6 +505,29 @@ export const isGameReadyToPlay = (game: LibraryGame): boolean =>
     ? Boolean(game.selectedDiscPath)
     : isGameInstalled(game);
 
+const DOWNLOAD_IN_PROGRESS_STATUSES = new Set([
+  "active",
+  "waiting",
+  "paused",
+  "extracting",
+  "complete",
+  "seeding",
+]);
+
+/**
+ * A library game that isn't on this machine (added here, or on another
+ * device and synced) and has nothing downloading, so its card offers a
+ * Download button. Custom games and Classics have no download options.
+ */
+export const canDownloadFromLibraryCard = (game: LibraryGame): boolean =>
+  game.shop !== "custom" &&
+  game.shop !== "launchbox" &&
+  !isGameReadyToPlay(game) &&
+  !(
+    game.download?.status &&
+    DOWNLOAD_IN_PROGRESS_STATUSES.has(game.download.status)
+  );
+
 const getInstalledFirstDifference = (
   a: LibraryGame,
   b: LibraryGame

@@ -153,3 +153,95 @@ export const syncedGamePatch = (
 
   return Object.keys(patch).length > 0 ? patch : null;
 };
+
+/*
+ * Library membership. A game added on one device shows up in the library on
+ * the others (not installed there, so it can be downloaded from the card), and
+ * removing it elsewhere removes it here unless it is installed here.
+ *
+ * Custom games and Classics point at files on one machine, and Steam or Epic
+ * account imports are re-imported on each machine, so they stay local.
+ */
+
+/** Enough to show the game in another device's library. */
+export interface SyncedLibraryGame {
+  shop: Game["shop"];
+  objectId: string;
+  title: string;
+  iconUrl: string | null;
+  libraryHeroImageUrl: string | null;
+  logoImageUrl: string | null;
+  addedToLibraryAt: string | null;
+}
+
+export const isSyncableLibraryGame = (game: Game) =>
+  !game.isDeleted &&
+  game.shop !== "custom" &&
+  game.shop !== "launchbox" &&
+  game.source !== "steam" &&
+  game.source !== "epic";
+
+export const toSyncedLibraryGame = (game: Game): SyncedLibraryGame => ({
+  shop: game.shop,
+  objectId: game.objectId,
+  title: game.title,
+  iconUrl: game.iconUrl ?? null,
+  libraryHeroImageUrl: game.libraryHeroImageUrl ?? null,
+  logoImageUrl: game.logoImageUrl ?? null,
+  addedToLibraryAt: toIso(game.addedToLibraryAt),
+});
+
+/**
+ * This device's library as synced items. A game whose removal came in from
+ * another device but that stays here (because it is installed) is left out,
+ * so it doesn't bring itself back everywhere else; re-adding it here later
+ * (a newer addedToLibraryAt) does.
+ */
+export const localLibraryItems = (
+  entries: SyncEntries<SyncedLibraryGame>,
+  games: GameWithKey[]
+): Record<string, SyncedLibraryGame> => {
+  const items: Record<string, SyncedLibraryGame> = {};
+  for (const [key, game] of games) {
+    if (!isSyncableLibraryGame(game)) continue;
+    const entry = entries[key];
+    const added = game.addedToLibraryAt
+      ? new Date(game.addedToLibraryAt).getTime()
+      : 0;
+    if (entry?.deleted && !(added > entry.updatedAt)) continue;
+    items[key] = toSyncedLibraryGame(game);
+  }
+  return items;
+};
+
+export interface LibraryGamePlan {
+  add: SyncedLibraryGame[];
+  remove: string[];
+}
+
+/**
+ * What to change locally after a merge. Additions bring back a game this
+ * device had removed; removals skip games installed or downloading here.
+ */
+export const planLibraryGames = (
+  entries: SyncEntries<SyncedLibraryGame>,
+  changedKeys: readonly string[],
+  games: GameWithKey[],
+  isBusyHere: (key: string, game: Game) => boolean
+): LibraryGamePlan => {
+  const local = new Map(games);
+  const plan: LibraryGamePlan = { add: [], remove: [] };
+  for (const key of changedKeys) {
+    const entry = entries[key];
+    if (!entry) continue;
+    const game = local.get(key);
+    if (entry.deleted || !entry.value) {
+      if (game && !game.isDeleted && isSyncableLibraryGame(game)) {
+        if (!isBusyHere(key, game)) plan.remove.push(key);
+      }
+      continue;
+    }
+    if (!game || game.isDeleted) plan.add.push(entry.value);
+  }
+  return plan;
+};

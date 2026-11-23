@@ -13,6 +13,7 @@ import type {
 import {
   db,
   downloadSourcesSublevel,
+  downloadsSublevel,
   gamesSublevel,
   levelKeys,
   themesSublevel,
@@ -46,7 +47,10 @@ import {
   type SyncedArtwork,
 } from "../game-artwork-cloud";
 import {
+  isSyncableLibraryGame,
+  localLibraryItems,
   otherDevicesPlaytime,
+  planLibraryGames,
   recordGameFlags,
   recordOwnPlaytime,
   syncedGamePatch,
@@ -72,6 +76,7 @@ interface LocalSyncRecord {
     downloadSources: string[];
     themes: string[];
     gameCollections: string[];
+    libraryGames: string[];
   };
 }
 
@@ -88,7 +93,12 @@ const newRecord = (): LocalSyncRecord => ({
   lastSyncedAt: null,
   lastChangeFromDevice: null,
   state: emptySettingsSyncState(),
-  localKeys: { downloadSources: [], themes: [], gameCollections: [] },
+  localKeys: {
+    downloadSources: [],
+    themes: [],
+    gameCollections: [],
+    libraryGames: [],
+  },
 });
 
 const toSyncedTheme = (theme: Theme): SyncedTheme => ({
@@ -284,6 +294,13 @@ export class SettingsSync {
         deviceId
       ),
       gameFlags: recordGameFlags(state.gameFlags, games, now, deviceId),
+      libraryGames: recordCollection(
+        state.libraryGames,
+        localLibraryItems(state.libraryGames, games),
+        localKeys.libraryGames,
+        now,
+        deviceId
+      ),
       playtime: recordOwnPlaytime(state.playtime, games, now, deviceId),
       gameArtwork: recordLocalValues<SyncedArtwork>(
         state.gameArtwork,
@@ -327,6 +344,7 @@ export class SettingsSync {
       await this.applyThemes(merged, incoming.themes);
     }
 
+    await this.applyLibraryGames(merged, incoming.libraryGames);
     await this.applyGameCollections(merged, incoming.gameCollections);
     await this.applyGameLibrary(merged, incoming.gameFlags, deviceId);
     await this.applyGameArtwork(merged);
@@ -345,6 +363,70 @@ export class SettingsSync {
     if (await applySyncedArtwork(changes)) {
       WindowManager.sendToAppWindows("on-library-batch-complete");
     }
+  }
+
+  /**
+   * Adds games that were added on another device, and removes games that
+   * were removed on another device unless they are installed or downloading
+   * here.
+   */
+  private static async applyLibraryGames(
+    merged: SettingsSyncState,
+    changed: string[]
+  ) {
+    if (changed.length === 0) return;
+    const [games, downloadKeys] = await Promise.all([
+      gamesSublevel.iterator().all() as Promise<GameWithKey[]>,
+      downloadsSublevel.keys().all(),
+    ]);
+    const downloading = new Set(downloadKeys);
+    const plan = planLibraryGames(
+      merged.libraryGames,
+      changed,
+      games,
+      (key, game) => Boolean(game.executablePath) || downloading.has(key)
+    );
+    if (plan.add.length === 0 && plan.remove.length === 0) return;
+
+    const { removeLibraryGame } = await import(
+      "@main/helpers/remove-library-game"
+    );
+    const local = new Map(games);
+    for (const item of plan.add) {
+      const key = levelKeys.game(item.shop, item.objectId);
+      const existing = local.get(key);
+      const addedToLibraryAt = item.addedToLibraryAt
+        ? new Date(item.addedToLibraryAt)
+        : new Date();
+      await gamesSublevel.put(
+        key,
+        existing
+          ? { ...existing, isDeleted: false, addedToLibraryAt }
+          : {
+              title: item.title,
+              iconUrl: item.iconUrl,
+              libraryHeroImageUrl: item.libraryHeroImageUrl,
+              logoImageUrl: item.logoImageUrl,
+              objectId: item.objectId,
+              shop: item.shop,
+              remoteId: null,
+              isDeleted: false,
+              playTimeInMilliseconds: 0,
+              lastTimePlayed: null,
+              addedToLibraryAt,
+              platform: null,
+              source: "hydra",
+            }
+      );
+    }
+    for (const key of plan.remove) {
+      const game = local.get(key);
+      if (game) await removeLibraryGame(game.shop, game.objectId);
+    }
+    logger.log(
+      `Settings sync: ${plan.add.length} game(s) added to and ${plan.remove.length} removed from the library from other devices`
+    );
+    WindowManager.sendToAppWindows("on-library-batch-complete");
   }
 
   /**
@@ -515,10 +597,15 @@ export class SettingsSync {
       );
     }
 
-    const [sources, themes, collectionIds] = await Promise.all([
+    const [sources, themes, collectionIds, libraryKeys] = await Promise.all([
       downloadSourcesSublevel.values().all(),
       themesSublevel.keys().all(),
       GameCollections.all().then((items) => items.map((item) => item.id)),
+      (gamesSublevel.iterator().all() as Promise<GameWithKey[]>).then((games) =>
+        games
+          .filter(([, game]) => isSyncableLibraryGame(game))
+          .map(([key]) => key)
+      ),
     ]);
     const incomingDevices = Object.entries(incoming).flatMap(
       ([section, keys]) =>
@@ -544,6 +631,7 @@ export class SettingsSync {
         downloadSources: sources.map((source) => source.url),
         themes,
         gameCollections: collectionIds,
+        libraryGames: libraryKeys,
       },
     });
   }

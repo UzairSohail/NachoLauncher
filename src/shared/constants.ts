@@ -16,8 +16,7 @@ export enum Downloader {
   // 15 was the Epic Games downloader, removed with Epic support.
   FileKeeper = 16,
   Buzzheavier = 17,
-  // 18 was a FileDitch downloader that never shipped: its links are behind
-  // a gate page, not direct files.
+  FileDitch = 18,
   MegaDB = 19,
   // 20 was an AnkerGames downloader, removed again.
   /** A free ROM / disc image from RomsFun, read from the game's page. */

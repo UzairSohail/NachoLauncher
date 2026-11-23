@@ -39,6 +39,18 @@ export function useGameCard(
     navigate(buildGameDetailsPath({ ...game, ...game.catalogueGame }));
   }, [navigate, game]);
 
+  /** Opens the game's download options, without the extra trip through its page. */
+  const handleDownloadClick = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      navigate(buildGameDetailsPath({ ...game, ...game.catalogueGame }), {
+        state: { openRepacks: true },
+      });
+    },
+    [navigate, game]
+  );
+
   const handleContextMenuClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -62,5 +74,6 @@ export function useGameCard(
     handleCardClick,
     handleContextMenuClick,
     handleMenuButtonClick,
+    handleDownloadClick,
   };
 }
