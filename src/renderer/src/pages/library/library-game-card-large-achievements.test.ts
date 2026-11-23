@@ -59,6 +59,7 @@ it("refreshes grouped progress on member changes and preserves known offline tot
       getUpdatableGame: () => null,
       CLASSICS_PS_PLATFORM_LABELS: {},
       isGameReadyToPlay: () => false,
+      canDownloadFromLibraryCard: () => false,
       resolveClassicsBadge: () => ({}),
     },
     "@renderer/helpers/catalogue-images": {

@@ -66,6 +66,7 @@ function renderCard(
       getUpdatableGame: () => null,
       CLASSICS_PS_PLATFORM_LABELS: {},
       isGameReadyToPlay: (game: Record<string, unknown>) => game.isInstalled,
+      canDownloadFromLibraryCard: () => false,
       shouldShowSteamLibraryBadge: (game: Record<string, unknown>) =>
         game.hasActiveSteamImport && !preferences.hideSteamLibraryBadges,
       resolveClassicsBadge: (_shop: string, platform?: string) => ({
