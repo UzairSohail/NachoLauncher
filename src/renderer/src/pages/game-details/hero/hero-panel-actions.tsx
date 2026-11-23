@@ -453,23 +453,36 @@ export function HeroPanelActions() {
       );
     }
 
+    // Files from an earlier download are here but no game file was chosen.
+    // Offer a fresh download next to it in case they aren't the game any more.
     return (
-      <Button
-        onClick={async () => {
-          const picked = await pickGameExecutable(
-            downloadGame.shop,
-            downloadGame.objectId
-          );
+      <>
+        <Button
+          onClick={() => setShowRepacksModal(true)}
+          theme="outline"
+          disabled={isGameDownloading}
+          className="hero-panel-actions__action"
+        >
+          <DownloadIcon />
+          {t("download")}
+        </Button>
+        <Button
+          onClick={async () => {
+            const picked = await pickGameExecutable(
+              downloadGame.shop,
+              downloadGame.objectId
+            );
 
-          if (picked) updateGame();
-        }}
-        theme="outline"
-        disabled={deleting}
-        className="hero-panel-actions__action"
-      >
-        <FileIcon size={16} />
-        {t("select_executable", { ns: "downloads" })}
-      </Button>
+            if (picked) updateGame();
+          }}
+          theme="outline"
+          disabled={deleting}
+          className="hero-panel-actions__action"
+        >
+          <FileIcon size={16} />
+          {t("select_executable", { ns: "downloads" })}
+        </Button>
+      </>
     );
   };
 
