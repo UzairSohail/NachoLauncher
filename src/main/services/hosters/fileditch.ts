@@ -1,6 +1,7 @@
 import {
   DownloadError,
   fileDitchPageCandidates,
+  fileDitchRefererFor,
   isFileDitchUri,
   isSignedFileDitchLink,
   normalizeFileDitchUrl,
@@ -35,10 +36,17 @@ export class FileDitchApi {
 
   public static async getDownload(uri: string): Promise<FileDitchDownload> {
     const { url, kind } = normalizeFileDitchUrl(uri);
+    const referer = fileDitchRefererFor(url);
 
     // Hotlinks already point at the file.
     if (kind === "hotlink") {
-      return { url, headers: { "User-Agent": USER_AGENT } };
+      return {
+        url,
+        headers: {
+          "User-Agent": USER_AGENT,
+          ...(referer ? { Referer: referer } : {}),
+        },
+      };
     }
 
     let pages = kind === "short" ? [url] : fileDitchPageCandidates(url);
@@ -47,7 +55,7 @@ export class FileDitchApi {
 
     for (let index = 0; index < pages.length; index++) {
       const pageUrl = pages[index];
-      const html = await this.fetchPage(pageUrl);
+      const html = await this.fetchPage(pageUrl, referer);
       if (html === null) continue;
       const state = parseFileDitchPage(html);
 
@@ -64,7 +72,7 @@ export class FileDitchApi {
         if (isSignedFileDitchLink(link)) {
           return {
             url: link,
-            headers: { "User-Agent": USER_AGENT, Referer: pageUrl },
+            headers: { "User-Agent": USER_AGENT, Referer: referer ?? pageUrl },
           };
         }
         logger.warn(`[FileDitch] Unexpected download link on ${pageUrl}`);
@@ -82,7 +90,8 @@ export class FileDitchApi {
     }
 
     const browserLink = await this.resolveInBrowser(
-      challengedPage ?? pages[pages.length - 1]
+      challengedPage ?? pages[pages.length - 1],
+      referer
     );
     if (browserLink) return browserLink;
 
@@ -93,10 +102,16 @@ export class FileDitchApi {
     );
   }
 
-  private static async fetchPage(pageUrl: string): Promise<string | null> {
+  private static async fetchPage(
+    pageUrl: string,
+    referer: string | null
+  ): Promise<string | null> {
     try {
       const response = await fetch(pageUrl, {
-        headers: { "User-Agent": USER_AGENT },
+        headers: {
+          "User-Agent": USER_AGENT,
+          ...(referer ? { Referer: referer } : {}),
+        },
         signal: AbortSignal.timeout(20_000),
       });
       if (response.status === 404 || response.status === 410) {
@@ -111,7 +126,8 @@ export class FileDitchApi {
   }
 
   private static async resolveInBrowser(
-    pageUrl: string
+    pageUrl: string,
+    referer: string | null
   ): Promise<FileDitchDownload | null> {
     const {
       resolveFileDitchInBrowser,
@@ -120,7 +136,7 @@ export class FileDitchApi {
       getFileDitchUserAgent,
     } = await import("./fileditch-browser");
     try {
-      const result = await resolveFileDitchInBrowser(pageUrl);
+      const result = await resolveFileDitchInBrowser(pageUrl, referer);
       if (result.gone) throw new Error(DownloadError.HosterUnlockFileNotFound);
       if (!result.url) return null;
       const cookie = await getFileDitchCookieHeader(result.url);
@@ -128,7 +144,7 @@ export class FileDitchApi {
         url: result.url,
         headers: {
           "User-Agent": getFileDitchUserAgent(),
-          Referer: result.pageUrl,
+          Referer: referer ?? result.pageUrl,
           ...(cookie ? { Cookie: cookie } : {}),
         },
       };

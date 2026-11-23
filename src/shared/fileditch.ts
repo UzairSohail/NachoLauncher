@@ -48,6 +48,16 @@ export const isFileDitchUri = (uri: string): boolean => {
   );
 };
 
+/**
+ * FileDitch sends visitors without a referrer from the uploader's site back
+ * to that site: SteamRIP's links bounce to steamrip.com unless the request
+ * says it came from there, which is where the listing's link was published.
+ */
+export const fileDitchRefererFor = (uri: string): string | null =>
+  /steamrip/i.test(decodeURIComponent(parseHttpUrl(uri)?.pathname ?? ""))
+    ? "https://steamrip.com/"
+    : null;
+
 export type FileDitchLinkKind = "short" | "hotlink" | "page";
 
 /**

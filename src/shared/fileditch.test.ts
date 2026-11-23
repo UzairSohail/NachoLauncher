@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   fileDitchPageCandidates,
+  fileDitchRefererFor,
   isFileDitchUri,
   isSignedFileDitchLink,
   normalizeFileDitchUrl,
@@ -55,6 +56,19 @@ describe("FileDitch links", () => {
     assert.equal(
       normalizeFileDitchUrl("https://fileditchhot.st/s21/a/b.zip").kind,
       "hotlink"
+    );
+  });
+
+  it("says SteamRIP links come from SteamRIP", () => {
+    assert.equal(
+      fileDitchRefererFor(
+        "https://itsfileditchfiles.st/alpha44/aa43/DREADMOOR-SteamRIP.com.rar"
+      ),
+      "https://steamrip.com/"
+    );
+    assert.equal(
+      fileDitchRefererFor("https://fileditchfiles.me/b71/abc.mp4"),
+      null
     );
   });
 
