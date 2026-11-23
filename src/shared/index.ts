@@ -19,6 +19,7 @@ import {
 
 import { isArchiveOrgFileUri } from "./archive-org";
 import { isBuzzheavierUri, isMegaDbUri } from "./direct-hosts";
+import { isFileDitchUri } from "./fileditch";
 import { isRomsFunPageUri } from "./romsfun";
 import {
   getUriGroupParts,
@@ -42,6 +43,7 @@ import { NACHO_NOTIFICATION_ICON_DATA_URI } from "./nacho-icon";
 
 export * from "./archive-org";
 export * from "./direct-hosts";
+export * from "./fileditch";
 export * from "./romsfun";
 export * from "./constants";
 export * from "./features";
@@ -246,6 +248,9 @@ const getBaseDownloadersForUri = (uri: string): Downloader[] => {
   }
   if (isMegaDbUri(uri)) {
     return [Downloader.MegaDB];
+  }
+  if (isFileDitchUri(uri)) {
+    return [Downloader.FileDitch];
   }
 
   // A RomsFun game page: its free direct download, read from the page.

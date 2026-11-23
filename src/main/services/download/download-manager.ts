@@ -38,6 +38,8 @@ import {
   RootzApi,
   FileKeeperApi,
   BuzzheavierApi,
+  FileDitchApi,
+  FILEDITCH_MAX_CONNECTIONS,
   MegaDbApi,
 } from "../hosters";
 import { TorrentService } from "../torrent-service";
@@ -132,6 +134,7 @@ interface JsDownloadOptions {
   parallelRangeConnections?: number;
   probeUnboundedRange?: boolean;
   totalSize?: number;
+  refreshUrl?: () => Promise<string>;
 }
 
 interface PreparedJsDownload {
@@ -1691,6 +1694,8 @@ export class DownloadManager {
         return this.getArchiveOrgDownloadOptions(download, resumingFilename);
       case Downloader.MegaDB:
         return this.getMegaDbDownloadOptions(download, resumingFilename);
+      case Downloader.FileDitch:
+        return this.getFileDitchDownloadOptions(download, resumingFilename);
       case Downloader.RomsFun:
         return this.getRomsFunDownloadOptions(download, resumingFilename);
       default:
@@ -1770,7 +1775,9 @@ export class DownloadManager {
       parallelRangeConnections: this.connectionsFor(
         batch.provider === "realDebrid"
           ? realDebridConnections(entry.chunks)
-          : undefined
+          : batch.hosterDownload?.downloader === Downloader.FileDitch
+            ? FILEDITCH_MAX_CONNECTIONS
+            : undefined
       ),
       maxParallelRanges: torBoxParallel
         ? TORBOX_MAX_PARALLEL_RANGES
@@ -2402,6 +2409,29 @@ export class DownloadManager {
       download.downloadPath,
       filename
     );
+  }
+
+  /**
+   * FileDitch's link is signed and expires, so a retry after it runs out
+   * reads a fresh one from the page.
+   */
+  private static async getFileDitchDownloadOptions(
+    download: Download,
+    resumingFilename?: string
+  ): Promise<JsDownloadOptions> {
+    const { url, headers } = await FileDitchApi.getDownload(download.uri);
+    const filename = this.resolveFilename(resumingFilename, download.uri, url);
+    return {
+      ...this.buildDownloadOptions(
+        url,
+        download.downloadPath,
+        filename,
+        headers
+      ),
+      parallelRangeConnections: FILEDITCH_MAX_CONNECTIONS,
+      refreshUrl: async () =>
+        (await FileDitchApi.getDownload(download.uri)).url,
+    };
   }
 
   /**
