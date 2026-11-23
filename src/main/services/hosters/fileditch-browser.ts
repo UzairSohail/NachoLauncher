@@ -47,7 +47,8 @@ export interface FileDitchBrowserResult {
  * speed and the person can click it if it asks; nothing is solved for them.
  */
 export async function resolveFileDitchInBrowser(
-  pageUrl: string
+  pageUrl: string,
+  referer: string | null = null
 ): Promise<FileDitchBrowserResult> {
   const previouslyFocused = BrowserWindow.getFocusedWindow();
   const browserSession = getSession();
@@ -55,7 +56,6 @@ export async function resolveFileDitchInBrowser(
   browserSession.setPermissionRequestHandler((_c, _p, callback) =>
     callback(false)
   );
-  browserSession.on("will-download", (event) => event.preventDefault());
 
   const window = new BrowserWindow({
     show: false,
@@ -78,16 +78,41 @@ export async function resolveFileDitchInBrowser(
     closedByPerson = true;
   });
 
+  // Once the check passes, FileDitch may start the file straight away
+  // instead of showing a button. Nacho downloads it itself, so take the link
+  // and stop the browser's own download.
+  let startedDownload: string | null = null;
+  const onWillDownload = (
+    event: Electron.Event,
+    item: Electron.DownloadItem,
+    contents: Electron.WebContents
+  ) => {
+    if (contents !== window.webContents) return;
+    event.preventDefault();
+    startedDownload ??= item.getURL();
+  };
+  browserSession.on("will-download", onWillDownload);
+
   try {
     logger.log(`[FileDitch] Opening ${pageUrl} in the app browser`);
     window.show();
     window.focus();
-    await window.loadURL(pageUrl).catch(() => undefined);
+    await window
+      .loadURL(pageUrl, referer ? { httpReferrer: referer } : undefined)
+      .catch(() => undefined);
 
     const started = Date.now();
     let loggedChallenge = false;
     let followedShortLink = false;
     while (!closedByPerson) {
+      if (startedDownload) {
+        logger.log("[FileDitch] The page started the file download");
+        return {
+          url: startedDownload,
+          gone: false,
+          pageUrl: window.webContents.getURL() || pageUrl,
+        };
+      }
       const state = (await window.webContents
         .executeJavaScript(READ_FILEDITCH_PAGE_STATE)
         .catch(() => null)) as FileDitchPageState | null;
@@ -96,7 +121,14 @@ export async function resolveFileDitchInBrowser(
       if (state?.gone) return { url: null, gone: true, pageUrl: currentUrl };
 
       if (state && !state.challenged) {
-        if (state.downloadHref && isSignedFileDitchLink(state.downloadHref)) {
+        // Once the page's own check has passed, its download button is the
+        // file even when the link isn't one of the known signed shapes.
+        if (state.downloadHref) {
+          if (!isSignedFileDitchLink(state.downloadHref)) {
+            logger.log(
+              `[FileDitch] Using an unsigned download link from ${currentUrl}`
+            );
+          }
           return {
             url: new URL(state.downloadHref, currentUrl).href,
             gone: false,
@@ -126,6 +158,7 @@ export async function resolveFileDitchInBrowser(
 
     throw new FileDitchCheckCancelledError();
   } finally {
+    browserSession.removeListener("will-download", onWillDownload);
     if (!window.isDestroyed()) window.destroy();
     if (previouslyFocused && !previouslyFocused.isDestroyed()) {
       previouslyFocused.focus();
