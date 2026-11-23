@@ -1,7 +1,8 @@
 /**
  * FileDitch moves between domains often (fileditchfiles.me, fileditchvids.st,
- * fileditch.com...), so any host with "fileditch" in its name counts, plus its
- * short-link and embed domains. Album pages are not single files.
+ * itsfileditchfiles.st, fileditch.com...), so any host with "fileditch" in
+ * its name counts, plus its short-link and embed domains. Album pages are not
+ * single files.
  */
 const FILEDITCH_SHORT_HOST = "theditch.st";
 const FILEDITCH_EMBED_HOST = "embedditch.st";
@@ -34,8 +35,7 @@ const hostOf = (url: URL) => url.hostname.toLowerCase().replace(/^www\./, "");
 const isFileDitchHost = (host: string) =>
   host === FILEDITCH_SHORT_HOST ||
   host === FILEDITCH_EMBED_HOST ||
-  (/(^|\.)fileditch[a-z0-9-]*\.[a-z]+$/.test(host) &&
-    !host.startsWith("fileditchalbums."));
+  (host.includes("fileditch") && !host.includes("fileditchalbums"));
 
 export const isFileDitchUri = (uri: string): boolean => {
   const url = parseHttpUrl(uri);

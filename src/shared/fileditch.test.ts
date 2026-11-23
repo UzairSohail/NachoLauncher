@@ -18,6 +18,12 @@ describe("FileDitch links", () => {
       isFileDitchUri("https://fileditchvids.st/beta22/1e34db/Game.part1.rar"),
       true
     );
+    assert.equal(
+      isFileDitchUri(
+        "https://itsfileditchfiles.st/alpha42/27a4324cacfe3df84b4f/DREADMOOR-SteamRIP.com.rar"
+      ),
+      true
+    );
     assert.equal(isFileDitchUri("https://theditch.st/wtk8hvwb"), true);
     assert.equal(isFileDitchUri("https://fileditchhot.st/s21/x/y.zip"), true);
     assert.equal(
